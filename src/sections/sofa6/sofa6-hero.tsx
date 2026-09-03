@@ -15,12 +15,14 @@ import { varAlpha, textGradient } from 'src/theme/styles';
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionContainer } from 'src/components/animate';
 
-import { SOFA6_COLORS, SOFA6_IMAGES, SOFA6_PROMOS } from './sofa6-data';
+import { useSofa6Content } from './sofa6-i18n';
+import { SOFA6_COLORS, SOFA6_IMAGES, SOFA6_PROMO_ICONS } from './sofa6-data';
 
 // ----------------------------------------------------------------------
 
 export function Sofa6Hero({ sx, ...other }: BoxProps) {
   const theme = useTheme();
+  const content = useSofa6Content();
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '25%']);
@@ -92,7 +94,7 @@ export function Sofa6Hero({ sx, ...other }: BoxProps) {
                 variant="overline"
                 sx={{ color: SOFA6_COLORS.terracottaLight, letterSpacing: 4, fontWeight: 'fontWeightBold' }}
               >
-                SOFA EARTH — Thủ Công Thiên Nhiên
+                {content.hero.badge}
               </Typography>
             </Stack>
           </Box>
@@ -108,7 +110,7 @@ export function Sofa6Hero({ sx, ...other }: BoxProps) {
                 fontWeight: 'fontWeightBold',
               }}
             >
-              Sofa từ đất,{' '}
+              {content.hero.titleLine1}{' '}
               <Box
                 component="span"
                 sx={{
@@ -117,7 +119,7 @@ export function Sofa6Hero({ sx, ...other }: BoxProps) {
                   ),
                 }}
               >
-                cho người yêu thiên nhiên
+                {content.hero.titleEm}
               </Box>
             </Typography>
           </Box>
@@ -131,8 +133,7 @@ export function Sofa6Hero({ sx, ...other }: BoxProps) {
                 lineHeight: 1.7,
               }}
             >
-              Linen tự nhiên, bông hữu cơ, thuốc nhuộm thực vật. Mỗi chiếc sofa là câu chuyện của
-              đất, cây, và bàn tay nghệ nhân Việt.
+              {content.hero.subtitle}
             </Typography>
           </Box>
 
@@ -156,7 +157,7 @@ export function Sofa6Hero({ sx, ...other }: BoxProps) {
                 '&:hover': { bgcolor: SOFA6_COLORS.terracottaLight },
               }}
             >
-              Khám phá bộ sưu tập
+              {content.hero.ctaPrimary}
             </Button>
             <Button
               component="a"
@@ -176,7 +177,7 @@ export function Sofa6Hero({ sx, ...other }: BoxProps) {
                 },
               }}
             >
-              Xem không gian sống
+              {content.hero.ctaSecondary}
             </Button>
           </Box>
 
@@ -185,9 +186,9 @@ export function Sofa6Hero({ sx, ...other }: BoxProps) {
             variants={varFade({ distance: 24 }).inUp}
             sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 2 }}
           >
-            {SOFA6_PROMOS.map((promo) => (
+            {content.hero.promos.map((promo, index) => (
               <Stack key={promo.label} direction="row" alignItems="center" spacing={1}>
-                <Iconify icon={promo.icon} width={22} sx={{ color: SOFA6_COLORS.sageLight }} />
+                <Iconify icon={SOFA6_PROMO_ICONS[index]} width={22} sx={{ color: SOFA6_COLORS.sageLight }} />
                 <Box>
                   <Typography variant="subtitle2" sx={{ color: 'common.white', fontWeight: 'fontWeightBold' }}>
                     {promo.label}
