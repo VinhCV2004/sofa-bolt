@@ -1,5 +1,4 @@
 import { Helmet } from 'react-helmet-async';
-import { useLocation } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -15,57 +14,32 @@ import { RouterLink } from 'src/routes/components';
 
 import { Iconify } from 'src/components/iconify';
 
-import { Sofa6AdminCharts } from './sofa6-admin-charts';
-import { Sofa6AdminLayout, SOFA6_ADMIN_THEME } from './sofa6-admin-layout';
+import { Sofa5AdminLayout, SOFA5_ADMIN_THEME } from './sofa5-admin-layout';
 import {
-  SOFA6_ADMIN_KPIS,
-  SOFA6_ADMIN_ROOT,
-  SOFA6_ADMIN_GROUPS,
-  SOFA6_ADMIN_ACTIVITIES,
-} from '../sofa6-admin-data';
+  SOFA5_ADMIN_KPIS,
+  SOFA5_ADMIN_ROOT,
+  SOFA5_ADMIN_GROUPS,
+  SOFA5_ADMIN_ACTIVITIES,
+} from '../sofa5-admin-data';
 
 // ----------------------------------------------------------------------
 
-const { ACCENT, SURFACE } = SOFA6_ADMIN_THEME;
+const { ACCENT, SURFACE } = SOFA5_ADMIN_THEME;
 
-export function Sofa6AdminDashboardView() {
-  const { pathname } = useLocation();
-  const adminRoot = pathname.startsWith('/sofa10')
-    ? '/sofa10/admin'
-    : pathname.startsWith('/sofa9')
-    ? '/sofa9/admin'
-    : pathname.startsWith('/sofa8')
-      ? '/sofa8/admin'
-    : pathname.startsWith('/sofa7')
-      ? '/sofa7/admin'
-      : pathname.startsWith('/sofa5')
-        ? '/sofa5/admin'
-        : SOFA6_ADMIN_ROOT;
-  const brandName = pathname.startsWith('/sofa10')
-    ? 'Sofa10'
-    : pathname.startsWith('/sofa9')
-    ? 'Sofa9'
-    : pathname.startsWith('/sofa8')
-      ? 'Sofa8'
-      : pathname.startsWith('/sofa7')
-        ? 'Sofa7'
-        : pathname.startsWith('/sofa5')
-          ? 'Sofa5'
-          : 'Sofa6';
-
+export function Sofa5AdminDashboardView() {
   return (
     <>
       <Helmet>
-        <title>{`Trung tâm quản trị | ${brandName}`}</title>
+        <title>Trung tâm quản trị | Sofa5</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <Sofa6AdminLayout
+      <Sofa5AdminLayout
         title="Tổng quan hệ thống"
         subtitle="Bảng điều khiển tổng hợp toàn bộ nghiệp vụ: nội dung, sản phẩm, kho, đơn hàng, CRM, marketing, phân tích, SEO và phân quyền."
       >
         <Grid container spacing={3}>
-          {SOFA6_ADMIN_KPIS.map((kpi) => (
+          {SOFA5_ADMIN_KPIS.map((kpi) => (
             <Grid key={kpi.label} xs={12} sm={6} md={3}>
               <Card sx={{ p: 3, borderTop: `3px solid ${ACCENT}` }}>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -85,21 +59,17 @@ export function Sofa6AdminDashboardView() {
             </Grid>
           ))}
 
-          <Grid xs={12}>
-            <Sofa6AdminCharts />
-          </Grid>
-
           <Grid xs={12} md={8}>
             <Card sx={{ p: 3 }}>
               <Typography variant="h6" sx={{ mb: 2.5 }}>
                 Nhóm chức năng quản trị
               </Typography>
               <Grid container spacing={2}>
-                {SOFA6_ADMIN_GROUPS.map((group) => (
+                {SOFA5_ADMIN_GROUPS.map((group) => (
                   <Grid key={group.slug} xs={12} sm={6}>
                     <ButtonBase
                       component={RouterLink}
-                      href={`${adminRoot}/${group.slug}/${group.modules[0].slug}`}
+                      href={`${SOFA5_ADMIN_ROOT}/${group.slug}/${group.modules[0].slug}`}
                       sx={{
                         width: 1,
                         p: 2,
@@ -108,7 +78,7 @@ export function Sofa6AdminDashboardView() {
                         textAlign: 'left',
                         alignItems: 'flex-start',
                         justifyContent: 'flex-start',
-                        border: `1px solid ${alpha('#A6634A', 0.2)}`,
+                        border: `1px solid ${alpha('#C9A227', 0.2)}`,
                         transition: 'all .2s',
                         '&:hover': { borderColor: ACCENT, bgcolor: alpha(ACCENT, 0.06) },
                       }}
@@ -122,7 +92,7 @@ export function Sofa6AdminDashboardView() {
                           display: 'grid',
                           placeItems: 'center',
                           bgcolor: alpha(ACCENT, 0.14),
-                          color: '#A6634A',
+                          color: '#8A6B3D',
                         }}
                       >
                         <Iconify icon={group.icon} width={24} />
@@ -146,7 +116,7 @@ export function Sofa6AdminDashboardView() {
                 Hoạt động gần đây
               </Typography>
               <Stack spacing={2.5}>
-                {SOFA6_ADMIN_ACTIVITIES.map((item) => (
+                {SOFA5_ADMIN_ACTIVITIES.map((item) => (
                   <Stack key={item.text} direction="row" spacing={1.5}>
                     <Box
                       sx={{
@@ -171,10 +141,10 @@ export function Sofa6AdminDashboardView() {
               <Box sx={{ mt: 4 }}>
                 <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
                   <Typography variant="body2">Mục tiêu doanh thu tháng</Typography>
-                  <Typography variant="subtitle2">68%</Typography>
+                  <Typography variant="subtitle2">74%</Typography>
                 </Stack>
                 <LinearProgress
-                  value={68}
+                  value={74}
                   variant="determinate"
                   sx={{ height: 8, borderRadius: 1, [`& .MuiLinearProgress-bar`]: { bgcolor: ACCENT } }}
                 />
@@ -182,7 +152,7 @@ export function Sofa6AdminDashboardView() {
             </Card>
           </Grid>
         </Grid>
-      </Sofa6AdminLayout>
+      </Sofa5AdminLayout>
     </>
   );
 }

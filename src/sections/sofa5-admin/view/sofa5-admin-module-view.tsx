@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Navigate, useLocation, useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -31,20 +31,20 @@ import TablePagination from '@mui/material/TablePagination';
 
 import { Iconify } from 'src/components/iconify';
 
-import { type AdminRow, useSofa6AdminRows } from '../sofa6-admin-store';
-import { Sofa6AdminLayout, SOFA6_ADMIN_THEME } from './sofa6-admin-layout';
-import { SOFA6_ADMIN_ROOT, SOFA6_ADMIN_GROUPS, findSofa6AdminModule } from '../sofa6-admin-data';
+import { type AdminRow, useSofa5AdminRows } from '../sofa5-admin-store';
+import { Sofa5AdminLayout, SOFA5_ADMIN_THEME } from './sofa5-admin-layout';
+import { SOFA5_ADMIN_ROOT, SOFA5_ADMIN_GROUPS, findSofa5AdminModule } from '../sofa5-admin-data';
 
 // ----------------------------------------------------------------------
 
-const { ACCENT, SURFACE } = SOFA6_ADMIN_THEME;
+const { ACCENT, SURFACE } = SOFA5_ADMIN_THEME;
 
 const statusColor = (value: string) => {
   const v = value.toLowerCase();
-  if (/(xuất bản|hoàn tất|thành công|hoạt động|đã duyệt|còn hàng|đang chạy|đã giao|đã hoàn)/.test(v))
+  if (/(xuất bản|hoàn tất|thành công|hoạt động|đã duyệt|còn hàng|đang chạy|đã giao|đã hoàn|hiển thị|đang bán|đủ hàng)/.test(v))
     return 'success';
-  if (/(chờ|đang xử lý|nháp|xem xét|mới)/.test(v)) return 'warning';
-  if (/(từ chối|hủy|huỷ|lỗi|hết hàng|tạm ẩn|quá hạn|bị khoá)/.test(v)) return 'error';
+  if (/(chờ|đang xử lý|nháp|xem xét|mới|đang giao|đang thu hồi|sắp hết|đang vận chuyển|lên lịch)/.test(v)) return 'warning';
+  if (/(từ chối|hủy|huỷ|lỗi|hết hàng|tạm ẩn|quá hạn|bị khoá|ngừng bán|ẩn|thất bại|hết hạn)/.test(v)) return 'error';
   return 'default';
 };
 
@@ -56,27 +56,15 @@ const formatCell = (value: string | number, type?: string) => {
 
 type FormState = { open: boolean; mode: 'create' | 'edit'; index: number; values: AdminRow };
 
-export function Sofa6AdminModuleView() {
+export function Sofa5AdminModuleView() {
   const { group: groupSlug, module: moduleSlug } = useParams();
-  const { pathname } = useLocation();
-  const adminRoot = pathname.startsWith('/sofa10')
-    ? '/sofa10/admin'
-    : pathname.startsWith('/sofa9')
-    ? '/sofa9/admin'
-    : pathname.startsWith('/sofa8')
-      ? '/sofa8/admin'
-    : pathname.startsWith('/sofa7')
-      ? '/sofa7/admin'
-      : pathname.startsWith('/sofa5')
-        ? '/sofa5/admin'
-        : SOFA6_ADMIN_ROOT;
 
-  const found = useMemo(() => findSofa6AdminModule(groupSlug, moduleSlug), [groupSlug, moduleSlug]);
+  const found = useMemo(() => findSofa5AdminModule(groupSlug, moduleSlug), [groupSlug, moduleSlug]);
 
   const group = found?.group;
   const module = found?.module;
 
-  const { rows, createRow, updateRow, deleteRow, deleteRows, resetRows } = useSofa6AdminRows(
+  const { rows, createRow, updateRow, deleteRow, deleteRows, resetRows } = useSofa5AdminRows(
     group?.slug ?? '',
     module?.slug ?? ''
   );
@@ -99,8 +87,8 @@ export function Sofa6AdminModuleView() {
   });
 
   if (!found || !group || !module) {
-    const first = SOFA6_ADMIN_GROUPS[0];
-    return <Navigate to={`${adminRoot}/${first.slug}/${first.modules[0].slug}`} replace />;
+    const first = SOFA5_ADMIN_GROUPS[0];
+    return <Navigate to={`${SOFA5_ADMIN_ROOT}/${first.slug}/${first.modules[0].slug}`} replace />;
   }
 
   const filtered = rows
@@ -186,23 +174,11 @@ export function Sofa6AdminModuleView() {
   return (
     <>
       <Helmet>
-        <title>{`${module.name} | ${group.name} - Quản trị ${
-          pathname.startsWith('/sofa10')
-            ? 'Sofa10'
-            : pathname.startsWith('/sofa9')
-            ? 'Sofa9'
-            : pathname.startsWith('/sofa8')
-              ? 'Sofa8'
-              : pathname.startsWith('/sofa7')
-                ? 'Sofa7'
-                : pathname.startsWith('/sofa5')
-                  ? 'Sofa5'
-                  : 'Sofa6'
-        }`}</title>
+        <title>{`${module.name} | ${group.name} - Quản trị Sofa5`}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <Sofa6AdminLayout
+      <Sofa5AdminLayout
         activeGroup={group.slug}
         activeModule={module.slug}
         breadcrumb={[group.name, module.name]}
@@ -303,7 +279,7 @@ export function Sofa6AdminModuleView() {
                 </Stack>
               </Stack>
 
-              <TableContainer sx={{ borderTop: `1px solid ${alpha('#A6634A', 0.16)}` }}>
+              <TableContainer sx={{ borderTop: `1px solid ${alpha('#C9A227', 0.16)}` }}>
                 <Table size="medium">
                   <TableHead>
                     <TableRow>
@@ -410,13 +386,13 @@ export function Sofa6AdminModuleView() {
                 <Chip
                   size="small"
                   label={`Nhóm: ${group.name}`}
-                  sx={{ mr: 2, mb: { xs: 2, sm: 0 }, bgcolor: alpha(ACCENT, 0.14), color: '#A6634A' }}
+                  sx={{ mr: 2, mb: { xs: 2, sm: 0 }, bgcolor: alpha(ACCENT, 0.14), color: '#8A6B3D' }}
                 />
               </Stack>
             </Card>
           </Grid>
         </Grid>
-      </Sofa6AdminLayout>
+      </Sofa5AdminLayout>
 
       {/* Form thêm / sửa */}
       <Dialog
