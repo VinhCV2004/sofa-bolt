@@ -188,7 +188,7 @@ export function Sofa6Hero({ sx, ...other }: BoxProps) {
           >
             {content.hero.promos.map((promo, index) => (
               <Stack key={promo.label} direction="row" alignItems="center" spacing={1}>
-                <Iconify icon={SOFA6_PROMO_ICONS[index]} width={22} sx={{ color: SOFA6_COLORS.sageLight }} />
+                <Iconify icon={SOFA6_PROMOS[index]?.icon ?? 'solar:leaf-bold-duotone'} width={22} sx={{ color: SOFA6_COLORS.sageLight }} />
                 <Box>
                   <Typography variant="subtitle2" sx={{ color: 'common.white', fontWeight: 'fontWeightBold' }}>
                     {promo.label}
