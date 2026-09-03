@@ -16,7 +16,7 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionContainer } from 'src/components/animate';
 
 import { useSofa6Content } from './sofa6-i18n';
-import { SOFA6_COLORS, SOFA6_IMAGES, SOFA6_PROMO_ICONS } from './sofa6-data';
+import { SOFA6_COLORS, SOFA6_IMAGES, SOFA6_PROMOS } from './sofa6-data';
 
 // ----------------------------------------------------------------------
 
