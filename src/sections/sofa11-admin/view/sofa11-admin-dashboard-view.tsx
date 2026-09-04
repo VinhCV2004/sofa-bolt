@@ -12,8 +12,8 @@ import {
   Sofa11AdminLayout,
   Sofa11AdminHeading,
   Sofa11AdminKpis,
-} from './sofa11-admin-layout';
-import { SOFA11_ADMIN_GROUPS } from './sofa11-admin-config';
+} from '../sofa11-admin-layout';
+import { SOFA11_ADMIN_GROUPS } from '../sofa11-admin-config';
 
 // ----------------------------------------------------------------------
 

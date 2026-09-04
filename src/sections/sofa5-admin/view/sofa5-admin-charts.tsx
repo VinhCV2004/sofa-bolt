@@ -1,127 +1,83 @@
 import Card from '@mui/material/Card';
-import Stack from '@mui/material/Stack';
 import Grid from '@mui/material/Unstable_Grid2';
-import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
 
 import { Chart, useChart } from 'src/components/chart';
 
-import {
-  SOFA5_ADMIN_CHART_MONTHS,
-  SOFA5_ADMIN_TOP_PRODUCTS,
-  SOFA5_ADMIN_ORDER_SERIES,
-  SOFA5_ADMIN_CHANNEL_CHART,
-  SOFA5_ADMIN_REVENUE_SERIES,
-} from '../sofa5-admin-data';
+import { SOFA5_ADMIN_THEME } from './sofa5-admin-layout';
 
 // ----------------------------------------------------------------------
 
-const PALETTE = ['#C9A227', '#8C7B3F', '#A6862B', '#D8C36A', '#2C2823'];
+const { ACCENT, SURFACE } = SOFA5_ADMIN_THEME;
+
+const MONTHS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9'];
 
 export function Sofa5AdminCharts() {
   const revenueOptions = useChart({
-    colors: [PALETTE[0], PALETTE[1]],
-    stroke: { width: [3, 2], dashArray: [0, 5] },
-    xaxis: { categories: SOFA5_ADMIN_CHART_MONTHS },
-    legend: { show: true },
-  });
-
-  const orderOptions = useChart({
-    colors: [PALETTE[2]],
-    xaxis: { categories: SOFA5_ADMIN_CHART_MONTHS },
-    plotOptions: { bar: { columnWidth: '45%', borderRadius: 4 } },
+    colors: [ACCENT],
+    xaxis: { categories: MONTHS },
+    stroke: { width: 3 },
+    yaxis: { labels: { formatter: (value: number) => `${value} tỷ` } },
+    tooltip: { y: { formatter: (value: number) => `${value} tỷ đồng` } },
   });
 
   const channelOptions = useChart({
-    colors: PALETTE,
-    labels: SOFA5_ADMIN_CHANNEL_CHART.labels,
-    stroke: { width: 0 },
-    legend: { position: 'bottom', horizontalAlign: 'center' },
+    colors: [ACCENT, SURFACE, '#8A6B3D', '#D9C79A'],
+    labels: ['Showroom', 'Website', 'Đại lý', 'Dự án B2B'],
+    legend: { position: 'bottom' },
     tooltip: { y: { formatter: (value: number) => `${value}%` } },
   });
 
-  const topProductOptions = useChart({
-    colors: [PALETTE[1]],
-    xaxis: { categories: SOFA5_ADMIN_TOP_PRODUCTS.labels },
-    plotOptions: { bar: { horizontal: true, barHeight: '55%', borderRadius: 4 } },
+  const ordersOptions = useChart({
+    colors: [ACCENT, '#8A6B3D'],
+    xaxis: { categories: MONTHS },
+    plotOptions: { bar: { columnWidth: '48%', borderRadius: 4 } },
   });
 
   return (
-    <Grid container spacing={3}>
+    <>
       <Grid xs={12} md={8}>
-        <Card>
-          <CardHeader
-            title="Doanh thu theo tháng"
-            subheader="So sánh doanh thu thực tế với mục tiêu (đơn vị: tỷ đồng)"
-          />
+        <Card sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Doanh thu 9 tháng
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Đơn vị: tỷ đồng
+          </Typography>
           <Chart
-            type="line"
-            series={SOFA5_ADMIN_REVENUE_SERIES}
+            type="area"
+            height={300}
+            series={[{ name: 'Doanh thu', data: [3.2, 3.8, 4.1, 3.9, 4.8, 5.2, 5.0, 5.9, 6.4] }]}
             options={revenueOptions}
-            height={320}
-            sx={{ px: 2, pb: 2 }}
           />
         </Card>
       </Grid>
 
       <Grid xs={12} md={4}>
-        <Card sx={{ height: 1 }}>
-          <CardHeader title="Nguồn truy cập / đặt hàng" subheader="Tỷ trọng theo kênh (%)" />
-          <Chart
-            type="donut"
-            series={SOFA5_ADMIN_CHANNEL_CHART.series}
-            options={channelOptions}
-            height={300}
-            sx={{ px: 2, pb: 2 }}
-          />
-        </Card>
-      </Grid>
-
-      <Grid xs={12} md={6}>
-        <Card>
-          <CardHeader title="Số đơn hàng" subheader="Tổng đơn mỗi tháng" />
-          <Chart
-            type="bar"
-            series={SOFA5_ADMIN_ORDER_SERIES}
-            options={orderOptions}
-            height={300}
-            sx={{ px: 2, pb: 2 }}
-          />
-        </Card>
-      </Grid>
-
-      <Grid xs={12} md={6}>
-        <Card>
-          <CardHeader title="Sản phẩm bán chạy" subheader="Số lượng bán trong 90 ngày" />
-          <Chart
-            type="bar"
-            series={[{ name: 'Đã bán', data: SOFA5_ADMIN_TOP_PRODUCTS.series }]}
-            options={topProductOptions}
-            height={300}
-            sx={{ px: 2, pb: 2 }}
-          />
+        <Card sx={{ p: 3, height: 1 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Nguồn doanh thu
+          </Typography>
+          <Chart type="donut" height={300} series={[42, 28, 18, 12]} options={channelOptions} />
         </Card>
       </Grid>
 
       <Grid xs={12}>
         <Card sx={{ p: 3 }}>
-          <Stack direction="row" justifyContent="space-between" flexWrap="wrap" spacing={2}>
-            {[
-              { label: 'Giá trị đơn trung bình', value: '14.2tr' },
-              { label: 'Tỷ lệ giữ khách', value: '62%' },
-              { label: 'Đơn hoàn / đổi trả', value: '1.8%' },
-              { label: 'Tồn kho khả dụng', value: '3.482' },
-            ].map((item) => (
-              <Stack key={item.label} spacing={0.5}>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {item.label}
-                </Typography>
-                <Typography variant="h5">{item.value}</Typography>
-              </Stack>
-            ))}
-          </Stack>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Đơn hàng & đơn hoàn tất theo tháng
+          </Typography>
+          <Chart
+            type="bar"
+            height={300}
+            series={[
+              { name: 'Đơn tạo mới', data: [82, 96, 104, 98, 121, 133, 128, 149, 162] },
+              { name: 'Đơn hoàn tất', data: [70, 84, 95, 88, 110, 121, 118, 137, 150] },
+            ]}
+            options={ordersOptions}
+          />
         </Card>
       </Grid>
-    </Grid>
+    </>
   );
 }

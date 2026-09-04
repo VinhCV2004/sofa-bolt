@@ -46,9 +46,4 @@ export const sofa12NavData = [
     path: paths.contact,
     icon: <Iconify width={22} icon="solar:phone-bold-duotone" />,
   },
-  {
-    title: 'Quản trị',
-    path: '/sofa12/admin',
-    icon: <Iconify width={22} icon="solar:widget-5-bold-duotone" />,
-  },
 ];

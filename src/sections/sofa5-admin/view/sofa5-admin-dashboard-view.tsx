@@ -15,11 +15,6 @@ import { RouterLink } from 'src/routes/components';
 import { Iconify } from 'src/components/iconify';
 
 import { Sofa5AdminCharts } from './sofa5-admin-charts';
-import {
-  Sofa5AdminFunnel,
-  Sofa5AdminQuickLinks,
-  Sofa5AdminRevenueChart,
-} from './sofa5-admin-insights';
 import { Sofa5AdminLayout, SOFA5_ADMIN_THEME } from './sofa5-admin-layout';
 import {
   SOFA5_ADMIN_KPIS,
@@ -33,13 +28,10 @@ import {
 const { ACCENT, SURFACE } = SOFA5_ADMIN_THEME;
 
 export function Sofa5AdminDashboardView() {
-  const adminRoot = SOFA5_ADMIN_ROOT;
-  const brandName = 'Sofa5 Royale';
-
   return (
     <>
       <Helmet>
-        <title>{`Trung tâm quản trị | ${brandName}`}</title>
+        <title>Trung tâm quản trị | Sofa5</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
@@ -68,21 +60,7 @@ export function Sofa5AdminDashboardView() {
             </Grid>
           ))}
 
-          <Grid xs={12}>
-            <Sofa5AdminQuickLinks />
-          </Grid>
-
-          <Grid xs={12} md={8}>
-            <Sofa5AdminRevenueChart />
-          </Grid>
-
-          <Grid xs={12} md={4}>
-            <Sofa5AdminFunnel />
-          </Grid>
-
-          <Grid xs={12}>
-            <Sofa5AdminCharts />
-          </Grid>
+          <Sofa5AdminCharts />
 
           <Grid xs={12} md={8}>
             <Card sx={{ p: 3 }}>
@@ -94,7 +72,7 @@ export function Sofa5AdminDashboardView() {
                   <Grid key={group.slug} xs={12} sm={6}>
                     <ButtonBase
                       component={RouterLink}
-                      href={`${adminRoot}/${group.slug}/${group.modules[0].slug}`}
+                      href={`${SOFA5_ADMIN_ROOT}/${group.slug}/${group.modules[0].slug}`}
                       sx={{
                         width: 1,
                         p: 2,
@@ -117,7 +95,7 @@ export function Sofa5AdminDashboardView() {
                           display: 'grid',
                           placeItems: 'center',
                           bgcolor: alpha(ACCENT, 0.14),
-                          color: '#C9A227',
+                          color: '#8A6B3D',
                         }}
                       >
                         <Iconify icon={group.icon} width={24} />
@@ -166,10 +144,10 @@ export function Sofa5AdminDashboardView() {
               <Box sx={{ mt: 4 }}>
                 <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
                   <Typography variant="body2">Mục tiêu doanh thu tháng</Typography>
-                  <Typography variant="subtitle2">68%</Typography>
+                  <Typography variant="subtitle2">74%</Typography>
                 </Stack>
                 <LinearProgress
-                  value={68}
+                  value={74}
                   variant="determinate"
                   sx={{ height: 8, borderRadius: 1, [`& .MuiLinearProgress-bar`]: { bgcolor: ACCENT } }}
                 />
