@@ -49,12 +49,23 @@ export function Sofa6AdminRevenueChart() {
     plotOptions: { bar: { columnWidth: '42%', borderRadius: 4 } },
     legend: { show: true, position: 'top', horizontalAlign: 'right' },
     yaxis: [
-      { seriesName: 'Doanh thu', labels: { formatter: (value: number) => `${value} tỷ` } },
-      { seriesName: 'Doanh thu', show: false },
+      {
+        seriesName: 'Doanh thu',
+        min: 0,
+        max: Math.ceil(Math.max(...actual, ...target) + 1),
+        labels: { formatter: (value: number) => `${value.toFixed(0)} tỷ` },
+      },
+      {
+        seriesName: 'Doanh thu',
+        show: false,
+        min: 0,
+        max: Math.ceil(Math.max(...actual, ...target) + 1),
+      },
       {
         opposite: true,
         seriesName: 'Luỹ kế',
-        labels: { formatter: (value: number) => `${value} tỷ` },
+        min: 0,
+        labels: { formatter: (value: number) => `${value.toFixed(0)} tỷ` },
       },
     ],
     tooltip: { y: { formatter: (value: number) => currency(value) } },
