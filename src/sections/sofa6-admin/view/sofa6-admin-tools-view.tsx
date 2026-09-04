@@ -32,6 +32,7 @@ import {
   findSofa6AdminTool,
 } from '../sofa6-admin-tools';
 import { Sofa6AdminCharts } from './sofa6-admin-charts';
+import { Sofa6AdminFunnel, Sofa6AdminRevenueChart } from './sofa6-admin-insights';
 import { Sofa6AdminLayout } from './sofa6-admin-layout';
 import { SOFA6_ADMIN_ROOT } from '../sofa6-admin-data';
 
@@ -138,6 +139,14 @@ export function Sofa6AdminToolsView() {
             </Card>
           </Grid>
         ))}
+      </Grid>
+      <Grid container spacing={3}>
+        <Grid xs={12} md={8}>
+          <Sofa6AdminRevenueChart />
+        </Grid>
+        <Grid xs={12} md={4}>
+          <Sofa6AdminFunnel />
+        </Grid>
       </Grid>
       <Sofa6AdminCharts />
     </Stack>
