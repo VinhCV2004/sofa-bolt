@@ -20,6 +20,7 @@ import { RouterLink } from 'src/routes/components';
 import { Iconify } from 'src/components/iconify';
 
 import { SOFA6_ADMIN_ROOT, SOFA6_ADMIN_GROUPS } from '../sofa6-admin-data';
+import { SOFA6_ADMIN_TOOLS } from '../sofa6-admin-tools';
 
 // ----------------------------------------------------------------------
 
@@ -194,6 +195,37 @@ export function Sofa6AdminLayout({
             </Box>
           );
         })}
+
+        <Typography
+          variant="overline"
+          sx={{ display: 'block', px: 1.5, pt: 2, pb: 1, color: alpha(TEXT, 0.45) }}
+        >
+          Tiện ích
+        </Typography>
+
+        {SOFA6_ADMIN_TOOLS.map((tool) => (
+          <ButtonBase
+            key={tool.slug}
+            component={RouterLink}
+            href={`${adminRoot}/tools/${tool.slug}`}
+            sx={{
+              width: 1,
+              gap: 1.5,
+              px: 1.5,
+              py: 1.05,
+              mb: 0.25,
+              borderRadius: 1.25,
+              justifyContent: 'flex-start',
+              color: alpha(TEXT, 0.75),
+              '&:hover': { bgcolor: alpha(ACCENT, 0.1), color: TEXT },
+            }}
+          >
+            <Iconify icon={tool.icon} width={20} />
+            <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'left' }}>
+              {tool.name}
+            </Typography>
+          </ButtonBase>
+        ))}
       </Box>
 
       <Divider sx={{ borderColor: alpha(ACCENT, 0.16) }} />
