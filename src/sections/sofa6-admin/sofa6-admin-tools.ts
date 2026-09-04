@@ -40,6 +40,48 @@ export const findSofa6AdminTool = (slug?: string) =>
 
 // ----------------------------------------------------------------------
 
+export type Sofa6FunnelStep = {
+  label: string;
+  value: number;
+  icon: string;
+  desc: string;
+};
+
+export const SOFA6_ADMIN_FUNNEL: Sofa6FunnelStep[] = [
+  {
+    label: 'Lượt truy cập',
+    value: 128400,
+    icon: 'solar:eye-bold-duotone',
+    desc: 'Website, landing page và chiến dịch quảng cáo',
+  },
+  {
+    label: 'Xem sản phẩm',
+    value: 61300,
+    icon: 'solar:armchair-2-bold-duotone',
+    desc: 'Khách mở ít nhất một trang chi tiết sản phẩm',
+  },
+  {
+    label: 'Thêm vào giỏ',
+    value: 18240,
+    icon: 'solar:cart-large-2-bold-duotone',
+    desc: 'Giỏ hàng được tạo hoặc cập nhật',
+  },
+  {
+    label: 'Bắt đầu thanh toán',
+    value: 7420,
+    icon: 'solar:card-bold-duotone',
+    desc: 'Khách nhập thông tin giao hàng',
+  },
+  {
+    label: 'Đơn hoàn tất',
+    value: 2618,
+    icon: 'solar:check-circle-bold-duotone',
+    desc: 'Đơn đã xác nhận và thanh toán thành công',
+  },
+];
+
+// ----------------------------------------------------------------------
+
 export const SOFA6_SETTINGS_FIELDS = [
   { key: 'brand', label: 'Tên thương hiệu', value: 'SOFA EARTH', helper: 'Hiển thị trên toàn site' },
   { key: 'hotline', label: 'Hotline', value: '1900 6868' },
