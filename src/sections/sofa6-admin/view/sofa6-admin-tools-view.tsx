@@ -329,12 +329,14 @@ export function Sofa6AdminToolsView() {
     </Grid>
   );
 
-  const content = {
+  const renderers: Record<string, () => JSX.Element> = {
     reports: renderReports,
     settings: renderSettings,
     notifications: renderNotifications,
     profile: renderProfile,
-  }[tool.slug]();
+  };
+
+  const content = (renderers[tool.slug] ?? renderReports)();
 
   return (
     <>
