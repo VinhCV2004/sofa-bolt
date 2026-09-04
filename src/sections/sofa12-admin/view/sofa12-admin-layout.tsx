@@ -26,10 +26,10 @@ import { SOFA12_ADMIN_TOOLS } from '../sofa12-admin-tools';
 
 const NAV_WIDTH = 280;
 
-const BG = '#3D2817';
-const SURFACE = '#5D4037';
-const ACCENT = '#E07A4F';
-const TEXT = '#F5EFE6';
+const BG = '#2B1B12';
+const SURFACE = '#54382A';
+const ACCENT = '#D98E32';
+const TEXT = '#FBF6EE';
 
 type Props = {
   children: React.ReactNode;
@@ -253,7 +253,7 @@ export function Sofa12AdminLayout({
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#F4F7FB' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#FBF6EE' }}>
       {isDesktop ? (
         <Box
           component="aside"
@@ -276,7 +276,7 @@ export function Sofa12AdminLayout({
             zIndex: 10,
             bgcolor: alpha('#FFFFFF', 0.85),
             backdropFilter: 'blur(8px)',
-            borderBottom: `1px solid ${alpha('#A6634A', 0.16)}`,
+            borderBottom: `1px solid ${alpha('#B4552D', 0.16)}`,
           }}
         >
           <Container maxWidth={false} sx={{ maxWidth: 1440 }}>
@@ -298,7 +298,7 @@ export function Sofa12AdminLayout({
                 size="small"
                 icon={<Iconify icon="solar:shield-check-bold-duotone" width={16} />}
                 label="Dữ liệu demo"
-                sx={{ bgcolor: alpha(ACCENT, 0.16), color: '#A6634A', fontWeight: 600 }}
+                sx={{ bgcolor: alpha(ACCENT, 0.16), color: '#B4552D', fontWeight: 600 }}
               />
             </Stack>
           </Container>
