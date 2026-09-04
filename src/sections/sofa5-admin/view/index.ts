@@ -1,3 +1,5 @@
+export * from './sofa5-admin-charts';
+
 export * from './sofa5-admin-layout';
 
 export * from './sofa5-admin-module-view';
