@@ -1,4 +1,4 @@
-// SOFA12 ADMIN — các trang tiện ích bổ sung (báo cáo, cài đặt, thông báo, hồ sơ)
+// SOFA5 ADMIN — các trang tiện ích bổ sung (báo cáo, cài đặt, thông báo, hồ sơ)
 // ----------------------------------------------------------------------
 
 export type Sofa5AdminTool = {
