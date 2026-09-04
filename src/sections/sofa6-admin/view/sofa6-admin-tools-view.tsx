@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Navigate, useLocation, useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -54,7 +54,6 @@ const toneColor = (level: string): Tone => {
 
 export function Sofa6AdminToolsView() {
   const { tool: toolSlug } = useParams();
-  const { pathname } = useLocation();
   const tool = findSofa6AdminTool(toolSlug ?? 'reports');
   const [toast, setToast] = useState('');
   const [period, setPeriod] = useState('12 tháng');
