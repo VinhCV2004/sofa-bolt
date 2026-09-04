@@ -24,25 +24,28 @@ import Typography from '@mui/material/Typography';
 import { Iconify } from 'src/components/iconify';
 
 import {
-  SOFA6_ADMIN_PROFILE,
-  SOFA6_ADMIN_SETTINGS_FIELDS,
-  SOFA6_ADMIN_SETTINGS_TOGGLES,
+  SOFA6_PROFILE,
   SOFA6_ADMIN_TOOLS,
-  SOFA6_ADMIN_NOTIFICATIONS,
+  SOFA6_NOTIFICATIONS,
+  SOFA6_SETTINGS_FIELDS,
+  SOFA6_SETTINGS_TOGGLES,
   findSofa6AdminTool,
 } from '../sofa6-admin-tools';
 import { Sofa6AdminCharts } from './sofa6-admin-charts';
-import { Sofa6AdminLayout, SOFA6_ADMIN_THEME } from './sofa6-admin-layout';
+import { Sofa6AdminLayout } from './sofa6-admin-layout';
 import { SOFA6_ADMIN_ROOT } from '../sofa6-admin-data';
 
 // ----------------------------------------------------------------------
 
-const { ACCENT, SURFACE } = SOFA6_ADMIN_THEME;
+const ACCENT = '#E07A4F';
+const SURFACE = '#3D2817';
 
 type SettingsValues = Record<string, string>;
 type ToggleValues = Record<string, boolean>;
 
-const toneColor = (level: string) => {
+type Tone = 'error' | 'warning' | 'success' | 'info';
+
+const toneColor = (level: string): Tone => {
   if (level === 'error') return 'error';
   if (level === 'warning') return 'warning';
   if (level === 'success') return 'success';
