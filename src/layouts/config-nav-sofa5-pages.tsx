@@ -219,4 +219,21 @@ export const sofa5PagesNavData = [
       { title: 'Tài liệu bán hàng', path: '/sofa5/member/dealer-docs' },
     ],
   },
+  {
+    title: 'Quản trị',
+    path: '/sofa5/admin',
+    icon: <Iconify width={22} icon="solar:settings-bold-duotone" />,
+    children: [
+      { title: 'Tổng quan', path: '/sofa5/admin' },
+      { title: 'CMS', path: '/sofa5/admin/cms/home' },
+      { title: 'Sản phẩm', path: '/sofa5/admin/catalog/categories' },
+      { title: 'Kho hàng', path: '/sofa5/admin/warehouse/stock' },
+      { title: 'Đơn hàng', path: '/sofa5/admin/orders/list' },
+      { title: 'CRM', path: '/sofa5/admin/crm/customers' },
+      { title: 'Marketing', path: '/sofa5/admin/marketing/email' },
+      { title: 'Analytics', path: '/sofa5/admin/analytics/revenue' },
+      { title: 'SEO', path: '/sofa5/admin/seo/sitemap' },
+      { title: 'Phân quyền', path: '/sofa5/admin/access/users' },
+    ],
+  },
 ];
