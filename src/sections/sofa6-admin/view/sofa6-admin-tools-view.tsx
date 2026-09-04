@@ -61,15 +61,15 @@ export function Sofa6AdminToolsView() {
   const [notificationSearch, setNotificationSearch] = useState('');
   const [notificationLevel, setNotificationLevel] = useState('all');
   const [settings, setSettings] = useState<SettingsValues>(() =>
-    Object.fromEntries(SOFA6_ADMIN_SETTINGS_FIELDS.map((field) => [field.key, field.value]))
+    Object.fromEntries(SOFA6_SETTINGS_FIELDS.map((field) => [field.key, field.value]))
   );
   const [toggles, setToggles] = useState<ToggleValues>(() =>
-    Object.fromEntries(SOFA6_ADMIN_SETTINGS_TOGGLES.map((item) => [item.key, item.on]))
+    Object.fromEntries(SOFA6_SETTINGS_TOGGLES.map((item) => [item.key, item.on]))
   );
 
   const notifications = useMemo(
     () =>
-      SOFA6_ADMIN_NOTIFICATIONS.filter((item) => {
+      SOFA6_NOTIFICATIONS.filter((item) => {
         const matchesText = `${item.type} ${item.text}`
           .toLowerCase()
           .includes(notificationSearch.toLowerCase());
@@ -153,7 +153,7 @@ export function Sofa6AdminToolsView() {
         />
         <Divider />
         <Grid container spacing={2.5} sx={{ p: 3 }}>
-          {SOFA6_ADMIN_SETTINGS_FIELDS.map((field) => (
+          {SOFA6_SETTINGS_FIELDS.map((field) => (
             <Grid key={field.key} xs={12} md={6}>
               <TextField
                 fullWidth
@@ -172,7 +172,7 @@ export function Sofa6AdminToolsView() {
         <CardHeader title="Tính năng hệ thống" subheader="Bật hoặc tắt các chức năng đang phục vụ khách hàng." />
         <Divider />
         <Grid container spacing={1} sx={{ p: 2.5 }}>
-          {SOFA6_ADMIN_SETTINGS_TOGGLES.map((item) => (
+          {SOFA6_SETTINGS_TOGGLES.map((item) => (
             <Grid key={item.key} xs={12} md={6}>
               <Stack
                 direction="row"
@@ -270,16 +270,16 @@ export function Sofa6AdminToolsView() {
             <Box sx={{ width: 84, height: 84, borderRadius: '50%', display: 'grid', placeItems: 'center', bgcolor: 'warning.lighter', color: ACCENT }}>
               <Typography variant="h3">NA</Typography>
             </Box>
-            <Typography variant="h6">{SOFA6_ADMIN_PROFILE.name}</Typography>
-            <Chip label={SOFA6_ADMIN_PROFILE.role} color="warning" variant="soft" />
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>{SOFA6_ADMIN_PROFILE.email}</Typography>
+            <Typography variant="h6">{SOFA6_PROFILE.name}</Typography>
+            <Chip label={SOFA6_PROFILE.role} color="warning" variant="soft" />
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>{SOFA6_PROFILE.email}</Typography>
           </Stack>
           <Divider sx={{ my: 3 }} />
           <Stack spacing={1.5}>
             {[
-              ['Số điện thoại', SOFA6_ADMIN_PROFILE.phone],
-              ['Bộ phận', SOFA6_ADMIN_PROFILE.team],
-              ['Tham gia từ', SOFA6_ADMIN_PROFILE.joined],
+              ['Số điện thoại', SOFA6_PROFILE.phone],
+              ['Bộ phận', SOFA6_PROFILE.team],
+              ['Tham gia từ', SOFA6_PROFILE.joined],
             ].map(([label, value]) => (
               <Stack key={label} direction="row" justifyContent="space-between" spacing={2}>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>{label}</Typography>
@@ -303,7 +303,7 @@ export function Sofa6AdminToolsView() {
             <CardHeader title="Quyền truy cập" subheader="Các nhóm nghiệp vụ tài khoản này có thể quản lý." />
             <Divider />
             <Stack direction="row" flexWrap="wrap" useFlexGap gap={1} sx={{ p: 3 }}>
-              {SOFA6_ADMIN_PROFILE.permissions.map((permission) => (
+              {SOFA6_PROFILE.permissions.map((permission) => (
                 <Chip key={permission} label={permission} color="warning" variant="soft" icon={<Iconify icon="solar:check-circle-bold" width={16} />} />
               ))}
             </Stack>
@@ -312,7 +312,7 @@ export function Sofa6AdminToolsView() {
             <CardHeader title="Phiên đăng nhập" subheader="Thiết bị đã truy cập tài khoản quản trị." />
             <Divider />
             <Stack divider={<Divider />}>
-              {SOFA6_ADMIN_PROFILE.sessions.map((session) => (
+              {SOFA6_PROFILE.sessions.map((session) => (
                 <Stack key={session.device} direction="row" spacing={1.5} alignItems="center" sx={{ p: 2.5 }}>
                   <Iconify icon="solar:laptop-minimalistic-bold-duotone" width={24} color={ACCENT} />
                   <Box sx={{ flex: 1 }}>
