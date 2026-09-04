@@ -203,4 +203,16 @@ export const sofa6PagesNavData = [
       { title: 'Công nợ', path: '/sofa6/member/dealer-debt' },
     ],
   },
+  {
+    title: 'Quản trị',
+    path: '/sofa6/admin',
+    icon: <Iconify width={22} icon="solar:widget-5-bold-duotone" />,
+    children: [
+      { title: 'Tổng quan', path: '/sofa6/admin' },
+      { title: 'Báo cáo tổng hợp', path: '/sofa6/admin/tools/reports' },
+      { title: 'Cài đặt hệ thống', path: '/sofa6/admin/tools/settings' },
+      { title: 'Thông báo & Nhật ký', path: '/sofa6/admin/tools/notifications' },
+      { title: 'Hồ sơ quản trị', path: '/sofa6/admin/tools/profile' },
+    ],
+  },
 ];
