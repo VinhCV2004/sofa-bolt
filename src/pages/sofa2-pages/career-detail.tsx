@@ -130,6 +130,23 @@ export default function Page() {
               ))}
               {!!job.skills && <Typography variant="body2" sx={{ color: 'text.secondary' }}>Kỹ năng: {job.skills}</Typography>}
               {!!job.experience && <Typography variant="body2" sx={{ color: 'text.secondary' }}>Kinh nghiệm: {job.experience}</Typography>}
+              {[
+                { label: 'Học vấn', value: job.education },
+                { label: 'Độ tuổi', value: job.ageRange },
+                { label: 'Giới tính', value: job.gender },
+                { label: 'Ngoại ngữ', value: job.languages },
+              ].filter((item) => !!item.value && item.value !== 'Không yêu cầu').map((item) => (
+                <Typography key={item.label} variant="body2" sx={{ color: 'text.secondary' }}>
+                  {item.label}: {item.value}
+                </Typography>
+              ))}
+              {(job.contactEmail || job.contactPhone) && (
+                <Stack spacing={0.5} sx={{ mt: 1 }}>
+                  <Typography variant="subtitle2">Liên hệ tuyển dụng{job.contactPerson ? ` · ${job.contactPerson}` : ''}</Typography>
+                  {job.contactEmail && <Typography component="a" href={`mailto:${job.contactEmail}`} variant="body2" sx={{ color: 'primary.main' }}>{job.contactEmail}</Typography>}
+                  {job.contactPhone && <Typography component="a" href={`tel:${job.contactPhone}`} variant="body2" sx={{ color: 'primary.main' }}>{job.contactPhone}</Typography>}
+                </Stack>
+              )}
             </Stack>
 
             {/* Actions */}
