@@ -83,12 +83,13 @@ const faqs = [
   ],
 ];
 
-const sectionLabelSx = { color: SOFA21_COLORS.persimmonDeep, letterSpacing: 2.4, fontWeight: 800 };
+const sectionLabelSx = { color: SOFA21_COLORS.persimmonDeep, letterSpacing: 2.2, fontWeight: 600 };
 const headingSx = {
   color: SOFA21_COLORS.ink,
-  fontWeight: 750,
-  letterSpacing: '-.045em',
-  lineHeight: 1.06,
+  fontWeight: 500,
+  fontFamily: 'Georgia, "Times New Roman", serif',
+  letterSpacing: '-.035em',
+  lineHeight: 1.12,
 };
 
 function SectionHeading({
@@ -168,13 +169,11 @@ export function Sofa21View() {
         <Box
           sx={{
             position: 'absolute',
-            width: 420,
-            height: 420,
-            right: '-6%',
-            top: '8%',
-            border: '1px solid rgba(244,211,111,.35)',
-            borderRadius: '50%',
-            boxShadow: '0 0 0 48px rgba(244,211,111,.035), 0 0 0 96px rgba(244,211,111,.025)',
+            width: 1,
+            height: '42%',
+            right: { xs: '6%', md: '9%' },
+            top: '34%',
+            bgcolor: 'rgba(196,163,106,.52)',
           }}
         />
         <Container sx={{ position: 'relative', zIndex: 1, py: { xs: 9, md: 12 } }}>
@@ -187,22 +186,23 @@ export function Sofa21View() {
                     variant="overline"
                     sx={{ color: SOFA21_COLORS.butter, letterSpacing: 3 }}
                   >
-                    SOFA21 · THIẾT KẾ CHO ĐỜI SỐNG THẬT
+                    SOFA21 ATELIER · NỘI THẤT ĐƯƠNG ĐẠI
                   </Typography>
                 </Stack>
                 <Typography
                   component="h1"
                   sx={{
-                    fontSize: { xs: 52, sm: 70, md: 96 },
-                    lineHeight: 0.98,
-                    fontWeight: 800,
-                    letterSpacing: '-.065em',
+                    fontSize: { xs: 48, sm: 66, md: 88 },
+                    lineHeight: 1.02,
+                    fontWeight: 500,
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    letterSpacing: '-.045em',
                   }}
                 >
-                  Nhà đẹp,
+                  Một nơi,
                   <br />
-                  <Box component="span" sx={{ color: SOFA21_COLORS.butter }}>
-                    ngồi lâu.
+                  <Box component="span" sx={{ color: SOFA21_COLORS.butter, fontStyle: 'italic' }}>
+                    để trở về.
                   </Box>
                 </Typography>
                 <Typography
@@ -213,8 +213,8 @@ export function Sofa21View() {
                     fontSize: { xs: 17, md: 19 },
                   }}
                 >
-                  Sofa có gu, có chất — thiết kế quanh cách bạn sống, không bắt bạn sống theo thiết
-                  kế.
+                  Sofa21 kết hợp phom dáng vượt thời gian, vật liệu được tuyển chọn và sự thoải mái
+                  tinh tế — được tạo nên để thuộc về không gian của bạn.
                 </Typography>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ pt: 1 }}>
                   <Button
@@ -226,7 +226,7 @@ export function Sofa21View() {
                     sx={{
                       px: 3,
                       py: 1.5,
-                      borderRadius: 99,
+                      borderRadius: 1.5,
                       bgcolor: SOFA21_COLORS.persimmon,
                       color: 'common.white',
                       '&:hover': { bgcolor: SOFA21_COLORS.persimmonDeep },
@@ -241,7 +241,7 @@ export function Sofa21View() {
                     size="large"
                     startIcon={<Iconify icon="solar:map-point-bold-duotone" />}
                     sx={{
-                      borderRadius: 99,
+                      borderRadius: 1.5,
                       borderColor: 'rgba(255,255,255,.5)',
                       color: 'common.white',
                     }}
@@ -277,12 +277,11 @@ export function Sofa21View() {
             >
               <Box
                 sx={{
-                  width: 218,
-                  p: 1.3,
-                  bgcolor: 'rgba(255,254,251,.94)',
-                  borderRadius: '48% 48% 20px 20px',
-                  transform: 'rotate(4deg)',
-                  boxShadow: '0 35px 80px rgba(0,0,0,.24)',
+                  width: 270,
+                  p: 1.2,
+                  bgcolor: 'rgba(253,251,247,.96)',
+                  borderRadius: 1.5,
+                  boxShadow: '0 30px 70px rgba(0,0,0,.22)',
                 }}
               >
                 <Box
@@ -293,7 +292,7 @@ export function Sofa21View() {
                     width: 1,
                     height: 286,
                     objectFit: 'cover',
-                    borderRadius: '48% 48% 14px 14px',
+                    borderRadius: 1,
                   }}
                 />
                 <Typography
@@ -342,30 +341,34 @@ export function Sofa21View() {
         >
           {Array.from({ length: 2 }).map((_, repeat) => (
             <Stack key={repeat} direction="row" alignItems="center" spacing={4} sx={{ px: 2 }}>
-              {['NGỒI THẬT ÊM', 'ĐẸP THẬT GU', 'ĐO NI ĐÓNG GIÀY', 'DÙNG THẬT LÂU', 'SOFA21'].map(
-                (word) => (
-                  <Stack key={`${repeat}-${word}`} direction="row" spacing={3} alignItems="center">
-                    <Typography
-                      sx={{
-                        fontWeight: 850,
-                        letterSpacing: 2,
-                        whiteSpace: 'nowrap',
-                        color: SOFA21_COLORS.midnight,
-                      }}
-                    >
-                      {word}
-                    </Typography>
-                    <Box
-                      sx={{
-                        width: 9,
-                        height: 9,
-                        borderRadius: '50%',
-                        bgcolor: SOFA21_COLORS.persimmon,
-                      }}
-                    />
-                  </Stack>
-                )
-              )}
+              {[
+                'CHẾ TÁC TINH XẢO',
+                'VẬT LIỆU TUYỂN CHỌN',
+                'THIẾT KẾ VƯỢT THỜI GIAN',
+                'SỐNG CÓ CHỦ ĐÍCH',
+                'SOFA21 ATELIER',
+              ].map((word) => (
+                <Stack key={`${repeat}-${word}`} direction="row" spacing={3} alignItems="center">
+                  <Typography
+                    sx={{
+                      fontWeight: 850,
+                      letterSpacing: 2,
+                      whiteSpace: 'nowrap',
+                      color: SOFA21_COLORS.midnight,
+                    }}
+                  >
+                    {word}
+                  </Typography>
+                  <Box
+                    sx={{
+                      width: 9,
+                      height: 9,
+                      borderRadius: '50%',
+                      bgcolor: SOFA21_COLORS.persimmon,
+                    }}
+                  />
+                </Stack>
+              ))}
             </Stack>
           ))}
         </Box>
@@ -384,9 +387,9 @@ export function Sofa21View() {
               eyebrow="CHỌN THEO CÁCH BẠN SỐNG"
               title={
                 <>
-                  Có một chiếc
+                  Đường nét chuẩn mực.
                   <br />
-                  vừa gu bạn.
+                  Cảm giác riêng biệt.
                 </>
               }
               note="Từ những buổi tụ họp đông vui đến một góc đọc sách thật riêng — bắt đầu từ nhu cầu của bạn."
@@ -412,7 +415,7 @@ export function Sofa21View() {
                     height: { xs: 330, md: 430 },
                     overflow: 'hidden',
                     textDecoration: 'none',
-                    borderRadius: index % 2 ? '100px 18px 18px 18px' : '18px 100px 18px 18px',
+                    borderRadius: 1.5,
                     bgcolor: SOFA21_COLORS.midnight,
                     '&:hover img': { transform: 'scale(1.06)' },
                   }}
@@ -486,7 +489,7 @@ export function Sofa21View() {
         <Container>
           <SectionHeading
             eyebrow="SOFA21 SELECTED"
-            title="Những chiếc sofa có chuyện để kể."
+            title="Những thiết kế vượt thời gian."
             note="Thiết kế được yêu thích bởi phom dáng, cảm giác ngồi và những lựa chọn cá nhân hóa."
           />
           <Grid container spacing={3}>
@@ -509,7 +512,7 @@ export function Sofa21View() {
                     sx={{
                       position: 'relative',
                       overflow: 'hidden',
-                      borderRadius: index === 1 ? '130px 130px 18px 18px' : '18px',
+                      borderRadius: 1.5,
                       bgcolor: SOFA21_COLORS.cream,
                     }}
                   >
@@ -608,9 +611,9 @@ export function Sofa21View() {
                 eyebrow="THIẾT KẾ CÓ LÝ DO"
                 title={
                   <>
-                    Đẹp thì thích.
+                    Tỉ mỉ trong từng nét.
                     <br />
-                    Êm mới ở lâu.
+                    Thoải mái qua năm tháng.
                   </>
                 }
                 note="Mỗi chi tiết bắt đầu từ một câu hỏi đơn giản: điều gì sẽ khiến căn phòng dễ sống hơn?"
@@ -636,7 +639,7 @@ export function Sofa21View() {
                       alignItems: 'center',
                       p: { xs: 2, md: 2.5 },
                       borderBottom: `1px solid ${SOFA21_COLORS.line}`,
-                      '&:hover': { bgcolor: SOFA21_COLORS.paper, borderRadius: 3 },
+                      '&:hover': { bgcolor: SOFA21_COLORS.paper, borderRadius: 1.5 },
                     }}
                   >
                     <Typography sx={{ color: SOFA21_COLORS.persimmon, fontWeight: 800 }}>
@@ -688,7 +691,7 @@ export function Sofa21View() {
                 Chọn màu.
                 <br />
                 <Box component="span" sx={{ color: SOFA21_COLORS.cobalt }}>
-                  Chọn đúng mình.
+                  Đúng phong cách bạn.
                 </Box>
               </Typography>
               <Typography sx={{ my: 2.5, color: SOFA21_COLORS.inkSoft, lineHeight: 1.8 }}>
@@ -700,7 +703,7 @@ export function Sofa21View() {
                 href="/sofa21/services/design/custom-sofa"
                 variant="contained"
                 endIcon={<Iconify icon="solar:arrow-right-linear" />}
-                sx={{ bgcolor: SOFA21_COLORS.cobalt, borderRadius: 99, px: 2.5 }}
+                sx={{ bgcolor: SOFA21_COLORS.cobalt, borderRadius: 1.5, px: 2.5 }}
               >
                 Bắt đầu tùy chỉnh
               </Button>
@@ -715,7 +718,7 @@ export function Sofa21View() {
                     width: '78%',
                     height: { xs: 310, md: 450 },
                     objectFit: 'cover',
-                    borderRadius: '180px 180px 18px 18px',
+                    borderRadius: 1.5,
                     ml: 'auto',
                   }}
                 />
@@ -729,7 +732,7 @@ export function Sofa21View() {
                     p: 1.5,
                     bgcolor: SOFA21_COLORS.paper,
                     borderRadius: 99,
-                    boxShadow: '0 15px 40px rgba(25,27,43,.12)',
+                    boxShadow: '0 15px 40px rgba(41,40,33,.10)',
                   }}
                 >
                   {['#E0CDB4', '#B46E57', '#4C526F', '#D8B94E', '#82917E', '#D7D9E3'].map(
@@ -844,7 +847,7 @@ export function Sofa21View() {
               width: 1,
               height: { xs: 250, md: 400 },
               objectFit: 'cover',
-              borderRadius: { xs: 3, md: '120px 18px 18px 18px' },
+              borderRadius: 1.5,
             }}
           />
         </Container>
@@ -897,7 +900,7 @@ export function Sofa21View() {
                       justifyContent: 'space-between',
                       bgcolor: index === 1 ? SOFA21_COLORS.cobalt : 'rgba(255,255,255,.07)',
                       border: '1px solid rgba(255,255,255,.12)',
-                      borderRadius: index === 0 ? '65px 14px 14px 14px' : 2,
+                      borderRadius: 1.5,
                     }}
                   >
                     <Box
@@ -942,7 +945,7 @@ export function Sofa21View() {
           >
             <SectionHeading
               eyebrow="NHÀ THẬT · CẢM HỨNG THẬT"
-              title="Mỗi nhà một mood."
+              title="Không gian mang dấu ấn riêng."
               note="Một vài không gian được Sofa21 đồng hành từ lúc chọn sofa đến ngày hoàn thiện."
             />
             <Button
@@ -964,7 +967,7 @@ export function Sofa21View() {
                   display: 'block',
                   height: { xs: 340, md: 520 },
                   overflow: 'hidden',
-                  borderRadius: '16px 150px 16px 16px',
+                  borderRadius: 1.5,
                   textDecoration: 'none',
                   '&:hover img': { transform: 'scale(1.04)' },
                 }}
@@ -1002,7 +1005,7 @@ export function Sofa21View() {
                     width: 1,
                     height: { xs: 230, md: 250 },
                     objectFit: 'cover',
-                    borderRadius: '90px 16px 16px 16px',
+                    borderRadius: 1.5,
                   }}
                 />
                 <Box sx={{ flex: 1, p: 3, bgcolor: SOFA21_COLORS.butter, borderRadius: 2 }}>
@@ -1032,7 +1035,7 @@ export function Sofa21View() {
         <Container>
           <SectionHeading
             eyebrow="LỜI KỂ TỪ NHỮNG NGÔI NHÀ"
-            title="Được ngồi thử. Rồi thương luôn."
+            title="Sự hài lòng, qua lời kể."
             note="Điều vui nhất là khi khách hàng gửi lại ảnh chiếc sofa trong căn nhà của họ."
           />
           <Grid container spacing={2}>
@@ -1043,7 +1046,7 @@ export function Sofa21View() {
                     p: { xs: 3, md: 3.5 },
                     height: 1,
                     bgcolor: index === 1 ? SOFA21_COLORS.periwinkle : SOFA21_COLORS.cream,
-                    borderRadius: index === 1 ? '70px 18px 18px 18px' : 2.5,
+                    borderRadius: 1.5,
                     boxShadow: 'none',
                   }}
                 >
@@ -1096,7 +1099,7 @@ export function Sofa21View() {
           <Stack direction="row" justifyContent="space-between" alignItems="end" sx={{ mb: 5 }}>
             <SectionHeading
               eyebrow="JOURNAL 21"
-              title="Đọc một chút về nhà."
+              title="Tạp chí không gian sống."
               note="Ý tưởng, kiến thức và mẹo nhỏ làm không gian sống vui hơn."
             />
             <Button
@@ -1125,9 +1128,7 @@ export function Sofa21View() {
                     '&:hover img': { transform: 'scale(1.04)' },
                   }}
                 >
-                  <Box
-                    sx={{ overflow: 'hidden', borderRadius: index === 2 ? '80px 16px 16px' : 2.5 }}
-                  >
+                  <Box sx={{ overflow: 'hidden', borderRadius: 1.5 }}>
                     <Box
                       component="img"
                       src={story.image}
@@ -1255,7 +1256,7 @@ export function Sofa21View() {
                   fontSize: { xs: 40, md: 64 },
                 }}
               >
-                Ghé chơi một chút nhé?
+                Ghé thăm không gian Sofa21.
               </Typography>
               <Typography
                 sx={{ mt: 1.5, maxWidth: 580, color: 'rgba(255,255,255,.84)', lineHeight: 1.8 }}
@@ -1273,7 +1274,7 @@ export function Sofa21View() {
                 sx={{
                   px: 3.5,
                   py: 1.6,
-                  borderRadius: 99,
+                  borderRadius: 1.5,
                   bgcolor: SOFA21_COLORS.paper,
                   color: SOFA21_COLORS.ink,
                   fontWeight: 800,
