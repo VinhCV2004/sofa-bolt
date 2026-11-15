@@ -13,7 +13,9 @@ import { RouterLink } from 'src/routes/components';
 
 import { Iconify } from 'src/components/iconify';
 
+import { sofa2Visible } from 'src/sections/sofa2-admin/sofa2-support';
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 import {
   useCmsSeo,
@@ -47,6 +49,8 @@ export default function Sofa2CmsContentPage() {
   const { blocks, loading } = useCmsPageBlocks(isDynamicPage ? 'static-pages' : pageSlug);
   const { seo } = useCmsSeo(location.pathname);
   const { page: staticPage, loading: staticPageLoading } = useCmsStaticPage(slug);
+  const supportFaq = useSofa2AdminRows('support', 'faq');
+  const visibleSupportFaqs = sofa2Visible(supportFaq.rows);
   const pageTitle = isDynamicPage
     ? String(staticPage?.title ?? 'Trang không khả dụng')
     : PAGE_TITLES[pageSlug];
@@ -80,7 +84,7 @@ export default function Sofa2CmsContentPage() {
 
       <Sofa2Section>
         <Box sx={{ maxWidth: 960, mx: 'auto' }}>
-          {loading || staticPageLoading ? (
+          {loading || staticPageLoading || (pageSlug === 'faq' && supportFaq.loading) ? (
             <Typography color="text.secondary">Đang tải nội dung…</Typography>
           ) : notFound ? (
             <Stack spacing={2} alignItems="flex-start">
@@ -91,10 +95,29 @@ export default function Sofa2CmsContentPage() {
             </Stack>
           ) : isDynamicPage ? (
             <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.9 }}>{pageContent}</Typography>
+          ) : pageSlug === 'faq' ? (
+            visibleSupportFaqs.length ? (
+              <Stack spacing={1.5}>
+                {visibleSupportFaqs.map((faq, index) => (
+                  <Accordion key={`${String(faq.question ?? '')}-${index}`} disableGutters>
+                    <AccordionSummary expandIcon={<Iconify icon="solar:alt-arrow-down-bold" />}>
+                      <Typography variant="h6">{String(faq.question ?? '')}</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Typography color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>
+                        {String(faq.answer ?? '')}
+                      </Typography>
+                    </AccordionDetails>
+                  </Accordion>
+                ))}
+              </Stack>
+            ) : (
+              <Typography color="text.secondary">Chưa có câu hỏi thường gặp được xuất bản.</Typography>
+            )
           ) : visibleBlocks.length ? (
             <Stack spacing={2.5}>
               {visibleBlocks.map((block) =>
-                block.type === 'Câu hỏi thường gặp' || pageSlug === 'faq' ? (
+                block.type === 'Câu hỏi thường gặp' ? (
                   <Accordion key={block.id} disableGutters>
                     <AccordionSummary expandIcon={<Iconify icon="solar:alt-arrow-down-bold" />}>
                       <Typography variant="h6">{block.block || block.heading || block.title}</Typography>

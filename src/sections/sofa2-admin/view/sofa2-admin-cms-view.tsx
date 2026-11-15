@@ -42,6 +42,7 @@ import { Iconify } from 'src/components/iconify';
 
 import { isSofa2JobOpen } from 'src/sections/sofa2/sofa2-recruitment';
 
+import { isSofa2SupportHref } from '../sofa2-support';
 import { Sofa2AdminLayout } from './sofa2-admin-layout';
 import { Sofa2AdminSeoGenerator } from './sofa2-admin-seo-generator';
 import { Sofa2AdminDealerInsights } from './sofa2-admin-dealer-insights';
@@ -329,6 +330,29 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       else if (field.maxLength && value.length > field.maxLength)
         next[field.key] = `Tối đa ${field.maxLength} ký tự (hiện ${value.length})`;
     });
+    if (group.slug === 'support') {
+      const uniqueValue = (key: string, message = 'Giá trị này đã tồn tại.') => {
+        const candidate = String(form.values[key] ?? '').trim().toLowerCase();
+        if (candidate && rows.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index) &&
+          String(row[key] ?? '').trim().toLowerCase() === candidate
+        )) next[key] = message;
+      };
+      if (module.slug === 'tickets') uniqueValue('code', 'Mã ticket đã tồn tại.');
+      if (module.slug === 'faq') uniqueValue('question', 'Câu hỏi này đã tồn tại.');
+
+      if (module.slug === 'channels') {
+        if (!isSofa2SupportHref(form.values.href)) {
+          next.href = 'Chỉ hỗ trợ tel:, mailto:, http(s), đường dẫn nội bộ /... hoặc #chat.';
+        }
+      }
+
+      ['order', 'views'].forEach((key) => {
+        if (fields.some((field) => field.key === key) && Number(form.values[key] ?? 0) < 0) {
+          next[key] = 'Giá trị không thể âm.';
+        }
+      });
+    }
     if (group.slug === 'customer') {
       const uniqueValue = (key: string, message = 'Giá trị này đã tồn tại.') => {
         const candidate = String(form.values[key] ?? '').trim().toLowerCase();
@@ -1692,6 +1716,11 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         {group.slug === 'cms' && (
           <Alert severity="info" sx={{ mb: 2 }}>
             Dữ liệu CMS hiện lưu trên trình duyệt để đồng bộ tức thời với các component Sofa2 cùng thiết bị. Trạng thái nháp không hiển thị cho khách; nội dung xuất bản, menu, banner, SEO và trang tĩnh sẽ được website đọc từ cùng store localStorage này. Muốn vận hành nhiều thiết bị hoặc xuất bản an toàn cần API/CMS server-side.
+          </Alert>
+        )}
+        {group.slug === 'support' && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Nội dung hỗ trợ, ticket và chat đang dùng localStorage trên trình duyệt này để đồng bộ với trang khách cùng thiết bị. Đây là demo: chưa có API, xác thực/phân quyền phía máy chủ, sao lưu hay đồng bộ nhiều thiết bị; người có quyền truy cập trình duyệt có thể xem hoặc sửa dữ liệu. Không nhập thông tin khách hàng thật hoặc dữ liệu nhạy cảm.
           </Alert>
         )}
         {group.slug === 'catalog' && (
