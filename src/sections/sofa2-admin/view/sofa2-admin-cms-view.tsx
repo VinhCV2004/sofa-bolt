@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useMemo, useState, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
-import Alert from '@mui/material/Alert';
 import Tab from '@mui/material/Tab';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
 import Tabs from '@mui/material/Tabs';
+import Alert from '@mui/material/Alert';
 import Table from '@mui/material/Table';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
@@ -14,8 +14,8 @@ import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
-import MenuItem from '@mui/material/MenuItem';
 import { alpha } from '@mui/material/styles';
+import MenuItem from '@mui/material/MenuItem';
 import Checkbox from '@mui/material/Checkbox';
 import Snackbar from '@mui/material/Snackbar';
 import TableRow from '@mui/material/TableRow';
@@ -31,10 +31,12 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TableContainer from '@mui/material/TableContainer';
 import InputAdornment from '@mui/material/InputAdornment';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import TablePagination from '@mui/material/TablePagination';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { RouterLink } from 'src/routes/components';
+
+import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -42,22 +44,21 @@ import { isSofa2JobOpen } from 'src/sections/sofa2/sofa2-recruitment';
 
 import { Sofa2AdminLayout } from './sofa2-admin-layout';
 import { Sofa2AdminSeoGenerator } from './sofa2-admin-seo-generator';
-import {
-  getSofa2AdminRows,
-  loadSofa2DealerRows,
-  syncSofa2DealerRows,
-  type AdminRow,
-  useSofa2AdminRows,
-} from '../sofa2-admin-store';
-import { sofa2Today, sofa2Slugify, type Sofa2CmsField, type Sofa2CmsSchema } from '../sofa2-cms';
 import { Sofa2AdminDealerInsights } from './sofa2-admin-dealer-insights';
-
-import type { Sofa2AdminGroup, Sofa2AdminModule } from '../sofa2-admin-data';
+import { sofa2Today, sofa2Slugify, type Sofa2CmsField, type Sofa2CmsSchema } from '../sofa2-cms';
 import {
   hasSofa2AdminPermission,
   type Sofa2AdminAccessSession,
 } from '../sofa2-access-control';
-import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
+import {
+  type AdminRow,
+  getSofa2AdminRows,
+  useSofa2AdminRows,
+  loadSofa2DealerRows,
+  syncSofa2DealerRows,
+} from '../sofa2-admin-store';
+
+import type { Sofa2AdminGroup, Sofa2AdminModule } from '../sofa2-admin-data';
 
 // ----------------------------------------------------------------------
 
@@ -114,6 +115,12 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     error: rowsError,
     retry: retryRows,
   } = useSofa2AdminRows(group.slug, module.slug);
+  const { rows: accessUsers } = useSofa2AdminRows('access', 'users', {
+    load: group.slug === 'access' && module.slug === 'roles',
+  });
+  const { rows: accessRoles } = useSofa2AdminRows('access', 'roles', {
+    load: group.slug === 'access' && module.slug === 'users',
+  });
 
   const [dealerLoading, setDealerLoading] = useState(group.slug === 'dealer');
   const [accessSaveStarted, setAccessSaveStarted] = useState(false);
@@ -121,10 +128,10 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     getSofa2DemoAdminSession()
   );
   const isAdmin = accessSession?.role === 'admin';
-  const canCreate = hasSofa2AdminPermission(accessSession, group.slug, 'Tạo mới');
-  const canEdit = hasSofa2AdminPermission(accessSession, group.slug, 'Sửa');
-  const canDelete = hasSofa2AdminPermission(accessSession, group.slug, 'Xoá');
-  const canPublish = hasSofa2AdminPermission(accessSession, group.slug, 'Xuất bản');
+  const canCreate = !isAppendOnly && hasSofa2AdminPermission(accessSession, group.slug, 'Tạo mới');
+  const canEdit = !isAppendOnly && hasSofa2AdminPermission(accessSession, group.slug, 'Sửa');
+  const canDelete = !isAppendOnly && hasSofa2AdminPermission(accessSession, group.slug, 'Xoá');
+  const canPublish = !isAppendOnly && hasSofa2AdminPermission(accessSession, group.slug, 'Xuất bản');
   const canExport = hasSofa2AdminPermission(accessSession, group.slug, 'Xuất dữ liệu');
 
   useEffect(() => {
@@ -183,7 +190,20 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     values: {},
   });
 
-  const { titleKey, statusKey, statusOptions, fields, clientPath, entity } = schema;
+  const { titleKey, statusKey, statusOptions, clientPath, entity } = schema;
+  const fields =
+    group.slug === 'access' && module.slug === 'users'
+      ? schema.fields.map((field) =>
+          field.key === 'role'
+            ? {
+                ...field,
+                options: accessRoles
+                  .filter((role) => role.status !== 'Ngưng dùng' && role.status !== 'Hệ thống')
+                  .map((role) => String(role.role ?? '')),
+              }
+            : field
+        )
+      : schema.fields;
 
   const publishLabel = schema.publishLabel ?? 'Xuất bản';
   const defaultDraft = schema.defaultStatus ?? statusOptions[1] ?? 'Bản nháp';
@@ -388,6 +408,24 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         ) {
           next.email = 'Email này đã được thêm vào hệ thống.';
         }
+        const phone = String(form.values.phone ?? '').replace(/\D/g, '');
+        if (phone && (phone.length < 9 || phone.length > 15)) {
+          next.phone = 'Số điện thoại cần có từ 9 đến 15 chữ số.';
+        }
+        const role = String(form.values.role ?? '').trim();
+        const previousRole = form.mode === 'edit' ? String(rows[form.index]?.role ?? '') : '';
+        if (
+          role &&
+          role.toLocaleLowerCase() !== previousRole.trim().toLocaleLowerCase() &&
+          !accessRoles.some(
+            (item) =>
+              item.status !== 'Ngưng dùng' &&
+              item.status !== 'Hệ thống' &&
+              String(item.role ?? '').trim() === role
+          )
+        ) {
+          next.role = 'Hãy chọn một vai trò đang hoạt động.';
+        }
       }
       if (module.slug === 'roles') {
         const name = String(form.values.role ?? '').trim().toLowerCase();
@@ -402,6 +440,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         ) {
           next.role = 'Tên vai trò này đã tồn tại.';
         }
+        if (code && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(code)) {
+          next.code = 'Mã vai trò chỉ gồm chữ thường, số và dấu gạch nối.';
+        }
         if (
           code &&
           rows.some(
@@ -411,6 +452,16 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           )
         ) {
           next.code = 'Mã vai trò này đã tồn tại.';
+        }
+        const editingRole = form.mode === 'edit' ? rows[form.index] : undefined;
+        const oldRoleName = String(editingRole?.role ?? '').trim().toLocaleLowerCase();
+        const isAssigned = accessUsers.some((user) =>
+          [user.role, ...String(user.extraRoles ?? '').split(',')].some(
+            (assignedRole) => String(assignedRole ?? '').trim().toLocaleLowerCase() === oldRoleName
+          )
+        );
+        if (isAssigned && name !== oldRoleName) {
+          next.role = 'Không thể đổi tên vai trò đang được gán cho người dùng.';
         }
       }
       if (module.slug === 'permissions') {
@@ -444,8 +495,14 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     const clean: AdminRow = { ...form.values };
     fields.forEach((field) => {
       if (field.type === 'number') clean[field.key] = Number(clean[field.key]) || 0;
-      else clean[field.key] = String(clean[field.key] ?? '');
+      else clean[field.key] = String(clean[field.key] ?? '').trim();
     });
+    if (group.slug === 'access' && module.slug === 'users') {
+      clean.email = String(clean.email ?? '').toLowerCase();
+    }
+    if (group.slug === 'access' && module.slug === 'roles' && !String(clean.code ?? '').trim()) {
+      clean.code = sofa2Slugify(String(clean.role ?? ''));
+    }
     if (
       group.slug === 'hr' &&
       ['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug) &&
@@ -565,8 +622,19 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     );
 
-  const isProtectedAccessRole = (row: AdminRow) =>
+  const isSystemAccessRole = (row: AdminRow) =>
     group.slug === 'access' && module.slug === 'roles' && row.status === 'Hệ thống';
+  const isProtectedAccessRole = (row: AdminRow) => {
+    if (group.slug !== 'access' || module.slug !== 'roles') return false;
+    const roleName = String(row.role ?? '').trim().toLocaleLowerCase();
+    return (
+      isSystemAccessRole(row) ||
+      accessUsers.some((user) => {
+        const assigned = [user.role, ...String(user.extraRoles ?? '').split(',')];
+        return assigned.some((role) => String(role ?? '').trim().toLocaleLowerCase() === roleName);
+      })
+    );
+  };
   const selectablePaged = paged.filter(({ row }) => !isProtectedAccessRole(row));
   const allOnPage =
     selectablePaged.length > 0 && selectablePaged.every(({ index }) => selected.includes(index));
@@ -766,7 +834,14 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         return [
           { label: 'Vai trò', value: rows.length.toLocaleString('vi-VN') },
           { label: 'Vai trò tuỳ chỉnh', value: rows.filter((row) => row.status === 'Tuỳ chỉnh').length.toLocaleString('vi-VN') },
-          { label: 'Người dùng gán', value: rows.reduce((sum, row) => sum + asNumber(row.users), 0).toLocaleString('vi-VN') },
+          {
+            label: 'Người dùng gán',
+            value: accessUsers.filter((user) =>
+              [user.role, ...String(user.extraRoles ?? '').split(',')].some((assigned) =>
+                rows.some((role) => String(role.role ?? '').toLocaleLowerCase() === String(assigned ?? '').trim().toLocaleLowerCase())
+              )
+            ).length.toLocaleString('vi-VN'),
+          },
           { label: 'Đang sử dụng', value: rows.filter((row) => row.status !== 'Ngưng dùng').length.toLocaleString('vi-VN') },
         ];
       }
@@ -784,7 +859,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         return [
           { label: 'Sự kiện đang lưu', value: rows.length.toLocaleString('vi-VN') },
           { label: 'Sự kiện hôm nay', value: rows.filter((row) => String(row.time).startsWith(today)).length.toLocaleString('vi-VN') },
-          { label: 'Thay đổi quyền', value: rows.filter((row) => row.type === 'Thay đổi quyền').length.toLocaleString('vi-VN') },
+          { label: 'Thay đổi quyền', value: rows.filter((row) => row.type === 'Thay đổi phân quyền').length.toLocaleString('vi-VN') },
           { label: 'Giới hạn hiển thị', value: '500' },
         ];
       }
@@ -836,7 +911,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     };
 
     return statsByModule[module.slug] ?? module.stats;
-  }, [group.slug, module, rows]);
+  }, [accessUsers, group.slug, module, rows]);
 
   return (
     <>
@@ -875,14 +950,19 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
             Đang lưu thay đổi phân quyền…
           </Alert>
         )}
-        {group.slug === 'access' && module.slug === 'users' && (
+        {group.slug === 'access' && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Phân quyền hiện lưu cục bộ trên trình duyệt để phục vụ demo, chưa kết nối API xác thực hoặc cơ sở dữ liệu bảo mật. Không dùng dữ liệu này để cấp quyền thật; email người dùng chưa được xác minh.
+          </Alert>
+        )}
+        {group.slug === 'access' && module.slug === 'audit-log' && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            Danh sách người dùng và quyền chỉ là dữ liệu demo lưu trong trình duyệt; email không được xác minh và không cấp quyền đăng nhập thật.
+            Nhật ký được tạo tự động khi thêm, sửa hoặc xoá người dùng, vai trò và quyền. Danh sách chỉ cho phép xem/xuất, giới hạn 500 sự kiện gần nhất; dữ liệu nhật ký demo có thể bị sửa từ trình duyệt và không thay thế audit log phía máy chủ.
           </Alert>
         )}
         {group.slug === 'access' && module.slug === 'permissions' && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            Nhân viên chỉ thấy module có quyền Xem; thao tác thêm, sửa, xoá, xuất bản và xuất dữ liệu được kiểm tra riêng. Quyền phê duyệt đang bị từ chối an toàn cho đến khi có quy trình duyệt.
+            Ma trận quyền lưu cấu hình theo module, hành động và vai trò; hiện chưa được nối vào danh tính đăng nhập thật. Không dùng các dòng này để cấp quyền vận hành; hành động phê duyệt vẫn cần quy trình độc lập phía máy chủ.
           </Alert>
         )}
         {group.slug === 'dealer' && dealerLoading && (
@@ -1105,7 +1185,16 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
                           </TableCell>
                         )}
                         {module.columns.map((col) => {
-                          const value = row[col.key] ?? '—';
+                          const roleName = String(row.role ?? '').trim().toLocaleLowerCase();
+                          const assignedCount = accessUsers.filter((user) =>
+                            [user.role, ...String(user.extraRoles ?? '').split(',')].some(
+                              (assigned) => String(assigned ?? '').trim().toLocaleLowerCase() === roleName
+                            )
+                          ).length;
+                          const value =
+                            group.slug === 'access' && module.slug === 'roles' && col.key === 'users'
+                              ? assignedCount
+                              : row[col.key] ?? '—';
                           return (
                             <TableCell key={col.key}>
                               {col.type === 'status' ? (
@@ -1152,7 +1241,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
                                 <Iconify icon="solar:eye-bold-duotone" width={18} />
                               </IconButton>
                             </Tooltip>
-                            {!isAppendOnly && !isProtectedAccessRole(row) && (canEdit || canCreate || canDelete) && (
+                            {!isAppendOnly && !isSystemAccessRole(row) && (canEdit || canCreate || canDelete) && (
                               <>
                                 {canEdit && (
                                   <Tooltip title="Sửa">
@@ -1168,7 +1257,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
                                     </IconButton>
                                   </Tooltip>
                                 )}
-                                {canDelete && (
+                                {canDelete && !isProtectedAccessRole(row) && (
                                   <Tooltip title="Xoá">
                                     <IconButton
                                       size="small"
