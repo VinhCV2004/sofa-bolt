@@ -153,7 +153,7 @@ export default function Sofa21Pages() {
             sx={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `linear-gradient(100deg, rgba(32,33,59,.96) 0%, rgba(32,33,59,.86) 50%, rgba(32,33,59,.2) 100%), url(${image})`,
+              backgroundImage: `linear-gradient(100deg, rgba(48,47,41,.96) 0%, rgba(48,47,41,.84) 50%, rgba(48,47,41,.22) 100%), url(${image})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
@@ -188,8 +188,9 @@ export default function Sofa21Pages() {
                     sx={{
                       fontSize: { xs: 40, md: 66 },
                       lineHeight: 1.02,
-                      letterSpacing: '-.055em',
-                      fontWeight: 850,
+                      fontWeight: 500,
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      letterSpacing: '-.035em',
                     }}
                   >
                     {current.title}
@@ -241,13 +242,12 @@ export default function Sofa21Pages() {
                   sx={{
                     position: 'relative',
                     width: '100%',
-                    maxWidth: 270,
+                    maxWidth: 285,
                     ml: 'auto',
                     p: 1.2,
-                    bgcolor: 'rgba(255,254,251,.94)',
-                    borderRadius: '140px 140px 18px 18px',
-                    transform: 'rotate(3deg)',
-                    boxShadow: '0 25px 60px rgba(0,0,0,.24)',
+                    bgcolor: 'rgba(253,251,247,.96)',
+                    borderRadius: 1.5,
+                    boxShadow: '0 24px 55px rgba(0,0,0,.2)',
                   }}
                 >
                   <Box
@@ -258,7 +258,7 @@ export default function Sofa21Pages() {
                       width: 1,
                       height: 290,
                       objectFit: 'cover',
-                      borderRadius: '140px 140px 12px 12px',
+                      borderRadius: 0.75,
                     }}
                   />
                   <Typography
@@ -333,14 +333,14 @@ export default function Sofa21Pages() {
                         flexDirection: 'column',
                         textDecoration: 'none',
                         color: SOFA21_COLORS.ink,
-                        borderRadius: index % 4 === 1 ? '48px 16px 16px' : 2.5,
+                        borderRadius: 1.25,
                         bgcolor: index % 4 === 1 ? SOFA21_COLORS.periwinkle : SOFA21_COLORS.paper,
                         border: `1px solid ${SOFA21_COLORS.line}`,
                         boxShadow: 'none',
                         transition: 'transform .25s, box-shadow .25s',
                         '&:hover': {
                           transform: 'translateY(-5px)',
-                          boxShadow: '0 18px 35px rgba(32,33,59,.12)',
+                          boxShadow: '0 16px 32px rgba(41,40,33,.10)',
                         },
                       }}
                     >
@@ -544,7 +544,7 @@ export default function Sofa21Pages() {
                         sx={{
                           alignSelf: 'flex-start',
                           px: 2.5,
-                          borderRadius: 99,
+                          borderRadius: 1.25,
                           bgcolor: SOFA21_COLORS.cobalt,
                           '&:hover': { bgcolor: SOFA21_COLORS.cobaltDeep },
                         }}
@@ -610,7 +610,7 @@ export default function Sofa21Pages() {
               overflow: 'hidden',
               bgcolor: SOFA21_COLORS.midnight,
               color: 'white',
-              borderRadius: { xs: 3, md: '18px 100px 18px 18px' },
+              borderRadius: 1.5,
             }}
           >
             <Grid container alignItems="stretch">
@@ -636,7 +636,7 @@ export default function Sofa21Pages() {
                   sx={{
                     mt: 2.5,
                     px: 2.5,
-                    borderRadius: 99,
+                    borderRadius: 1.25,
                     bgcolor: SOFA21_COLORS.persimmon,
                     color: 'white',
                     '&:hover': { bgcolor: SOFA21_COLORS.persimmonDeep },
