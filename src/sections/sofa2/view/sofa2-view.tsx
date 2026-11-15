@@ -12,6 +12,7 @@ import { Sofa2Banner } from '../sofa2-banner';
 import { Sofa2Values } from '../sofa2-values';
 import { Sofa2Timeline } from '../sofa2-timeline';
 import { Sofa2Products } from '../sofa2-products';
+import { Sofa2CmsSlider } from '../sofa2-cms-slider';
 import { Sofa2Collections } from '../sofa2-collections';
 import { Sofa2Testimonials } from '../sofa2-testimonials';
 
@@ -27,6 +28,7 @@ export function Sofa2View() {
       <BackToTop />
 
       <Sofa2Hero />
+      <Sofa2CmsSlider />
 
       <Stack sx={{ position: 'relative', bgcolor: 'background.default' }}>
         <Sofa2Split />

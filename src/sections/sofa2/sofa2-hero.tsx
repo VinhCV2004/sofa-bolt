@@ -16,6 +16,7 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionContainer } from 'src/components/animate';
 
 import { SOFA2_IMAGES } from './sofa2-data';
+import { useCmsPageBlocks } from './sofa2-cms-client';
 
 // ----------------------------------------------------------------------
 
@@ -25,6 +26,8 @@ export function Sofa2Hero({ sx, ...other }: BoxProps) {
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);
+  const { blocks } = useCmsPageBlocks('home');
+  const heroBlock = blocks.find((block) => block.type === 'Banner');
 
   return (
     <Box
@@ -50,7 +53,7 @@ export function Sofa2Hero({ sx, ...other }: BoxProps) {
             position: 'absolute',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            backgroundImage: `linear-gradient(90deg, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.92)} 0%, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.56)} 50%, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.32)} 100%), url(${SOFA2_IMAGES.hero})`,
+            backgroundImage: `linear-gradient(90deg, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.92)} 0%, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.56)} 50%, ${varAlpha(theme.vars.palette.grey['900Channel'], 0.32)} 100%), url(${heroBlock?.image || SOFA2_IMAGES.hero})`,
           }}
         />
       </m.div>
@@ -61,7 +64,7 @@ export function Sofa2Hero({ sx, ...other }: BoxProps) {
             <Stack direction="row" alignItems="center" spacing={1.5}>
               <Box sx={{ width: 40, height: 2, bgcolor: 'primary.main' }} />
               <Typography variant="overline" sx={{ color: 'primary.light', letterSpacing: 4, fontWeight: 'fontWeightBold' }}>
-                LUXE Sofa — Thiết Kế Độc Quyền
+                {heroBlock?.block || 'LUXE Sofa — Thiết Kế Độc Quyền'}
               </Typography>
             </Stack>
           </Box>
@@ -77,17 +80,21 @@ export function Sofa2Hero({ sx, ...other }: BoxProps) {
                 fontWeight: 'fontWeightBold',
               }}
             >
-              Sofa định hình{' '}
-              <Box
-                component="span"
-                sx={{
-                  ...textGradient(
-                    `135deg, ${theme.vars.palette.primary.light} 0%, ${theme.vars.palette.warning.light} 100%`
-                  ),
-                }}
-              >
-                phong cách sống
-              </Box>
+              {heroBlock?.heading || (
+                <>
+                  Sofa định hình{' '}
+                  <Box
+                    component="span"
+                    sx={{
+                      ...textGradient(
+                        `135deg, ${theme.vars.palette.primary.light} 0%, ${theme.vars.palette.warning.light} 100%`
+                      ),
+                    }}
+                  >
+                    phong cách sống
+                  </Box>
+                </>
+              )}
             </Typography>
           </Box>
 
@@ -100,8 +107,8 @@ export function Sofa2Hero({ sx, ...other }: BoxProps) {
                 lineHeight: 1.7,
               }}
             >
-              Ba phong cách — Scandinavian, Industrial, Mid-Century. Mỗi mẫu sofa là một tuyên ngôn
-              thiết kế, chế tác từ vật liệu bền vững và công nghệ đệm Đức.
+              {heroBlock?.content ||
+                'Ba phong cách — Scandinavian, Industrial, Mid-Century. Mỗi mẫu sofa là một tuyên ngôn thiết kế, chế tác từ vật liệu bền vững và công nghệ đệm Đức.'}
             </Typography>
           </Box>
 
@@ -112,14 +119,14 @@ export function Sofa2Hero({ sx, ...other }: BoxProps) {
           >
             <Button
               component="a"
-              href="#collections"
+              href={heroBlock?.ctaLink || '#collections'}
               size="large"
               variant="contained"
               color="primary"
               startIcon={<Iconify icon="solar:archive-bold-duotone" />}
               sx={{ borderRadius: 2, px: 4, py: 1.5 }}
             >
-              Xem bộ sưu tập
+              {heroBlock?.ctaLabel || 'Xem bộ sưu tập'}
             </Button>
             <Button
               component="a"

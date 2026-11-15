@@ -110,7 +110,10 @@ SOFA2_ADMIN_GROUPS.forEach((group) => {
     ) {
       return;
     }
-    store[key(group.slug, module.slug)] = module.rows.map((row) => ({ ...row }));
+    store[key(group.slug, module.slug)] = module.rows.map((row, index) => ({
+      ...row,
+      ...(group.slug === 'cms' && !row.id ? { id: `cms-${module.slug}-${index + 1}` } : {}),
+    }));
   });
 });
 
@@ -120,7 +123,12 @@ try {
   if (saved) {
     const savedRows = JSON.parse(saved) as Store;
     Object.entries(savedRows).forEach(([storeKey, rows]) => {
-      store[storeKey] = rows;
+      store[storeKey] = storeKey.startsWith('cms/')
+        ? (rows ?? []).map((row, index) => ({
+            ...row,
+            id: String(row.id ?? `cms-${storeKey.slice(4)}-${index + 1}`),
+          }))
+        : rows;
     });
   } else {
     const addressesKey = key('shopping', 'addresses');
@@ -799,6 +807,12 @@ export function useSofa2AdminRows(
   const createRow = useCallback(
     (row: AdminRow) => {
       const nextRow = { ...row };
+      if (isCmsModule && !nextRow.id) {
+        const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+        nextRow.id = `cms-${moduleSlug}-${id}`;
+      }
       if (k === key('hr', 'recruitment') && !nextRow.jobId) {
         nextRow.jobId = `JOB-${Date.now().toString(36).toUpperCase()}`;
       }

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { m } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
 
@@ -10,7 +10,6 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Unstable_Grid2';
 import Container from '@mui/material/Container';
-import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
@@ -22,7 +21,11 @@ import { varFade, MotionViewport } from 'src/components/animate';
 
 import { SOFA2_BLOG_POSTS } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { fetchBlogPostBySlug, type Sofa2CmsBlogPost } from 'src/sections/sofa2/sofa2-cms-client';
+import {
+  hasCmsBlogPost,
+  fetchBlogPostBySlug,
+  type Sofa2CmsBlogPost,
+} from 'src/sections/sofa2/sofa2-cms-client';
 
 type UiPost = {
   id: string;
@@ -35,6 +38,8 @@ type UiPost = {
   author: string;
   date: string;
   readTime: string;
+  metaTitle: string;
+  metaDescription: string;
 };
 
 const STATIC_POSTS: UiPost[] = SOFA2_BLOG_POSTS.map((p) => ({
@@ -48,22 +53,24 @@ const STATIC_POSTS: UiPost[] = SOFA2_BLOG_POSTS.map((p) => ({
   author: p.author,
   date: p.date,
   readTime: p.readTime,
+  metaTitle: p.title,
+  metaDescription: p.excerpt,
 }));
 
 export default function Page() {
-  const theme = useTheme();
   const { id } = useParams();
   const [post, setPost] = useState<UiPost | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     let active = true;
-    if (!id) return;
+    if (!id) return undefined;
 
     const staticPost = STATIC_POSTS.find(
       (item) => item.id === id || item.slug === id
     );
-    setPost(staticPost ?? null);
+    const cmsOverridesStatic = hasCmsBlogPost(id);
+    setPost(cmsOverridesStatic ? null : staticPost ?? null);
     setNotFound(false);
 
     let foundCms = false;
@@ -82,11 +89,13 @@ export default function Page() {
           author: cmsPost.author || 'LUXE Sofa',
           date: cmsPost.publishedAt || '',
           readTime: `${Math.max(3, Math.ceil(cmsPost.content.length / 600))} phút`,
+          metaTitle: cmsPost.metaTitle || cmsPost.title,
+          metaDescription: cmsPost.metaDescription || cmsPost.excerpt,
         });
       })
       .catch(() => {})
       .finally(() => {
-        if (active && !staticPost && !foundCms) {
+        if (active && (!staticPost || cmsOverridesStatic) && !foundCms) {
           setNotFound(true);
         }
       });
@@ -125,7 +134,9 @@ export default function Page() {
   return (
     <>
       <Helmet>
-        <title>{`${post.title} - LUXE Sofa`}</title>
+        <title>{post.metaTitle || `${post.title} - LUXE Sofa`}</title>
+        <meta name="description" content={post.metaDescription || post.excerpt} />
+        <meta property="og:image" content={post.image} />
       </Helmet>
 
       <Sofa2PageHero

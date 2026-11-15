@@ -173,7 +173,17 @@ export const sofa2PagesNavData = [
   },
   { title: 'Giỏ hàng', path: '/sofa2/cart', icon: <Iconify width={22} icon="solar:cart-bold-duotone" /> },
   { title: 'Thanh toán', path: '/sofa2/payment', icon: <Iconify width={22} icon="solar:wallet-bold-duotone" /> },
-  { title: 'Hỗ trợ', path: '/sofa2/support', icon: <Iconify width={22} icon="solar:question-circle-bold-duotone" /> },
+  {
+    title: 'Hỗ trợ',
+    path: '/sofa2/support',
+    icon: <Iconify width={22} icon="solar:question-circle-bold-duotone" />,
+    children: [
+      { title: 'Trung tâm hỗ trợ', path: '/sofa2/support' },
+      { title: 'Câu hỏi thường gặp', path: '/sofa2/faq' },
+      { title: 'Chính sách', path: '/sofa2/policy' },
+      { title: 'Điều khoản', path: '/sofa2/policy/terms' },
+    ],
+  },
   {
     title: 'Quản trị',
     path: '/sofa2/admin',

@@ -17,11 +17,11 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { useCmsSeo, useCmsPageBlocks } from 'src/sections/sofa2/sofa2-cms-client';
 import {
   SOFA2_PAGE_IMAGES,
   SOFA2_COMPANY_INFO,
 } from 'src/sections/sofa2/sofa2-pages-data';
-import { useCmsPageBlocks, useCmsSeo } from 'src/sections/sofa2/sofa2-cms-client';
 
 // ----------------------------------------------------------------------
 
@@ -96,7 +96,7 @@ export default function Page() {
                   {cmsIntro?.title || 'Hành trình của chúng tôi'}
                 </Typography>
                 {cmsIntro?.heading ? (
-                  <Typography variant="h2" dangerouslySetInnerHTML={{ __html: cmsIntro.heading }} />
+                  <Typography variant="h2">{cmsIntro.heading}</Typography>
                 ) : (
                   <Typography variant="h2">
                     Từ xưởng nhỏ
@@ -104,7 +104,7 @@ export default function Page() {
                   </Typography>
                 )}
                 {cmsIntro?.content ? (
-                  <Typography sx={{ color: 'text.secondary' }} dangerouslySetInnerHTML={{ __html: cmsIntro.content }} />
+                  <Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap' }}>{cmsIntro.content}</Typography>
                 ) : (
                   <>
                     <Typography sx={{ color: 'text.secondary' }}>

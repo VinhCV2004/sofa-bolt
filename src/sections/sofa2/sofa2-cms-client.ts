@@ -1,4 +1,6 @@
-import { getSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import type { NavItemBaseProps } from 'src/layouts/main/nav/types';
+
+import { getSofa2AdminRows, useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 
 import { SOFA2_BLOG_POSTS, SOFA2_PAGE_IMAGES } from './sofa2-pages-data';
 
@@ -30,6 +32,10 @@ export type Sofa2CmsPageBlock = {
   image: string;
   ctaLabel: string;
   ctaLink: string;
+  metaTitle: string;
+  metaDescription: string;
+  ogImage: string;
+  indexable: boolean;
   status: string;
   sortOrder: number;
 };
@@ -49,6 +55,86 @@ export type Sofa2CmsBanner = {
 const isPublished = (status: unknown) =>
   ['published', 'đã xuất bản', 'đang chạy'].includes(String(status ?? '').trim().toLowerCase());
 
+const toDate = (value: unknown) => {
+  const text = String(value ?? '').trim();
+  if (!text) return null;
+  const vi = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const date = vi
+    ? new Date(Number(vi[3]), Number(vi[2]) - 1, Number(vi[1]))
+    : new Date(text);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const isVisible = (row: Record<string, string | number>) => {
+  if (!isPublished(row.status)) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const starts = toDate(row.startAt);
+  const ends = toDate(row.endAt);
+  if (starts && starts > today) return false;
+  if (ends) {
+    ends.setHours(23, 59, 59, 999);
+    if (ends < new Date()) return false;
+  }
+  return true;
+};
+
+const toPageBlock = (row: Record<string, string | number>, slug: string, index: number): Sofa2CmsPageBlock => ({
+  id: String(row.id ?? index),
+  slug,
+  title: String(row.title ?? row.heading ?? ''),
+  block: String(row.block ?? ''),
+  type: String(row.type ?? 'Rich text'),
+  heading: String(row.heading ?? ''),
+  content: String(row.content ?? ''),
+  image: String(row.image ?? ''),
+  ctaLabel: String(row.ctaLabel ?? ''),
+  ctaLink: String(row.ctaLink ?? ''),
+  metaTitle: String(row.metaTitle ?? ''),
+  metaDescription: String(row.metaDescription ?? ''),
+  ogImage: String(row.ogImage ?? ''),
+  indexable: String(row.indexable ?? 'Có') !== 'Không',
+  status: String(row.status ?? ''),
+  sortOrder: Number(row.order ?? index),
+});
+
+const toBanner = (row: Record<string, string | number>, index: number): Sofa2CmsBanner => ({
+  id: String(row.id ?? index),
+  name: String(row.name ?? ''),
+  position: String(row.position ?? ''),
+  imageDesktop: String(row.image ?? ''),
+  imageMobile: String(row.imageMobile ?? ''),
+  headline: String(row.headline ?? ''),
+  ctaLink: String(row.ctaLink ?? ''),
+  status: String(row.status ?? ''),
+  sortOrder: Number(row.order ?? index),
+});
+
+const pageSlugForPath = (pagePath: string) => {
+  const mapping: Record<string, string> = {
+    '/sofa2': 'home',
+    '/sofa2/about': 'about',
+    '/sofa2/contact': 'contact',
+    '/sofa2/policy': 'policy',
+    '/sofa2/policy/terms': 'terms',
+    '/sofa2/faq': 'faq',
+  };
+  if (pagePath.startsWith('/sofa2/pages/')) return 'static-pages';
+  return mapping[pagePath] ?? 'home';
+};
+
+const seoFromRow = (row: Record<string, string | number> | undefined) => {
+  if (!row) return null;
+  return {
+    metaTitle: String(row.metaTitle ?? row.title ?? ''),
+    metaDescription: String(row.metaDescription ?? row.description ?? ''),
+    keywords: String(row.keywords ?? ''),
+    canonical: String(row.canonical ?? ''),
+    ogImage: String(row.ogImage ?? ''),
+    indexable: !['false', 'không'].includes(String(row.indexable ?? 'Có').toLocaleLowerCase()),
+  };
+};
+
 const FALLBACK_BLOG_POSTS: Sofa2CmsBlogPost[] = SOFA2_BLOG_POSTS.map((post) => ({
   id: post.id,
   title: post.title,
@@ -66,29 +152,40 @@ const FALLBACK_BLOG_POSTS: Sofa2CmsBlogPost[] = SOFA2_BLOG_POSTS.map((post) => (
   metaDescription: post.excerpt,
 }));
 
-export async function fetchPublishedBlogPosts(): Promise<Sofa2CmsBlogPost[]> {
-  const rows = getSofa2AdminRows('cms', 'blog').filter((row) => isPublished(row.status));
-  if (!rows.length) return FALLBACK_BLOG_POSTS;
+const toBlogPost = (row: Record<string, string | number>): Sofa2CmsBlogPost => ({
+  id: String(row.id ?? ''),
+  title: String(row.title ?? ''),
+  slug: String(row.slug ?? ''),
+  category: String(row.category ?? ''),
+  excerpt: String(row.excerpt ?? ''),
+  content: String(row.content ?? ''),
+  cover: String(row.cover ?? ''),
+  tags: String(row.tags ?? '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean),
+  status: String(row.status ?? ''),
+  views: Number(row.views ?? 0),
+  author: String(row.author ?? ''),
+  publishedAt: String(row.updated ?? ''),
+  metaTitle: String(row.metaTitle ?? ''),
+  metaDescription: String(row.metaDescription ?? ''),
+});
 
-  return rows.map((row) => ({
-    id: String(row.id ?? ''),
-    title: String(row.title ?? ''),
-    slug: String(row.slug ?? ''),
-    category: String(row.category ?? ''),
-    excerpt: String(row.excerpt ?? ''),
-    content: String(row.content ?? ''),
-    cover: String(row.cover ?? ''),
-    tags: String(row.tags ?? '')
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean),
-    status: String(row.status ?? ''),
-    views: Number(row.views ?? 0),
-    author: String(row.author ?? ''),
-    publishedAt: String(row.updated ?? ''),
-    metaTitle: String(row.metaTitle ?? ''),
-    metaDescription: String(row.metaDescription ?? ''),
-  }));
+export function useCmsBlogPosts() {
+  const { rows, loading } = useSofa2AdminRows('cms', 'blog');
+  const posts = rows.length
+    ? rows.filter((row) => isPublished(row.status)).map(toBlogPost)
+    : FALLBACK_BLOG_POSTS;
+  return { posts, loading };
+}
+
+export async function fetchPublishedBlogPosts(): Promise<Sofa2CmsBlogPost[]> {
+  const cmsRows = getSofa2AdminRows('cms', 'blog');
+  if (!cmsRows.length) return FALLBACK_BLOG_POSTS;
+  const rows = cmsRows.filter((row) => isPublished(row.status));
+
+  return rows.map(toBlogPost);
 }
 
 export async function fetchBlogPostBySlug(slug: string): Promise<Sofa2CmsBlogPost | null> {
@@ -96,57 +193,44 @@ export async function fetchBlogPostBySlug(slug: string): Promise<Sofa2CmsBlogPos
   return posts.find((post) => post.slug === slug) ?? null;
 }
 
+export function hasCmsBlogPost(slug: string) {
+  return getSofa2AdminRows('cms', 'blog').some((row) => String(row.slug ?? '') === slug);
+}
+
 export async function fetchPublishedPageBlocks(slug: string): Promise<Sofa2CmsPageBlock[]> {
   return getSofa2AdminRows('cms', slug)
-    .filter((row) => isPublished(row.status))
-    .map((row, index) => ({
-      id: String(row.id ?? index),
-      slug,
-      title: String(row.title ?? row.heading ?? ''),
-      block: String(row.block ?? ''),
-      type: String(row.type ?? 'Rich text'),
-      heading: String(row.heading ?? ''),
-      content: String(row.content ?? ''),
-      image: String(row.image ?? ''),
-      ctaLabel: String(row.ctaLabel ?? ''),
-      ctaLink: String(row.ctaLink ?? ''),
-      status: String(row.status ?? ''),
-      sortOrder: Number(row.order ?? index),
-    }))
+    .filter((row) => isVisible(row))
+    .map((row, index) => toPageBlock(row, slug, index))
     .sort((left, right) => left.sortOrder - right.sortOrder);
 }
 
+const matchesBannerPosition = (rowPosition: unknown, requested?: string) => {
+  if (!requested) return true;
+  const actual = String(rowPosition ?? '').trim().toLocaleLowerCase();
+  if (requested === 'home') return ['home', 'trang chủ'].includes(actual);
+  return actual === requested.trim().toLocaleLowerCase();
+};
+
 export async function fetchPublishedBanners(position?: string): Promise<Sofa2CmsBanner[]> {
   return getSofa2AdminRows('cms', 'banner')
-    .filter((row) => isPublished(row.status) && (!position || row.position === position))
-    .map((row, index) => ({
-      id: String(row.id ?? index),
-      name: String(row.name ?? ''),
-      position: String(row.position ?? ''),
-      imageDesktop: String(row.image ?? ''),
-      imageMobile: String(row.imageMobile ?? ''),
-      headline: String(row.headline ?? ''),
-      ctaLink: String(row.ctaLink ?? ''),
-      status: String(row.status ?? ''),
-      sortOrder: Number(row.order ?? index),
-    }))
+    .filter((row) => isVisible(row) && matchesBannerPosition(row.position, position))
+    .map(toBanner)
     .sort((left, right) => left.sortOrder - right.sortOrder);
 }
 
 export async function fetchPublishedSeo(pagePath: string) {
-  const row = getSofa2AdminRows('cms', 'seo').find(
-    (item) => String(item.page ?? item.pagePath ?? '') === pagePath && isPublished(item.status)
+  const seoRow = getSofa2AdminRows('cms', 'seo').find(
+    (row) => String(row.page ?? row.pagePath ?? '') === pagePath && row.status !== 'Tắt'
   );
-  if (!row) return null;
-
-  return {
-    metaTitle: String(row.title ?? ''),
-    metaDescription: String(row.description ?? ''),
-    keywords: String(row.keywords ?? ''),
-    canonical: String(row.canonical ?? ''),
-    ogImage: String(row.ogImage ?? ''),
-    indexable: String(row.indexable ?? 'Có') !== 'Không',
-  };
+  const pageRows = getSofa2AdminRows('cms', pageSlugForPath(pagePath));
+  const pageRow = pageSlugForPath(pagePath) === 'static-pages'
+    ? pageRows.find((row) => String(row.slug ?? '').endsWith(pagePath.slice('/sofa2/pages/'.length)))
+    : pageRows.find((row) => row.status !== 'Tạm ẩn' && row.status !== 'Bản nháp' && (row.metaTitle || row.metaDescription));
+  const separateSeoData = seoFromRow(seoRow);
+  const pageSeoData = seoFromRow(pageRow);
+  return separateSeoData?.metaTitle || separateSeoData?.metaDescription || separateSeoData?.keywords
+    ? separateSeoData
+    : pageSeoData;
 }
 
 export function cmsBlogPostToUi(post: Sofa2CmsBlogPost, index: number) {
@@ -179,52 +263,108 @@ export function useFallbackBlogPosts() {
 }
 
 export function useCmsPageBlocks(slug: string) {
-  return { blocks: getSofa2AdminRows('cms', slug).map((row, index) => ({
-    id: String(row.id ?? index),
-    slug,
-    title: String(row.title ?? row.heading ?? ''),
-    block: String(row.block ?? ''),
-    type: String(row.type ?? 'Rich text'),
-    heading: String(row.heading ?? ''),
-    content: String(row.content ?? ''),
-    image: String(row.image ?? ''),
-    ctaLabel: String(row.ctaLabel ?? ''),
-    ctaLink: String(row.ctaLink ?? ''),
-    status: String(row.status ?? ''),
-    sortOrder: Number(row.order ?? index),
-  })).filter((block) => isPublished(block.status)), loading: false };
+  const { rows, loading } = useSofa2AdminRows('cms', slug);
+  const blocks = rows
+    .filter((row) => isVisible(row))
+    .map((row, index) => toPageBlock(row, slug, index))
+    .sort((left, right) => left.sortOrder - right.sortOrder);
+  return { blocks, loading };
 }
 
+export function useCmsSliderSlides(page: string) {
+  const { rows, loading } = useSofa2AdminRows('cms', 'slider');
+  const slider = rows.find((row) => row.page === page && isPublished(row.status));
+  const slides = String(slider?.slidesData ?? '')
+    .split(/\r?\n/)
+    .map((line) => line.split('|').map((part) => part.trim()))
+    .filter(([title, image]) => !!title && !!image)
+    .map(([title, image, link]) => ({ title, image, link: link || '' }))
+    .filter((slide) => isSafePublicUrl(slide.image) && (!slide.link || isSafePublicUrl(slide.link)));
+  return { slides, loading };
+}
+
+const isSafePublicUrl = (value: string) =>
+  (value.startsWith('/') && !value.startsWith('//')) || /^https?:\/\//i.test(value);
+
 export function useCmsBanners(position?: string) {
-  const banners = getSofa2AdminRows('cms', 'banner')
-    .filter((row) => isPublished(row.status) && (!position || row.position === position))
-    .map((row, index) => ({
-      id: String(row.id ?? index),
-      name: String(row.name ?? ''),
-      position: String(row.position ?? ''),
-      imageDesktop: String(row.image ?? ''),
-      imageMobile: String(row.imageMobile ?? ''),
-      headline: String(row.headline ?? ''),
-      ctaLink: String(row.ctaLink ?? ''),
-      status: String(row.status ?? ''),
-      sortOrder: Number(row.order ?? index),
-    }));
-  return { banners, loading: false };
+  const { rows, loading } = useSofa2AdminRows('cms', 'banner');
+  const banners = rows
+    .filter((row) => isVisible(row) && matchesBannerPosition(row.position, position))
+    .map(toBanner)
+    .sort((left, right) => left.sortOrder - right.sortOrder);
+  return { banners, loading };
 }
 
 export function useCmsSeo(pagePath: string) {
-  const row = getSofa2AdminRows('cms', 'seo').find(
-    (item) => String(item.page ?? item.pagePath ?? '') === pagePath && isPublished(item.status)
+  const { rows: seoRows } = useSofa2AdminRows('cms', 'seo');
+  const pageSlug = pageSlugForPath(pagePath);
+  const { rows: pageRows } = useSofa2AdminRows('cms', pageSlug);
+  const separateSeo = seoRows.find(
+    (row) => String(row.page ?? row.pagePath ?? '') === pagePath && row.status !== 'Tắt'
   );
-  const seo = row
-    ? {
-        metaTitle: String(row.title ?? ''),
-        metaDescription: String(row.description ?? ''),
-        keywords: String(row.keywords ?? ''),
-        canonical: String(row.canonical ?? ''),
-        ogImage: String(row.ogImage ?? ''),
-        indexable: String(row.indexable ?? 'Có') !== 'Không',
-      }
-    : null;
-  return { seo, loading: false };
+  const pageData = pageSlug === 'static-pages'
+    ? pageRows.find((row) => String(row.slug ?? '').endsWith(pagePath.slice('/sofa2/pages/'.length)))
+    : pageRows.find((row) => row.status !== 'Tạm ẩn' && row.status !== 'Bản nháp' && (row.metaTitle || row.metaDescription));
+  const separateSeoData = seoFromRow(separateSeo);
+  const pageSeoData = seoFromRow(pageData);
+  const hasSeparateMeta = !!(
+    separateSeoData?.metaTitle || separateSeoData?.metaDescription || separateSeoData?.keywords
+  );
+  return { seo: hasSeparateMeta ? separateSeoData : pageSeoData, loading: false };
+}
+
+export function useCmsStaticPage(slug: string) {
+  const { rows, loading } = useSofa2AdminRows('cms', 'static-pages');
+  const requested = slug.replace(/^\/+|\/+$/g, '');
+  const page = rows.find((row) => {
+    const storedSlug = String(row.slug ?? '').replace(/^\/+|\/+$/g, '');
+    return storedSlug === requested || storedSlug.endsWith(`/${requested}`);
+  });
+  return { page: page && isVisible(page) ? page : null, loading };
+}
+
+export function useCmsFooterMenus(enabled: boolean) {
+  const { rows } = useSofa2AdminRows('cms', 'menu', { load: enabled });
+  if (!enabled) return [];
+  return rows
+    .filter((row) => row.position === 'Footer' && isPublished(row.status) && String(row.structure ?? '').trim())
+    .map((row) => ({
+      headline: String(row.menu ?? 'Liên kết'),
+      children: String(row.structure ?? '')
+        .split(/\r?\n/)
+        .map((line) => line.split('|').map((part) => part.trim()))
+        .filter(([title, path]) => !!title && !!path && (/^\/sofa2(?:\/|$|#)/.test(path) || /^https?:\/\//i.test(path)))
+        .map(([name, href]) => ({ name, href })),
+    }))
+    .filter((menu) => menu.children.length > 0);
+}
+
+export function useCmsHeaderNavigation(fallback: NavItemBaseProps[], enabled: boolean) {
+  const { rows } = useSofa2AdminRows('cms', 'menu', { load: enabled });
+  if (!enabled) return fallback;
+  const menu = rows.find(
+    (row) => row.position === 'Header' && isPublished(row.status) && String(row.structure ?? '').trim()
+  );
+  if (!menu) return fallback;
+
+  const entries = String(menu.structure ?? '')
+    .split(/\r?\n/)
+    .map((line) => line.split('|').map((part) => part.trim()))
+    .filter(([title, path]) => !!title && !!path && (/^\/sofa2(?:\/|$|#)/.test(path) || /^https?:\/\//i.test(path)))
+    .map(([title, path, parentName]) => ({
+      node: { title, path } as NavItemBaseProps,
+      parentName: String(parentName ?? '').toLocaleLowerCase(),
+    }));
+  const nodes = new Map(entries.map((entry) => [entry.node.title.toLocaleLowerCase(), entry.node]));
+  const parents: NavItemBaseProps[] = [];
+  entries.forEach(({ node, parentName }) => {
+    const parent = parentName ? nodes.get(parentName) : undefined;
+    if (parent && parent !== node) {
+      if (!Array.isArray(parent.children)) parent.children = [];
+      (parent.children as NavItemBaseProps[]).push(node);
+    } else {
+      parents.push(node);
+    }
+  });
+  return parents.length ? parents : fallback;
 }

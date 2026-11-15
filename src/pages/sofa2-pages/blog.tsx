@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { m } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
@@ -9,7 +8,6 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Unstable_Grid2';
 import Container from '@mui/material/Container';
-import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
@@ -18,8 +16,8 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { SOFA2_BLOG_POSTS, SOFA2_BLOG_CATEGORIES, SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
-import { fetchPublishedBlogPosts, cmsBlogPostToUi } from 'src/sections/sofa2/sofa2-cms-client';
+import { SOFA2_PAGE_IMAGES, SOFA2_BLOG_CATEGORIES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useCmsSeo, cmsBlogPostToUi, useCmsBlogPosts } from 'src/sections/sofa2/sofa2-cms-client';
 
 type UiPost = {
   id: string;
@@ -35,48 +33,20 @@ type UiPost = {
   readTime: string;
 };
 
-const STATIC_POSTS: UiPost[] = SOFA2_BLOG_POSTS.map((p) => ({
-  id: p.id,
-  title: p.title,
-  slug: p.slug,
-  category: p.category,
-  categoryLabel: p.categoryLabel,
-  excerpt: p.excerpt,
-  content: p.content,
-  image: p.image,
-  author: p.author,
-  date: p.date,
-  readTime: p.readTime,
-}));
-
 export default function Page() {
-  const theme = useTheme();
-  const [posts, setPosts] = useState<UiPost[]>(STATIC_POSTS);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    fetchPublishedBlogPosts()
-      .then((cmsPosts) => {
-        if (!active || cmsPosts.length === 0) return;
-        setPosts(cmsPosts.map((p, i) => cmsBlogPostToUi(p, i) as UiPost));
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
+  const { seo } = useCmsSeo('/sofa2/blog');
+  const { posts: cmsPosts, loading } = useCmsBlogPosts();
+  const posts = cmsPosts.map((post, index) => cmsBlogPostToUi(post, index) as UiPost);
   const featured = posts[0];
   const rest = posts.slice(1);
 
   return (
     <>
       <Helmet>
-        <title>Blog nội thất - LUXE Sofa</title>
+        <title>{seo?.metaTitle || 'Blog nội thất - LUXE Sofa'}</title>
+        {seo?.metaDescription && <meta name="description" content={seo.metaDescription} />}
+        {seo?.canonical && <link rel="canonical" href={seo.canonical} />}
+        <meta name="robots" content={seo?.indexable === false ? 'noindex, nofollow' : 'index, follow'} />
       </Helmet>
 
       <Sofa2PageHero
@@ -141,6 +111,9 @@ export default function Page() {
             />
           ))}
         </Stack>
+        {!loading && posts.length === 0 ? (
+          <Typography color="text.secondary">Hiện chưa có bài viết được xuất bản.</Typography>
+        ) : null}
         <Grid container spacing={3}>
           {rest.map((post) => (
             <Grid key={post.id} xs={12} sm={6} md={4}>
