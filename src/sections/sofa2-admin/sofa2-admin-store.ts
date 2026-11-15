@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 
-import { SOFA2_ADMIN_GROUPS } from './sofa2-admin-data';
 import { sofa2Slugify } from './sofa2-cms';
+import { SOFA2_ADMIN_GROUPS } from './sofa2-admin-data';
 
 // ----------------------------------------------------------------------
-// Kho dữ liệu CRUD tại chỗ (in-memory) cho khu quản trị sofa2.
-// Dữ liệu khởi tạo từ SOFA2_ADMIN_GROUPS và giữ nguyên khi chuyển trang.
+// Kho CRUD dùng chung cho khu quản trị Sofa2; dữ liệu mặc định khởi tạo từ SOFA2_ADMIN_GROUPS.
+// Riêng module access được lưu browser-local để giữ thay đổi giữa các lần tải (chỉ phục vụ demo).
 // ----------------------------------------------------------------------
 
 export type AdminRow = Record<string, string | number>;
@@ -31,6 +31,75 @@ const seoWriteQueues = new Map<string, Promise<AdminRow[]>>();
 const seoWriteRevisions = new Map<string, number>();
 
 const STORAGE_KEY = 'sofa2-admin-rows-v1';
+const ACCESS_STORAGE_KEY = 'sofa2-access-demo-v1';
+const ACCESS_MODULES = ['users', 'roles', 'permissions', 'audit-log'] as const;
+const ACCESS_AUDIT_LIMIT = 500;
+let accessSnapshotHydrated = false;
+
+function hydrateAccessSnapshot() {
+  if (accessSnapshotHydrated) return;
+  accessSnapshotHydrated = true;
+  if (typeof window === 'undefined') return;
+  try {
+    const saved = window.localStorage.getItem(ACCESS_STORAGE_KEY);
+    if (!saved) return;
+    const snapshot = JSON.parse(saved) as Record<string, unknown>;
+    ACCESS_MODULES.forEach((module) => {
+      const moduleKey = key('access', module);
+      const rows = snapshot[moduleKey];
+      if (Array.isArray(rows)) {
+        store[moduleKey] = rows.filter(
+          (row): row is AdminRow => !!row && typeof row === 'object' && !Array.isArray(row)
+        );
+      }
+    });
+  } catch {
+    // Ignore malformed browser-only demo data and keep the seeded defaults.
+  }
+}
+
+function persistAccessSnapshot() {
+  if (typeof window === 'undefined') return;
+  try {
+    const snapshot = Object.fromEntries(
+      ACCESS_MODULES.map((module) => [key('access', module), store[key('access', module)] ?? []])
+    );
+    window.localStorage.setItem(ACCESS_STORAGE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // The browser demo remains usable if storage is disabled or full.
+  }
+}
+
+function appendAccessAudit(moduleSlug: string, action: string, row: AdminRow, before?: AdminRow) {
+  if (moduleSlug === 'audit-log') return;
+  hydrateAccessSnapshot();
+  const timestamp = new Date();
+  const auditKey = key('access', 'audit-log');
+  const auditRows = store[auditKey] ?? [];
+  const title = String(row.name ?? row.role ?? row.module ?? row.email ?? row.action ?? 'Bản ghi');
+  const detail = before
+    ? `Trước: ${JSON.stringify(before)} | Sau: ${JSON.stringify(row)}`
+    : JSON.stringify(row);
+  store[key('access', 'audit-log')] = [
+    {
+      time: timestamp.toISOString(),
+      user: 'Quản trị viên demo',
+      type: 'Thay đổi phân quyền',
+      module: moduleSlug,
+      action,
+      target: title,
+      detail: detail.slice(0, 2000),
+      ip: 'Không khả dụng trong demo',
+      device: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 160) : 'Không xác định',
+      location: 'Không xác định',
+      handled: 'false',
+      status: 'Thành công',
+    },
+    ...auditRows,
+  ].slice(0, ACCESS_AUDIT_LIMIT);
+  persistAccessSnapshot();
+  emit();
+}
 
 SOFA2_ADMIN_GROUPS.forEach((group) => {
   group.modules.forEach((module) => {
@@ -545,14 +614,11 @@ export async function loadSofa2CmsRows(moduleSlug: string, defaults: AdminRow[])
 
 export async function syncSofa2CmsRow(
   moduleSlug: string,
-  mode: 'create' | 'update' | 'delete',
-  row: AdminRow,
-  index: number
+  _mode: 'create' | 'update' | 'delete',
+  _row: AdminRow,
+  _index: number
 ): Promise<AdminRow[]> {
   const k = key('cms', moduleSlug);
-  void mode;
-  void row;
-  void index;
   return (store[k] ?? []).map((item) => ({ ...item }));
 }
 
@@ -574,6 +640,7 @@ export async function syncSofa2DealerRows(moduleSlug: string, rows: AdminRow[]) 
 }
 
 export async function loadSofa2AccessRows(moduleSlug: string) {
+  hydrateAccessSnapshot();
   const k = key('access', moduleSlug);
   const defaults =
     SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'access')?.modules.find(
@@ -584,7 +651,9 @@ export async function loadSofa2AccessRows(moduleSlug: string) {
 }
 
 export async function syncSofa2AccessRows(moduleSlug: string, rows: AdminRow[]) {
+  hydrateAccessSnapshot();
   store[key('access', moduleSlug)] = rows.map((row) => ({ ...row }));
+  persistAccessSnapshot();
   emit();
 }
 
@@ -773,9 +842,10 @@ export function useSofa2AdminRows(
       emit();
       persistSeoRows(store[k], previousRows);
       persistAccessRows(store[k], previousRows);
+      if (isAccessModule && moduleSlug !== 'audit-log') appendAccessAudit(moduleSlug, 'Tạo bản ghi', nextRow);
       if (isCmsModule) persistCmsRow('create', nextRow, 0, previousRows);
     },
-    [k, persistSeoRows, persistAccessRows, isCmsModule, persistCmsRow]
+    [k, persistSeoRows, persistAccessRows, isAccessModule, isCmsModule, moduleSlug, persistCmsRow]
   );
 
   const updateRow = useCallback(
@@ -841,9 +911,10 @@ export function useSofa2AdminRows(
       emit();
       persistSeoRows(next, previousRows);
       persistAccessRows(next, previousRows);
+      if (isAccessModule && moduleSlug !== 'audit-log') appendAccessAudit(moduleSlug, 'Cập nhật bản ghi', row, previous);
       if (isCmsModule) persistCmsRow('update', row, index, previousRows);
     },
-    [k, persistSeoRows, persistAccessRows, isCmsModule, persistCmsRow]
+    [k, persistSeoRows, persistAccessRows, isAccessModule, isCmsModule, moduleSlug, persistCmsRow]
   );
 
   const deleteRow = useCallback(
@@ -858,9 +929,10 @@ export function useSofa2AdminRows(
       emit();
       persistSeoRows(store[k], previousRows);
       persistAccessRows(store[k], previousRows);
+      if (isAccessModule && moduleSlug !== 'audit-log' && removed) appendAccessAudit(moduleSlug, 'Xoá bản ghi', removed);
       if (isCmsModule && removed) persistCmsRow('delete', removed, index, previousRows);
     },
-    [k, persistSeoRows, persistAccessRows, isCmsModule, persistCmsRow]
+    [k, persistSeoRows, persistAccessRows, isAccessModule, isCmsModule, moduleSlug, persistCmsRow]
   );
 
   const deleteRows = useCallback(
@@ -876,11 +948,14 @@ export function useSofa2AdminRows(
       emit();
       persistSeoRows(store[k], previousRows);
       persistAccessRows(store[k], previousRows);
+      if (isAccessModule && moduleSlug !== 'audit-log') {
+        removed.forEach((row) => appendAccessAudit(moduleSlug, 'Xoá bản ghi', row));
+      }
       if (isCmsModule) {
         removed.forEach((r) => persistCmsRow('delete', r, -1, previousRows));
       }
     },
-    [k, persistSeoRows, persistAccessRows, isCmsModule, persistCmsRow]
+    [k, persistSeoRows, persistAccessRows, isAccessModule, isCmsModule, moduleSlug, persistCmsRow]
   );
 
   const resetRows = useCallback(
