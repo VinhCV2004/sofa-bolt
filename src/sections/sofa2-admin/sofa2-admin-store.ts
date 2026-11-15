@@ -253,12 +253,30 @@ store[key('hr', 'recruitment')] = (store[key('hr', 'recruitment')] ?? []).map((r
 function adjustRecruitmentApplicants(application: AdminRow, change: number) {
   const jobId = String(application.jobId ?? '');
   const jobTitle = String(application.job ?? application.appliedJob ?? '');
+  const status = String(application.status ?? '');
+  const screeningPassed = String(application.screeningResult ?? '') === 'Qua'
+    || ['Phỏng vấn', 'Thử việc', 'Trúng tuyển'].includes(status);
+  const offered = ['Có', 'true', 'yes', '1'].includes(String(application.offerSent ?? '').toLowerCase())
+    || ['Thử việc', 'Trúng tuyển'].includes(status);
+  const metrics = {
+    applicants: 1,
+    screeningPassed: screeningPassed ? 1 : 0,
+    interviewing: status === 'Phỏng vấn' ? 1 : 0,
+    offered: offered ? 1 : 0,
+    hired: status === 'Trúng tuyển' ? 1 : 0,
+    rejected: status === 'Không đạt' ? 1 : 0,
+  };
   const jobsKey = key('hr', 'recruitment');
   store[jobsKey] = (store[jobsKey] ?? []).map((job) => {
     const matches = jobId
       ? String(job.jobId ?? '') === jobId
       : String(job.title ?? '') === jobTitle;
-    return matches ? { ...job, applicants: Math.max(0, Number(job.applicants || 0) + change) } : job;
+    if (!matches) return job;
+    const next = { ...job };
+    Object.entries(metrics).forEach(([field, amount]) => {
+      next[field] = Math.max(0, Number(job[field] || 0) + change * amount);
+    });
+    return next;
   });
 }
 
@@ -816,7 +834,7 @@ export function useSofa2AdminRows(
       if (k === key('hr', 'recruitment') && !nextRow.jobId) {
         nextRow.jobId = `JOB-${Date.now().toString(36).toUpperCase()}`;
       }
-      if (k === key('hr', 'submit-cv') && !nextRow.applicationId) {
+      if ((k === key('hr', 'submit-cv') || k === key('hr', 'applicant-profile')) && !nextRow.applicationId) {
         nextRow.applicationId = `APP-${Date.now().toString(36).toUpperCase()}`;
       }
       const previousRows = store[k] ?? [];
@@ -824,33 +842,82 @@ export function useSofa2AdminRows(
       if (k === key('hr', 'submit-cv')) {
         const jobId = String(nextRow.jobId ?? '');
         const jobTitle = String(nextRow.job ?? '');
-        const jobsKey = key('hr', 'recruitment');
-        store[jobsKey] = (store[jobsKey] ?? []).map((job) =>
-          String(job.jobId ?? '') === jobId || (!jobId && String(job.title ?? '') === jobTitle)
-            ? { ...job, applicants: Number(job.applicants || 0) + 1 }
-            : job
-        );
+        adjustRecruitmentApplicants(nextRow, 1);
         const profilesKey = key('hr', 'applicant-profile');
         const applicationId = String(nextRow.applicationId ?? '');
-        if (!(store[profilesKey] ?? []).some((candidate) => String(candidate.applicationId ?? '') === applicationId)) {
-          store[profilesKey] = [
-            {
-              applicationId,
-              jobId,
-              name: String(nextRow.applicant ?? ''),
-              email: String(nextRow.email ?? ''),
-              phone: String(nextRow.phone ?? ''),
-              appliedJob: jobTitle,
-              appliedDate: String(nextRow.submittedDate ?? ''),
-              source: String(nextRow.source ?? 'Website'),
-              cvUrl: String(nextRow.cvUrl ?? ''),
-              cvFileName: String(nextRow.cvFileName ?? ''),
-              interviewRound: 'Sàng lọc CV',
-              status: String(nextRow.status ?? 'Mới'),
-              note: '',
-            },
-            ...(store[profilesKey] ?? []),
-          ];
+        const profiles = store[profilesKey] ?? [];
+        const profileIndex = profiles.findIndex((candidate) => String(candidate.applicationId ?? '') === applicationId);
+        const profile: AdminRow = {
+          ...(profileIndex >= 0 ? profiles[profileIndex] : {}),
+          applicationId,
+          jobId,
+          name: String(nextRow.applicant ?? ''),
+          email: String(nextRow.email ?? ''),
+          phone: String(nextRow.phone ?? ''),
+          appliedJob: jobTitle,
+          appliedDate: String(nextRow.submittedDate ?? ''),
+          source: String(nextRow.source ?? 'Website'),
+          expectedSalary: Number(nextRow.expectedSalary ?? 0),
+          availableDate: String(nextRow.availableDate ?? ''),
+          coverLetter: String(nextRow.coverLetter ?? ''),
+          cvUrl: String(nextRow.cvUrl ?? ''),
+          cvFileName: String(nextRow.cvFileName ?? ''),
+          interviewRound: String(profiles[profileIndex]?.interviewRound ?? 'Sàng lọc CV'),
+          status: String(nextRow.status ?? 'Mới'),
+          note: String(profiles[profileIndex]?.note ?? ''),
+        };
+        store[profilesKey] = profileIndex >= 0
+          ? profiles.map((candidate, index) => index === profileIndex ? profile : candidate)
+          : [profile, ...profiles];
+      }
+      if (k === key('hr', 'applicant-profile')) {
+        const applicationsKey = key('hr', 'submit-cv');
+        const applicationId = String(nextRow.applicationId ?? '');
+        const applications = store[applicationsKey] ?? [];
+        const existingIndex = applications.findIndex((application) => String(application.applicationId ?? '') === applicationId);
+        const existing = existingIndex >= 0 ? applications[existingIndex] : undefined;
+        const profileRow: AdminRow = existing ? {
+          ...nextRow,
+          jobId: String(existing.jobId ?? nextRow.jobId ?? ''),
+          appliedJob: String(existing.job ?? nextRow.appliedJob ?? ''),
+          appliedDate: String(existing.submittedDate ?? nextRow.appliedDate ?? ''),
+          source: String(existing.source ?? nextRow.source ?? 'Website'),
+          status: String(existing.status ?? nextRow.status ?? 'Mới'),
+          cvUrl: String(existing.cvUrl ?? nextRow.cvUrl ?? ''),
+          cvFileName: String(existing.cvFileName ?? nextRow.cvFileName ?? ''),
+          expectedSalary: Number(existing.expectedSalary ?? nextRow.expectedSalary ?? 0),
+          availableDate: String(existing.availableDate ?? nextRow.availableDate ?? ''),
+          coverLetter: String(existing.coverLetter ?? nextRow.coverLetter ?? ''),
+        } : nextRow;
+        store[k] = [profileRow, ...previousRows];
+        const jobId = String(profileRow.jobId ?? '');
+        const job = (store[key('hr', 'recruitment')] ?? []).find((item) => String(item.jobId ?? '') === jobId);
+        const appliedJob = String(profileRow.appliedJob ?? '');
+        const jobTitle = String(job?.title ?? (appliedJob && appliedJob !== 'Ứng tuyển vị trí phù hợp' ? appliedJob : existing?.job ?? 'Ứng tuyển vị trí phù hợp'));
+        const mirroredApplication: AdminRow = {
+          ...(existing ?? {}),
+          applicationId,
+          jobId,
+          applicant: String(profileRow.name ?? existing?.applicant ?? ''),
+          email: String(profileRow.email ?? existing?.email ?? ''),
+          phone: String(profileRow.phone ?? existing?.phone ?? ''),
+          job: jobTitle,
+          source: String(profileRow.source ?? existing?.source ?? 'Website'),
+          submittedDate: String(profileRow.appliedDate ?? existing?.submittedDate ?? ''),
+          cvUrl: String(profileRow.cvUrl ?? existing?.cvUrl ?? ''),
+          cvFileName: String(profileRow.cvFileName ?? existing?.cvFileName ?? ''),
+          expectedSalary: Number(profileRow.expectedSalary ?? existing?.expectedSalary ?? 0),
+          availableDate: String(profileRow.availableDate ?? existing?.availableDate ?? ''),
+          coverLetter: String(profileRow.coverLetter ?? existing?.coverLetter ?? ''),
+          offerSent: String(profileRow.offerSent ?? existing?.offerSent ?? 'Không'),
+          screeningResult: String(existing?.screeningResult ?? 'Chưa sàng lọc'),
+          status: String(profileRow.status ?? existing?.status ?? 'Mới'),
+        };
+        if (existingIndex >= 0) {
+          store[applicationsKey] = applications.map((application, index) => index === existingIndex ? mirroredApplication : application);
+        } else {
+          store[applicationsKey] = [mirroredApplication, ...applications];
+          adjustRecruitmentApplicants(mirroredApplication, 1);
         }
       }
       emit();
@@ -901,7 +968,9 @@ export function useSofa2AdminRows(
           const sourceModule = k === key('hr', 'submit-cv') ? 'submit-cv' : 'applicant-profile';
           const targetModule = sourceModule === 'submit-cv' ? 'applicant-profile' : 'submit-cv';
           const targetKey = key('hr', targetModule);
-          store[targetKey] = (store[targetKey] ?? []).map((candidate) => {
+          const targetRows = store[targetKey] ?? [];
+          const hasTarget = targetRows.some((candidate) => String(candidate.applicationId ?? '') === applicationId);
+          store[targetKey] = targetRows.map((candidate) => {
             if (String(candidate.applicationId ?? '') !== applicationId) return candidate;
             const shared = {
               email: row.email,
@@ -909,18 +978,55 @@ export function useSofa2AdminRows(
               status: row.status,
             };
             return sourceModule === 'submit-cv'
-              ? { ...candidate, ...shared, name: row.applicant, appliedJob: row.job, jobId: row.jobId, cvUrl: row.cvUrl, cvFileName: row.cvFileName }
-              : { ...candidate, ...shared, applicant: row.name, job: row.appliedJob, jobId: row.jobId, cvUrl: row.cvUrl, cvFileName: row.cvFileName };
+              ? { ...candidate, ...shared, name: row.applicant, appliedJob: row.job, appliedDate: row.submittedDate, jobId: row.jobId, source: row.source, expectedSalary: row.expectedSalary, availableDate: row.availableDate, coverLetter: row.coverLetter, offerSent: row.offerSent ?? candidate.offerSent, cvUrl: row.cvUrl, cvFileName: row.cvFileName }
+              : { ...candidate, ...shared, applicant: row.name, job: row.appliedJob, submittedDate: row.appliedDate, jobId: row.jobId, source: row.source, expectedSalary: row.expectedSalary, availableDate: row.availableDate, coverLetter: row.coverLetter, offerSent: row.offerSent ?? candidate.offerSent, cvUrl: row.cvUrl, cvFileName: row.cvFileName };
           });
+          if (!hasTarget && sourceModule === 'submit-cv') {
+            store[targetKey] = [{
+              applicationId,
+              jobId: String(row.jobId ?? ''),
+              name: String(row.applicant ?? ''),
+              email: String(row.email ?? ''),
+              phone: String(row.phone ?? ''),
+              appliedJob: String(row.job ?? 'Ứng tuyển vị trí phù hợp'),
+              appliedDate: String(row.submittedDate ?? ''),
+              source: String(row.source ?? 'Website'),
+              cvUrl: String(row.cvUrl ?? ''),
+              cvFileName: String(row.cvFileName ?? ''),
+              interviewRound: 'Sàng lọc CV',
+              status: String(row.status ?? 'Mới'),
+              note: '',
+            }, ...targetRows];
+          }
+          if (hasTarget && sourceModule === 'applicant-profile' && previous
+            && ['jobId', 'status', 'screeningResult', 'offerSent'].some((field) => String(previous[field] ?? '') !== String(row[field] ?? ''))) {
+            adjustRecruitmentApplicants(previous, -1);
+            adjustRecruitmentApplicants(row, 1);
+          }
+          if (!hasTarget && sourceModule === 'applicant-profile') {
+            const mirroredApplication: AdminRow = {
+              applicationId,
+              jobId: String(row.jobId ?? ''),
+              applicant: String(row.name ?? ''),
+              email: String(row.email ?? ''),
+              phone: String(row.phone ?? ''),
+              job: String(row.appliedJob ?? 'Ứng tuyển vị trí phù hợp'),
+              source: String(row.source ?? 'Website'),
+              submittedDate: String(row.appliedDate ?? ''),
+              cvUrl: String(row.cvUrl ?? ''),
+              cvFileName: String(row.cvFileName ?? ''),
+              screeningResult: 'Chưa sàng lọc',
+              status: String(row.status ?? 'Mới'),
+            };
+            store[targetKey] = [mirroredApplication, ...targetRows];
+            adjustRecruitmentApplicants(mirroredApplication, 1);
+          }
         }
       }
-      if (k === key('hr', 'submit-cv') && previous) {
-        const oldJobId = String(previous.jobId ?? '');
-        const newJobId = String(row.jobId ?? '');
-        if (oldJobId !== newJobId) {
-          adjustRecruitmentApplicants(previous, -1);
-          adjustRecruitmentApplicants(row, 1);
-        }
+      if (k === key('hr', 'submit-cv') && previous
+        && ['jobId', 'status', 'screeningResult', 'offerSent'].some((field) => String(previous[field] ?? '') !== String(row[field] ?? ''))) {
+        adjustRecruitmentApplicants(previous, -1);
+        adjustRecruitmentApplicants(row, 1);
       }
       emit();
       persistSeoRows(next, previousRows);

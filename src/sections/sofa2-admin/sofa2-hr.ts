@@ -19,7 +19,7 @@ const JOB_TYPES = ['Toàn thời gian', 'Bán thời gian', 'Thời vụ', 'Free
 const LOCATIONS = ['TP.HCM', 'Hà Nội', 'Đà Nẵng', 'Bình Dương', 'Remote'];
 const EMPLOYMENT_STATUS = ['Đang tuyển', 'Tạm dừng', 'Đã đóng', 'Đã đủ người'];
 const APPLICATION_STATUS = ['Mới', 'Đang sàng lọc', 'Phỏng vấn', 'Thử việc', 'Trúng tuyển', 'Không đạt', 'Tự rút'];
-const SCREENING_RESULTS = ['Qua', 'Chưa quyết', 'Loại'];
+const SCREENING_RESULTS = ['Chưa sàng lọc', 'Qua', 'Chưa quyết', 'Loại'];
 const INTERVIEW_ROUNDS = ['Sàng lọc CV', 'Phỏng vấn HR', 'Phỏng vấn chuyên môn', 'Phỏng vấn cuối', 'Thử việc'];
 const AGENTS = ['Minh Anh', 'Đức Anh', 'Thu Hà', 'Hoàng Long', 'Quốc Bảo', 'Chưa gán'];
 const SOURCES = ['Website', 'TopCV', 'VietnamWorks', 'LinkedIn', 'Facebook', 'Giới thiệu', 'Headhunter', 'Khác'];
@@ -36,7 +36,7 @@ export const SOFA2_HR_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     statusKey: 'status',
     statusOptions: EMPLOYMENT_STATUS,
     publishLabel: 'Đăng tuyển',
-    defaultStatus: 'Đang tuyển',
+    defaultStatus: 'Tạm dừng',
     fields: [
       f('jobId', 'Mã vị trí', 'text', 'display', { helper: 'Được tạo tự động nếu để trống.' }),
       f('title', 'Vị trí tuyển dụng', 'text', 'content', { required: true, maxLength: 120 }),
@@ -47,11 +47,12 @@ export const SOFA2_HR_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('location', 'Địa điểm', 'select', 'content', { required: true, options: LOCATIONS }),
       f('salaryMin', 'Lương tối thiểu (₫)', 'number', 'content', { helper: 'Để trống nếu thỏa thuận.' }),
       f('salaryMax', 'Lương tối đa (₫)', 'number', 'content'),
-      f('deadline', 'Hạn nộp hồ sơ', 'date', 'content', { required: true }),
+      f('deadline', 'Hạn nộp hồ sơ', 'date', 'content'),
       f('description', 'Mô tả công việc', 'textarea', 'content', { multiline: 6 }),
       f('requirements', 'Yêu cầu công việc', 'textarea', 'content', { multiline: 6 }),
       f('benefits', 'Quyền lợi', 'textarea', 'content', { multiline: 4 }),
       f('postedDate', 'Ngày đăng tuyển', 'date', 'display'),
+      f('closedDate', 'Ngày đóng', 'date', 'display'),
       f('views', 'Lượt xem', 'number', 'display'),
       f('applicants', 'Số ứng viên', 'number', 'display'),
       f('hired', 'Đã tuyển', 'number', 'display'),
@@ -71,7 +72,7 @@ export const SOFA2_HR_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     statusKey: 'status',
     statusOptions: EMPLOYMENT_STATUS,
     publishLabel: 'Đăng tuyển',
-    defaultStatus: 'Đang tuyển',
+    defaultStatus: 'Tạm dừng',
     fields: [
       f('jobId', 'Mã vị trí', 'text', 'display', { helper: 'Mã liên kết giữa tin tuyển dụng và trang chi tiết.' }),
       f('title', 'Vị trí', 'text', 'content', { required: true }),
@@ -82,7 +83,7 @@ export const SOFA2_HR_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('location', 'Địa điểm', 'select', 'content', { required: true, options: LOCATIONS }),
       f('salaryMin', 'Lương tối thiểu (₫)', 'number', 'content'),
       f('salaryMax', 'Lương tối đa (₫)', 'number', 'content'),
-      f('deadline', 'Hạn nộp', 'date', 'content', { required: true }),
+      f('deadline', 'Hạn nộp', 'date', 'content'),
       f('description', 'Mô tả công việc', 'textarea', 'content', { multiline: 8 }),
       f('requirements', 'Yêu cầu', 'textarea', 'content', { multiline: 8 }),
       f('benefits', 'Quyền lợi', 'textarea', 'content', { multiline: 6 }),
@@ -174,6 +175,8 @@ export const SOFA2_HR_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('cvUrl', 'Link CV', 'url', 'content'),
       f('cvFileName', 'Tên tệp CV', 'text', 'display'),
       f('portfolioUrl', 'Link Portfolio', 'url', 'content'),
+      f('coverLetter', 'Thư ứng tuyển', 'textarea', 'content', { multiline: 5 }),
+      f('availableDate', 'Ngày có thể nhận việc', 'date', 'content'),
       f('appliedJob', 'Vị trí ứng tuyển', 'text', 'display'),
       f('appliedDate', 'Ngày ứng tuyển', 'date', 'display'),
       f('source', 'Nguồn', 'select', 'display', { options: SOURCES }),
@@ -201,7 +204,7 @@ export const SOFA2_HR_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     statusKey: 'status',
     statusOptions: ['Đang tuyển', 'Tạm dừng', 'Đã đóng', 'Đã đủ người'],
     publishLabel: 'Mở lại',
-    defaultStatus: 'Đang tuyển',
+    defaultStatus: 'Tạm dừng',
     fields: [
       f('jobId', 'Mã vị trí', 'text', 'display'),
       f('title', 'Vị trí tuyển dụng', 'text', 'content', { required: true }),
@@ -215,6 +218,7 @@ export const SOFA2_HR_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('rejected', 'Không đạt', 'number', 'display'),
       f('postedDate', 'Ngày đăng', 'date', 'display'),
       f('deadline', 'Hạn nộp', 'date', 'display'),
+      f('closedDate', 'Ngày đóng', 'date', 'display'),
       f('daysOpen', 'Số ngày tuyển', 'number', 'display'),
       f('cost', 'Chi phí tuyển dụng (₫)', 'number', 'display'),
       f('source', 'Nguồn hiệu quả nhất', 'select', 'display', { options: SOURCES }),

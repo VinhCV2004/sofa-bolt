@@ -117,6 +117,11 @@ export default function Page() {
             >
               <Stack spacing={1} sx={{ flex: 1 }}>
                 <Typography variant="h6">{job.title}</Typography>
+                {(job.department || job.level) && (
+                  <Typography variant="caption" sx={{ color: 'primary.main' }}>
+                    {[job.department, job.level].filter(Boolean).join(' · ')}
+                  </Typography>
+                )}
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>{job.description || 'Xem chi tiết công việc và yêu cầu ứng tuyển.'}</Typography>
               </Stack>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>

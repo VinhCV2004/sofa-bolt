@@ -47,10 +47,10 @@ const { ACCENT, SURFACE } = SOFA2_ADMIN_THEME;
 
 const statusColor = (value: string) => {
   const v = value.toLowerCase();
-  if (/(xuất bản|hoàn tất|thành công|hoạt động|đã duyệt|còn hàng|đang chạy|đã giao|đã hoàn)/.test(v))
+  if (/(xuất bản|hoàn tất|thành công|hoạt động|đã duyệt|còn hàng|đang chạy|đang tuyển|đã giao|đã hoàn|trúng tuyển|đã đủ người)/.test(v))
     return 'success';
-  if (/(chờ|đang xử lý|nháp|xem xét|mới)/.test(v)) return 'warning';
-  if (/(từ chối|hủy|huỷ|lỗi|hết hàng|tạm ẩn|quá hạn|bị khoá)/.test(v)) return 'error';
+  if (/(chờ|đang xử lý|nháp|xem xét|mới|tạm dừng|đang sàng lọc|phỏng vấn|thử việc)/.test(v)) return 'warning';
+  if (/(từ chối|không đạt|tự rút|đã đóng|hủy|huỷ|lỗi|hết hàng|tạm ẩn|quá hạn|bị khoá)/.test(v)) return 'error';
   return 'default';
 };
 

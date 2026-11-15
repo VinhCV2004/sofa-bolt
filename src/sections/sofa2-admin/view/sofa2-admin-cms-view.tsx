@@ -282,9 +282,11 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     fields.forEach((field) => {
       if (field.type === 'number') values[field.key] = 0;
       else if (field.type === 'switch')
-        values[field.key] = group.slug === 'dealer' || group.slug === 'customer' ? 'Không' : 'Có';
+        values[field.key] = ['dealer', 'customer', 'hr'].includes(group.slug) ? 'Không' : 'Có';
       else if (field.key === statusKey) values[field.key] = defaultDraft;
-      else if (field.type === 'date') values[field.key] = field.key === 'updated' ? sofa2Today() : '';
+      else if (field.type === 'date') values[field.key] = ['updated', 'submittedDate', 'appliedDate'].includes(field.key) ? sofa2Today() : '';
+      else if (group.slug === 'hr' && ['job', 'appliedJob'].includes(field.key)) values[field.key] = 'Ứng tuyển vị trí phù hợp';
+      else if (group.slug === 'hr' && field.key === 'source') values[field.key] = 'Website';
       else values[field.key] = '';
     });
     return values;
@@ -461,26 +463,73 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         if (phone && (phone.length < 9 || phone.length > 15)) {
           next.phone = 'Số điện thoại cần có từ 9 đến 15 chữ số.';
         }
-        const cvUrl = String(form.values.cvUrl ?? '').trim();
-        if (cvUrl) {
+        const urlFields = module.slug === 'applicant-profile' ? ['cvUrl', 'portfolioUrl'] : ['cvUrl'];
+        urlFields.forEach((key) => {
+          const url = String(form.values[key] ?? '').trim();
+          if (!url) return;
           try {
-            const parsed = new URL(cvUrl);
+            const parsed = new URL(url);
             if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid protocol');
           } catch {
-            next.cvUrl = 'Vui lòng nhập đường dẫn CV bắt đầu bằng http:// hoặc https://.';
+            next[key] = 'Vui lòng nhập đường dẫn bắt đầu bằng http:// hoặc https://.';
           }
+        });
+        const emailKey = email.trim().toLowerCase();
+        const jobId = String(form.values.jobId ?? '').trim();
+        const duplicateApplication = emailKey && rows.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index)
+          && String(row.email ?? '').trim().toLowerCase() === emailKey
+          && String(row.jobId ?? '') === jobId
+        );
+        if (duplicateApplication) next.email = 'Ứng viên này đã có hồ sơ cho vị trí đã chọn.';
+        if (jobId && !getSofa2AdminRows('hr', 'recruitment').some((job) => String(job.jobId ?? '') === jobId)) {
+          next.jobId = 'Mã vị trí không tồn tại trong danh sách tuyển dụng.';
         }
+        if (form.mode === 'edit' && jobId !== String(rows[form.index]?.jobId ?? '')) {
+          next.jobId = 'Không thể đổi vị trí sau khi nhận hồ sơ; hãy tạo đơn ứng tuyển mới để giữ đúng lịch sử.';
+        }
+        if (Number(form.values.expectedSalary) < 0) next.expectedSalary = 'Mức lương mong muốn không thể âm.';
       }
 
-      if (['recruitment', 'job-detail'].includes(module.slug)) {
+      if (['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug)) {
         const salaryMin = Number(form.values.salaryMin) || 0;
         const salaryMax = Number(form.values.salaryMax) || 0;
+        const quantity = Number(form.values.quantity);
+        if (salaryMin < 0) next.salaryMin = 'Mức lương không thể âm.';
+        if (salaryMax < 0) next.salaryMax = 'Mức lương không thể âm.';
         if (salaryMin && salaryMax && salaryMax < salaryMin) {
           next.salaryMax = 'Lương tối đa phải lớn hơn hoặc bằng lương tối thiểu.';
+        }
+        if (!Number.isInteger(quantity) || quantity < 1) next.quantity = 'Số lượng cần tuyển phải là số nguyên lớn hơn 0.';
+        ['applicants', 'hired', 'screeningPassed', 'interviewing', 'offered', 'rejected', 'views', 'daysOpen', 'cost'].forEach((key) => {
+          const metric = Number(form.values[key] ?? 0);
+          if (metric < 0) next[key] = 'Giá trị không thể âm.';
+          if (key !== 'cost' && !Number.isInteger(metric)) next[key] = 'Giá trị cần là số nguyên.';
+        });
+        if (Number(form.values.hired) > quantity) next.hired = 'Số đã tuyển không thể vượt chỉ tiêu.';
+        const contactEmail = String(form.values.contactEmail ?? '').trim();
+        if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) next.contactEmail = 'Email liên hệ không hợp lệ.';
+        const contactPhone = String(form.values.contactPhone ?? '').replace(/\D/g, '');
+        if (contactPhone && (contactPhone.length < 9 || contactPhone.length > 15)) next.contactPhone = 'Số liên hệ cần có từ 9 đến 15 chữ số.';
+        const deadline = toDateInput(form.values.deadline);
+        const previous = form.mode === 'edit' ? rows[form.index] : undefined;
+        const becomingOpen = String(form.values.status) === 'Đang tuyển'
+          && (!previous || String(previous.status) !== 'Đang tuyển' || deadline !== toDateInput(previous.deadline));
+        if (becomingOpen && !String(form.values.description ?? '').trim()) next.description = 'Cần có mô tả công việc trước khi đăng tuyển.';
+        if (becomingOpen && !String(form.values.requirements ?? '').trim()) next.requirements = 'Cần nêu yêu cầu ứng tuyển trước khi đăng tuyển.';
+        if (becomingOpen && !deadline) next.deadline = 'Cần chọn hạn nộp trước khi mở vị trí.';
+        else if (becomingOpen && deadline < new Date().toISOString().slice(0, 10)) {
+          next.deadline = 'Không thể mở vị trí có hạn nộp đã qua.';
         }
       }
 
       if (module.slug === 'applicant-profile') {
+        ['experience', 'currentSalary', 'expectedSalary', 'interviewScore'].forEach((key) => {
+          const value = String(form.values[key] ?? '').trim();
+          if (value && Number(value) < 0) next[key] = 'Giá trị không thể âm.';
+        });
+        const birthday = toDateInput(form.values.birthday);
+        if (birthday && birthday > new Date().toISOString().slice(0, 10)) next.birthday = 'Ngày sinh không thể nằm trong tương lai.';
         const score = Number(form.values.interviewScore);
         if (Number.isFinite(score) && (score < 0 || score > 10)) {
           next.interviewScore = 'Điểm phỏng vấn phải nằm trong khoảng 0–10.';
@@ -885,6 +934,31 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     if (group.slug === 'hr' && ['submit-cv', 'applicant-profile'].includes(module.slug) && !String(clean.applicationId ?? '').trim()) {
       clean.applicationId = `APP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     }
+    if (group.slug === 'hr') {
+      const today = sofa2Today();
+      if (['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug)) {
+        if (String(clean.status) === 'Đang tuyển') {
+          clean.postedDate = String(clean.postedDate ?? '') || today;
+          clean.closedDate = '';
+        } else if (['Đã đóng', 'Đã đủ người'].includes(String(clean.status)) && fields.some((field) => field.key === 'closedDate')) {
+          clean.closedDate = String(clean.closedDate ?? '') || today;
+        }
+      }
+      if (module.slug === 'submit-cv') {
+        clean.email = String(clean.email ?? '').toLowerCase();
+        clean.screeningResult = String(clean.screeningResult ?? '') || 'Chưa sàng lọc';
+        const job = getSofa2AdminRows('hr', 'recruitment')
+          .find((item) => String(item.jobId ?? '') === String(clean.jobId ?? ''));
+        clean.job = job ? String(job.title ?? '') : 'Ứng tuyển vị trí phù hợp';
+      }
+      if (module.slug === 'applicant-profile') {
+        clean.email = String(clean.email ?? '').toLowerCase();
+        clean.interviewRound = String(clean.interviewRound ?? '') || 'Sàng lọc CV';
+        const job = getSofa2AdminRows('hr', 'recruitment')
+          .find((item) => String(item.jobId ?? '') === String(clean.jobId ?? ''));
+        clean.appliedJob = job ? String(job.title ?? '') : 'Ứng tuyển vị trí phù hợp';
+      }
+    }
     if (fields.some((x) => x.key === 'updated')) clean.updated = sofa2Today();
     if (group.slug === 'dealer' && module.slug === 'dashboard' && form.mode === 'edit') {
       clean.dealerId = rows[form.index]?.dealerId ?? '';
@@ -911,7 +985,27 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     const row = rows[index];
     const isPublished = String(row[statusKey]) === published;
     const next = isPublished ? statusOptions[1] ?? 'Bản nháp' : published;
-    updateRow(index, { ...row, [statusKey]: next, ...(row.updated ? { updated: sofa2Today() } : {}) });
+    if (group.slug === 'hr' && ['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug) && next === 'Đang tuyển') {
+      const deadline = toDateInput(row.deadline);
+      if (!deadline || deadline < sofa2Today()) {
+        setToast('Không thể mở vị trí: cần đặt hạn nộp hôm nay hoặc muộn hơn.');
+        return;
+      }
+      if (!String(row.description ?? '').trim() || !String(row.requirements ?? '').trim()) {
+        setToast('Không thể mở vị trí: hãy bổ sung mô tả và yêu cầu trong Chi tiết vị trí.');
+        return;
+      }
+    }
+    const nextRow: AdminRow = { ...row, [statusKey]: next, ...(row.updated ? { updated: sofa2Today() } : {}) };
+    if (group.slug === 'hr' && ['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug)) {
+      if (next === 'Đang tuyển') {
+        nextRow.postedDate = String(row.postedDate ?? '') || sofa2Today();
+        nextRow.closedDate = '';
+      } else if (['Đã đóng', 'Đã đủ người'].includes(String(next)) && fields.some((field) => field.key === 'closedDate')) {
+        nextRow.closedDate = sofa2Today();
+      }
+    }
+    updateRow(index, nextRow);
     const synced = await syncDealerModule();
     setToast(
       synced
@@ -924,12 +1018,25 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
 
   const duplicateRow = async (index: number) => {
     if (!canCreate) return;
+    if (group.slug === 'hr' && ['submit-cv', 'applicant-profile'].includes(module.slug)) {
+      setToast('Không thể nhân bản hồ sơ ứng viên; hãy tạo hồ sơ mới để tránh trùng thông tin và mã theo dõi.');
+      return;
+    }
     const row = rows[index];
     const copy: AdminRow = {
       ...row,
       [titleKey]: `${row[titleKey]} (bản sao)`,
       [statusKey]: statusOptions[1] ?? 'Bản nháp',
     };
+    if (group.slug === 'hr' && ['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug)) {
+      copy.jobId = `JOB-COPY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      delete copy.legacyId;
+      copy.status = 'Tạm dừng';
+      copy.deadline = '';
+      copy.postedDate = '';
+      copy.closedDate = '';
+      ['views', 'applicants', 'hired', 'screeningPassed', 'interviewing', 'offered', 'rejected', 'daysOpen', 'cost'].forEach((key) => { copy[key] = 0; });
+    }
     if (group.slug === 'dealer' && module.slug === 'dashboard') {
       delete copy.dealerId;
       copy.email = '';
@@ -948,6 +1055,13 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   };
 
   const catalogDeleteBlockReason = (row: AdminRow) => {
+    if (group.slug === 'hr' && ['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug)) {
+      const jobId = String(row.jobId ?? '');
+      const hasApplications = ['submit-cv', 'applicant-profile'].some((moduleName) =>
+        getSofa2AdminRows('hr', moduleName).some((application) => String(application.jobId ?? '') === jobId)
+      );
+      if (hasApplications) return 'Vị trí có hồ sơ ứng viên liên kết; hãy chuyển trạng thái sang Đã đóng thay vì xoá để giữ lịch sử.';
+    }
     if (group.slug === 'customer') {
       const customerId = String(row.customerId ?? '');
       const linked = (moduleName: string, predicate: (item: AdminRow) => boolean) =>
@@ -1015,7 +1129,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       setBulkConfirm(false);
       setToast(group.slug === 'customer'
         ? 'Không thể xoá các bản ghi đã được dùng; hãy cập nhật trạng thái hoặc lưu trữ thay vì xoá lịch sử.'
-        : 'Không thể xoá: một số bản ghi còn liên kết với sản phẩm, tồn kho hoặc bảng giá.');
+        : group.slug === 'hr'
+          ? 'Không thể xoá vị trí đã có ứng viên; hãy đóng vị trí để giữ lại lịch sử tuyển dụng.'
+          : 'Không thể xoá: một số bản ghi còn liên kết với sản phẩm, tồn kho hoặc bảng giá.');
       return;
     }
     const deletedCount = removable.length;
@@ -1034,16 +1150,31 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
 
   const bulkPublish = async () => {
     if (!canPublish) return;
-    selected
-      .slice()
-      .sort((a, b) => a - b)
-      .forEach((index) => updateRow(index, { ...rows[index], [statusKey]: published }));
+    const isHrJobs = group.slug === 'hr' && ['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug);
+    const publishable = selected.filter((index) => {
+      if (!isHrJobs) return true;
+      const row = rows[index];
+      const deadline = toDateInput(row?.deadline);
+      return !!deadline && deadline >= sofa2Today()
+        && !!String(row?.description ?? '').trim()
+        && !!String(row?.requirements ?? '').trim();
+    });
+    const skipped = selected.length - publishable.length;
+    publishable.slice().sort((a, b) => a - b).forEach((index) => {
+      const row = rows[index];
+      const nextRow: AdminRow = { ...row, [statusKey]: published };
+      if (isHrJobs) {
+        nextRow.postedDate = String(row.postedDate ?? '') || sofa2Today();
+        nextRow.closedDate = '';
+      }
+      updateRow(index, nextRow);
+    });
     const synced = await syncDealerModule();
-    setToast(
-      synced
+    setToast(skipped
+      ? `Đã cập nhật ${publishable.length} ${entity}; bỏ qua ${skipped} vị trí chưa đủ hạn nộp, mô tả hoặc yêu cầu.`
+      : synced
         ? `Đã ${publishLabel.toLowerCase()} ${selected.length} ${entity}.`
-        : 'Đã lưu thay đổi trên trình duyệt demo.'
-    );
+        : 'Đã lưu thay đổi trên trình duyệt demo.');
     setSelected([]);
   };
 
@@ -1097,6 +1228,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     const isCustomerLookup = group.slug === 'customer'
       && !['dashboard', 'profiles'].includes(module.slug)
       && ['customerId', 'customer', 'orderCode'].includes(field.key);
+    const isHrJobLookup = group.slug === 'hr'
+      && ['submit-cv', 'applicant-profile'].includes(module.slug)
+      && field.key === 'jobId';
     const fieldOptions = (() => {
       if (field.key === 'dealer' && group.slug === 'dealer') {
         return Array.from(
@@ -1117,6 +1251,13 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           .map((row) => String(row.role ?? '').trim())
           .filter(Boolean);
         return Array.from(new Set([...activeRoles, String(value).trim()])).filter(Boolean);
+      }
+      if (isHrJobLookup) {
+        const jobs = getSofa2AdminRows('hr', 'recruitment');
+        return Array.from(new Set([
+          ...jobs.map((job) => String(job.jobId ?? '').trim()),
+          String(value).trim(),
+        ])).filter(Boolean);
       }
       if (group.slug === 'customer') {
         const profiles = getSofa2AdminRows('customer', 'profiles');
@@ -1185,12 +1326,12 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       <TextField
         key={field.key}
         fullWidth
-        select={field.type === 'select' || isCustomerLookup}
+        select={field.type === 'select' || isCustomerLookup || isHrJobLookup}
         multiline={field.type === 'textarea'}
         minRows={field.multiline}
         type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
         label={field.label}
-        disabled={field.disabled}
+        disabled={field.disabled || (isHrJobLookup && form.mode === 'edit')}
         value={field.type === 'date' ? toDateInput(value) : value}
         error={!!error}
         placeholder={field.placeholder}
@@ -1198,11 +1339,22 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           error ??
           (field.maxLength
             ? `${String(value).length}/${field.maxLength} ký tự${field.helper ? ` — ${field.helper}` : ''}`
-            : field.helper)
+            : isHrJobLookup
+              ? form.mode === 'edit'
+                ? 'Vị trí đã khóa để giữ nguyên lịch sử hồ sơ.'
+                : 'Chọn vị trí ứng tuyển; để trống cho hồ sơ tự do.'
+              : field.helper)
         }
+        SelectProps={isHrJobLookup ? { displayEmpty: true } : undefined}
         onChange={(e) => {
           const nextValue = e.target.value;
           setValue(field.key, nextValue);
+          if (isHrJobLookup) {
+            const job = getSofa2AdminRows('hr', 'recruitment')
+              .find((item) => String(item.jobId ?? '') === String(nextValue));
+            const title = String(job?.title ?? 'Ứng tuyển vị trí phù hợp');
+            setValue(module.slug === 'submit-cv' ? 'job' : 'appliedJob', title);
+          }
           if (group.slug === 'customer' && field.key === 'customerId') {
             const profile = getSofa2AdminRows('customer', 'profiles')
               .find((item) => String(item.customerId ?? '') === String(nextValue));
@@ -1227,6 +1379,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           }
         }}
       >
+        {isHrJobLookup && <MenuItem value="">Ứng tuyển tự do / chưa gắn vị trí</MenuItem>}
         {fieldOptions.map((opt) => (
           <MenuItem key={opt} value={opt}>
             {opt}
