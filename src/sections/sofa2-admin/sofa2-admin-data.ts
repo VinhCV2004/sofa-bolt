@@ -1,7 +1,7 @@
+import { SOFA2_SHOP_GROUP } from './sofa2-shop';
 import { SOFA2_SUPPORT_GROUP } from './sofa2-support';
 import { SOFA2_CUSTOMER_GROUP } from './sofa2-customer';
-import { SOFA2_SHOP_GROUP } from './sofa2-shop';
-import { getSofa2SeoEntries, SOFA2_SITE_ORIGIN, type Sofa2SeoScope } from './sofa2-seo-generator';
+import { SOFA2_SITE_ORIGIN, getSofa2SeoEntries, type Sofa2SeoScope } from './sofa2-seo-generator';
 // SOFA2 ADMIN — Bold, dark, modern editorial style
 // ----------------------------------------------------------------------
 
@@ -199,6 +199,34 @@ const cmsTermsRows: Record<string, string | number>[] = [
   },
 ];
 
+const cmsAboutRows: Record<string, string | number>[] = [
+  {
+    block: 'intro',
+    type: 'Rich text',
+    heading: 'Từ xưởng nhỏ đến thương hiệu quốc gia',
+    content: 'LUXE Sofa ra đời năm 2012 từ một xưởng mộc nhỏ tại Bình Dương. Chúng tôi chế tác sofa theo triết lý bền vững, tỉ mỉ và phù hợp với không gian sống Việt.',
+    image: '',
+    status: 'Đã xuất bản',
+    order: 1,
+    updated: '14/09/2026',
+    author: 'Minh Anh',
+  },
+];
+
+const cmsContactRows: Record<string, string | number>[] = [
+  {
+    block: 'intro',
+    type: 'Rich text',
+    heading: 'Liên hệ LUXE Sofa',
+    content: 'Đội ngũ tư vấn sẵn sàng hỗ trợ bạn chọn sofa, đặt lịch đến showroom hoặc trao đổi về dự án.',
+    image: '',
+    status: 'Đã xuất bản',
+    order: 1,
+    updated: '14/09/2026',
+    author: 'Minh Anh',
+  },
+];
+
 const cmsFaqRows: Record<string, string | number>[] = [
   {
     block: 'Sofa có làm theo kích thước riêng không?',
@@ -258,11 +286,11 @@ const CMS_GROUP: Sofa2AdminGroup = {
   icon: 'solar:documents-bold-duotone',
   modules: [
     cmsPage('home', 'Trang chủ', '/sofa2'),
-    cmsPage('about', 'Trang giới thiệu', '/sofa2/about'),
-    cmsPage('contact', 'Trang liên hệ', '/sofa2/contact'),
-    cmsPage('policy', 'Trang chính sách', '/sofa2/policy'),
-    cmsPage('terms', 'Trang điều khoản', '/sofa2/policy/terms'),
-    cmsPage('faq', 'Trang FAQ', '/sofa2/faq'),
+    cmsPage('about', 'Trang giới thiệu', '/sofa2/about', cmsAboutRows),
+    cmsPage('contact', 'Trang liên hệ', '/sofa2/contact', cmsContactRows),
+    cmsPage('policy', 'Trang chính sách', '/sofa2/policy', cmsPolicyRows),
+    cmsPage('terms', 'Trang điều khoản', '/sofa2/policy/terms', cmsTermsRows),
+    cmsPage('faq', 'Trang FAQ', '/sofa2/faq', cmsFaqRows),
     mod(
       'blog',
       'Trang blog',
@@ -333,7 +361,13 @@ const CMS_GROUP: Sofa2AdminGroup = {
       [
         { menu: 'Menu chính', position: 'Header', items: 24, status: 'Đã xuất bản' },
         { menu: 'Menu sản phẩm (mega)', position: 'Header', items: 18, status: 'Đã xuất bản' },
-        { menu: 'Menu footer', position: 'Footer', items: 10, status: 'Đã xuất bản' },
+        {
+          menu: 'Menu footer',
+          position: 'Footer',
+          items: 4,
+          structure: 'Chính sách | /sofa2/policy\nĐiều khoản | /sofa2/policy/terms\nCâu hỏi thường gặp | /sofa2/faq\nLiên hệ | /sofa2/contact',
+          status: 'Đã xuất bản',
+        },
         { menu: 'Menu mobile', position: 'Mobile', items: 14, status: 'Bản nháp' },
       ],
       ['Thêm menu']

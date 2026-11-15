@@ -169,6 +169,7 @@ const Sofa2CareerDetailPage = lazy(() => import('src/pages/sofa2-pages/career-de
 const Sofa2CareerApplyPage = lazy(() => import('src/pages/sofa2-pages/career-apply'));
 const Sofa2CareerTrackingPage = lazy(() => import('src/pages/sofa2-pages/career-tracking'));
 const Sofa2ContactPage = lazy(() => import('src/pages/sofa2-pages/contact'));
+const Sofa2CmsContentPage = lazy(() => import('src/pages/sofa2-pages/cms-content'));
 const Sofa2AccountPage = lazy(() => import('src/pages/sofa2-pages/account'));
 const Sofa2B2BPage = lazy(() => import('src/pages/sofa2-pages/b2b'));
 const Sofa2B2BRegisterPage = lazy(() => import('src/pages/sofa2-pages/b2b-register'));
@@ -2360,6 +2361,46 @@ export function Router() {
         <Suspense fallback={<SplashScreen />}>
           <MainLayout data={{ nav: sofa2PagesNavData }}>
             <Sofa2CareerTrackingPage />
+          </MainLayout>
+        </Suspense>
+      ),
+    },
+    {
+      path: '/sofa2/policy/terms',
+      element: (
+        <Suspense fallback={<SplashScreen />}>
+          <MainLayout data={{ nav: sofa2PagesNavData }}>
+            <Sofa2CmsContentPage />
+          </MainLayout>
+        </Suspense>
+      ),
+    },
+    {
+      path: '/sofa2/policy',
+      element: (
+        <Suspense fallback={<SplashScreen />}>
+          <MainLayout data={{ nav: sofa2PagesNavData }}>
+            <Sofa2CmsContentPage />
+          </MainLayout>
+        </Suspense>
+      ),
+    },
+    {
+      path: '/sofa2/faq',
+      element: (
+        <Suspense fallback={<SplashScreen />}>
+          <MainLayout data={{ nav: sofa2PagesNavData }}>
+            <Sofa2CmsContentPage />
+          </MainLayout>
+        </Suspense>
+      ),
+    },
+    {
+      path: '/sofa2/pages/:slug',
+      element: (
+        <Suspense fallback={<SplashScreen />}>
+          <MainLayout data={{ nav: sofa2PagesNavData }}>
+            <Sofa2CmsContentPage />
           </MainLayout>
         </Suspense>
       ),

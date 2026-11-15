@@ -41,13 +41,21 @@ const LINKS = [
 
 // ----------------------------------------------------------------------
 
+export type FooterLinkGroup = {
+  headline: string;
+  children: { name: string; href: string }[];
+};
+
 export type FooterProps = {
   layoutQuery: Breakpoint;
   sx?: SxProps<Theme>;
+  customLinks?: FooterLinkGroup[];
+  description?: string;
 };
 
-export function Footer({ layoutQuery, sx }: FooterProps) {
+export function Footer({ layoutQuery, sx, customLinks, description }: FooterProps) {
   const theme = useTheme();
+  const linkGroups = customLinks?.length ? customLinks : LINKS;
 
   return (
     <Box component="footer" sx={{ position: 'relative', bgcolor: 'background.default', ...sx }}>
@@ -80,8 +88,8 @@ export function Footer({ layoutQuery, sx }: FooterProps) {
                 [theme.breakpoints.up(layoutQuery)]: { mx: 'unset' },
               }}
             >
-              The starting point for your next project with Minimal UI Kit, built on the newest
-              version of Material-UI ©, ready to be customized to your style.
+              {description ??
+                'The starting point for your next project with Minimal UI Kit, built on the newest version of Material-UI ©, ready to be customized to your style.'}
             </Typography>
 
             <Stack
@@ -112,7 +120,7 @@ export function Footer({ layoutQuery, sx }: FooterProps) {
                 [theme.breakpoints.up(layoutQuery)]: { flexDirection: 'row' },
               }}
             >
-              {LINKS.map((list) => (
+              {linkGroups.map((list) => (
                 <Stack
                   key={list.headline}
                   spacing={2}

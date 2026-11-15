@@ -20,6 +20,7 @@ export type Sofa2CmsField = {
   options?: string[];
   helper?: string;
   required?: boolean;
+  disabled?: boolean;
   maxLength?: number;
   multiline?: number;
   placeholder?: string;
@@ -137,7 +138,11 @@ export const SOFA2_CMS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     statusOptions: ['Đã xuất bản', 'Chờ duyệt', 'Bản nháp', 'Tạm ẩn'],
     fields: [
       f('title', 'Tiêu đề bài viết', 'text', 'content', { required: true }),
-      f('slug', 'Đường dẫn', 'text', 'content', { placeholder: '/sofa2/blog/ten-bai-viet' }),
+      f('slug', 'Đường dẫn', 'text', 'content', {
+        required: true,
+        placeholder: '/sofa2/blog/ten-bai-viet',
+        helper: 'Tự tạo từ tiêu đề nếu để trống; đường dẫn phải duy nhất.',
+      }),
       f('category', 'Chuyên mục', 'select', 'content', {
         required: true,
         options: ['Triết lý', 'Tư vấn', 'Xu hướng', 'Bảo dưỡng', 'Dự án', 'Tin công ty'],
@@ -169,12 +174,13 @@ export const SOFA2_CMS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
         required: true,
         options: ['Header', 'Footer', 'Mobile', 'Sidebar', 'Mega menu'],
       }),
-      f('items', 'Số mục', 'number', 'content'),
-      f('structure', 'Danh sách mục (mỗi dòng: Tên | đường dẫn)', 'textarea', 'content', {
-        multiline: 6,
-        placeholder: 'Trang chủ | /sofa2\nSản phẩm | /sofa2/products',
+      f('items', 'Số mục', 'number', 'content', { disabled: true, helper: 'Tự đếm từ cấu trúc bên dưới.' }),
+      f('structure', 'Danh sách mục (mỗi dòng: Tên | đường dẫn | mục cha)', 'textarea', 'content', {
+        multiline: 8,
+        placeholder: 'Trang chủ | /sofa2\nSản phẩm | /sofa2/products\nSofa góc | /sofa2/products/category/sofa-goc | Sản phẩm',
+        helper: 'Cột mục cha không bắt buộc; chỉ chấp nhận đường dẫn nội bộ /sofa2 hoặc http/https.',
       }),
-      f('depth', 'Số cấp tối đa', 'number', 'display'),
+      f('depth', 'Số cấp tối đa', 'number', 'display', { disabled: true, helper: 'Tự tính theo mục cha đã khai báo.' }),
       ...displayFields(),
     ],
   },
@@ -195,7 +201,9 @@ export const SOFA2_CMS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('imageMobile', 'Ảnh banner (mobile)', 'url', 'content'),
       f('headline', 'Dòng tiêu đề', 'text', 'content'),
       f('ctaLink', 'Liên kết khi bấm', 'url', 'content', { placeholder: '/sofa2/promotions' }),
-      f('schedule', 'Lịch chạy', 'text', 'content', { placeholder: '01/09 – 30/09' }),
+        f('schedule', 'Ghi chú lịch chạy', 'text', 'content', { placeholder: 'Chiến dịch tháng 9' }),
+      f('startAt', 'Bắt đầu hiển thị', 'date', 'display', { helper: 'Để trống để hiển thị ngay khi xuất bản.' }),
+      f('endAt', 'Kết thúc hiển thị', 'date', 'display', { helper: 'Để trống nếu không giới hạn ngày kết thúc.' }),
       f('status', 'Trạng thái', 'select', 'display', {
         required: true,
         options: ['Đang chạy', 'Bản nháp', 'Tạm ẩn', 'Hết hạn'],
@@ -233,6 +241,7 @@ export const SOFA2_CMS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     titleKey: 'page',
     statusKey: 'status',
     statusOptions: ['Tốt', 'Cần cải thiện', 'Thiếu meta'],
+    statusToggle: false,
     fields: [
       f('page', 'Đường dẫn trang', 'text', 'content', { required: true, placeholder: '/sofa2/about' }),
       f('title', 'Meta title', 'text', 'content', { required: true, maxLength: 60 }),
@@ -243,14 +252,16 @@ export const SOFA2_CMS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('length', 'Độ dài title', 'number', 'display'),
       f('status', 'Đánh giá', 'select', 'display', {
         required: true,
+        disabled: true,
         options: ['Tốt', 'Cần cải thiện', 'Thiếu meta'],
+        helper: 'Tự tính theo độ dài title và description khi lưu.',
       }),
       f('indexable', 'Cho phép lập chỉ mục', 'switch', 'display'),
     ],
   },
 
   'static-pages': {
-    clientPath: '/sofa2',
+    clientPath: '/sofa2/pages',
     entity: 'trang tĩnh',
     titleKey: 'title',
     statusKey: 'status',
@@ -259,7 +270,8 @@ export const SOFA2_CMS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('title', 'Tiêu đề trang', 'text', 'content', { required: true }),
       f('slug', 'Đường dẫn', 'text', 'content', {
         required: true,
-        placeholder: '/sofa2/huong-dan-do',
+        placeholder: '/sofa2/pages/huong-dan-do',
+        helper: 'Trang tĩnh được hiển thị tại /sofa2/pages/{slug}; slug phải duy nhất.'
       }),
       f('template', 'Bố cục', 'select', 'content', {
         options: ['Một cột', 'Có mục lục', 'Landing page', 'Câu hỏi thường gặp'],

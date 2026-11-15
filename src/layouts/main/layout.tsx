@@ -14,6 +14,11 @@ import { allLangs } from 'src/locales';
 
 import { Logo } from 'src/components/logo';
 
+import {
+  useCmsFooterMenus,
+  useCmsHeaderNavigation,
+} from 'src/sections/sofa2/sofa2-cms-client';
+
 import { Main } from './main';
 import { NavMobile } from './nav/mobile';
 import { NavDesktop } from './nav/desktop';
@@ -52,7 +57,9 @@ export function MainLayout({ sx, data, children, header }: MainLayoutProps) {
 
   const layoutQuery: Breakpoint = 'md';
 
-  const navData = data?.nav ?? mainNavData;
+  const isSofa2 = pathname.startsWith('/sofa2');
+  const navData = useCmsHeaderNavigation(data?.nav ?? mainNavData, isSofa2);
+  const cmsFooterMenus = useCmsFooterMenus(isSofa2);
 
   return (
     <LayoutSection
@@ -129,7 +136,17 @@ export function MainLayout({ sx, data, children, header }: MainLayoutProps) {
       /** **************************************
        * Footer
        *************************************** */
-      footerSection={homePage ? <HomeFooter /> : <Footer layoutQuery={layoutQuery} />}
+      footerSection={
+        homePage ? (
+          <HomeFooter />
+        ) : (
+          <Footer
+            layoutQuery={layoutQuery}
+            customLinks={isSofa2 ? cmsFooterMenus : undefined}
+            description={isSofa2 ? 'LUXE Sofa — thiết kế độc quyền, chế tác bền vững cho không gian sống Việt.' : undefined}
+          />
+        )
+      }
       /** **************************************
        * Style
        *************************************** */

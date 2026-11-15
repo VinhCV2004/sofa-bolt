@@ -36,7 +36,7 @@ function cmsBannerToContent(b: Sofa2CmsBanner): BannerContent {
   return {
     image: b.imageDesktop || b.imageMobile || SOFA2_IMAGES.banner,
     overline: b.name,
-    headline: b.headline,
+    headline: b.headline || b.name,
     description: '',
     ctaLink: b.ctaLink,
   };

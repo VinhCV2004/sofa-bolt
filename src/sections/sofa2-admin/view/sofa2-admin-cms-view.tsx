@@ -91,6 +91,44 @@ const getDate = (value: unknown) => {
 const isPortalEnabled = (value: unknown) =>
   value === true || ['có', 'yes', 'true', '1'].includes(String(value ?? '').trim().toLowerCase());
 
+const canonicalCmsSlug = (moduleSlug: string, value: unknown, title: unknown) => {
+  const input = String(value ?? '').trim();
+  if (moduleSlug === 'blog') {
+    const bare = input.replace(/^\/?sofa2\/blog\//i, '').replace(/^\/+|\/+$/g, '');
+    return sofa2Slugify(bare || String(title ?? ''));
+  }
+  const bare = input
+    .replace(/^\/?sofa2\/pages\//i, '')
+    .replace(/^\/?sofa2\//i, '')
+    .replace(/^\/+|\/+$/g, '');
+  return `/sofa2/pages/${sofa2Slugify(bare || String(title ?? ''))}`;
+};
+
+const toDateInput = (value: unknown) => {
+  const text = String(value ?? '').trim();
+  const vi = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (vi) return `${vi[3]}-${vi[2].padStart(2, '0')}-${vi[1].padStart(2, '0')}`;
+  return text.slice(0, 10);
+};
+
+const isSafeCmsUrl = (value: unknown, absoluteOnly = false) => {
+  const text = String(value ?? '').trim();
+  if (!text) return true;
+  if (!absoluteOnly && text.startsWith('/') && !text.startsWith('//')) return true;
+  try {
+    return ['http:', 'https:'].includes(new URL(text).protocol);
+  } catch {
+    return false;
+  }
+};
+
+const parseCmsMenuStructure = (value: unknown) =>
+  String(value ?? '')
+    .split(/\r?\n/)
+    .map((line) => line.split('|').map((part) => part.trim()))
+    .filter(([title, path]) => !!title || !!path)
+    .map(([title = '', path = '', parent = '']) => ({ title, path, parent }));
+
 const GROUP_LABEL: Record<Sofa2CmsField['group'], string> = {
   content: 'Nội dung',
   display: 'Hiển thị & lịch',
@@ -243,7 +281,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       else if (field.type === 'switch')
         values[field.key] = group.slug === 'dealer' && field.key === 'portalAccess' ? 'Không' : 'Có';
       else if (field.key === statusKey) values[field.key] = defaultDraft;
-      else if (field.type === 'date') values[field.key] = sofa2Today();
+      else if (field.type === 'date') values[field.key] = field.key === 'updated' ? sofa2Today() : '';
       else values[field.key] = '';
     });
     return values;
@@ -268,7 +306,12 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     const next: Record<string, string> = {};
     fields.forEach((field) => {
       const value = String(form.values[field.key] ?? '').trim();
-      if (field.required && !value) next[field.key] = 'Trường bắt buộc';
+      const willAutoSlug =
+        group.slug === 'cms' &&
+        field.key === 'slug' &&
+        ['blog', 'static-pages'].includes(module.slug) &&
+        !!String(form.values[titleKey] ?? '').trim();
+      if (field.required && !value && !willAutoSlug) next[field.key] = 'Trường bắt buộc';
       else if (field.maxLength && value.length > field.maxLength)
         next[field.key] = `Tối đa ${field.maxLength} ký tự (hiện ${value.length})`;
     });
@@ -481,6 +524,83 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         }
       }
     }
+    if (group.slug === 'cms') {
+      const isBlog = module.slug === 'blog';
+      const isStatic = module.slug === 'static-pages';
+      const candidateSlug = isBlog || isStatic
+        ? canonicalCmsSlug(module.slug, form.values.slug, form.values[titleKey])
+        : '';
+      if ((isBlog || isStatic) && candidateSlug) {
+        const duplicate = rows.some((row, index) => {
+          if (form.mode === 'edit' && index === form.index) return false;
+          return canonicalCmsSlug(module.slug, row.slug, row[titleKey]) === candidateSlug;
+        });
+        if (duplicate) next.slug = 'Đường dẫn này đã tồn tại; hãy chọn slug khác.';
+      }
+      if (module.slug === 'seo') {
+        const path = String(form.values.page ?? '').trim().replace(/\/+$/, '').toLowerCase() || '/';
+        if (!path.startsWith('/sofa2')) next.page = 'Đường dẫn SEO phải thuộc website /sofa2.';
+        if (rows.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index) &&
+          String(row.page ?? '').trim().replace(/\/+$/, '').toLowerCase() === path
+        )) next.page = 'Đường dẫn này đã có cấu hình SEO.';
+        if (!isSafeCmsUrl(form.values.canonical, true)) {
+          next.canonical = 'Canonical phải là URL tuyệt đối bắt đầu bằng http:// hoặc https://.';
+        }
+      }
+      if (['menu', 'banner', 'slider'].includes(module.slug)) {
+        const nameKey = module.slug === 'menu' ? 'menu' : 'name';
+        const name = String(form.values[nameKey] ?? '').trim().toLocaleLowerCase();
+        const position = String(form.values.position ?? '').trim().toLocaleLowerCase();
+        if (name && rows.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index) &&
+          String(row[nameKey] ?? '').trim().toLocaleLowerCase() === name &&
+          (module.slug !== 'menu' && module.slug !== 'banner' || String(row.position ?? '').trim().toLocaleLowerCase() === position)
+        )) next[nameKey] = 'Tên bản ghi đã được dùng trong vị trí này.';
+      }
+      if (module.slug === 'menu') {
+        const menuItems = parseCmsMenuStructure(form.values.structure);
+        const menuNames = new Set(menuItems.map((item) => item.title.toLocaleLowerCase()));
+        if (menuItems.some((item) => !item.title || !item.path || !isSafeCmsUrl(item.path))) {
+          next.structure = 'Mỗi dòng cần có tên mục và URL an toàn (đường dẫn / hoặc http/https).';
+        }
+        if (menuItems.some((item) => item.title && !item.path)) {
+          next.structure = 'Mỗi mục menu cần có đường dẫn.';
+        }
+        if (menuItems.some((item) => item.parent && !menuNames.has(item.parent.toLocaleLowerCase()))) {
+          next.structure = 'Mục cha phải trùng tên một mục khác trong cùng menu.';
+        }
+        const parentByName = new Map(menuItems.map((item) => [item.title.toLocaleLowerCase(), item.parent.toLocaleLowerCase()]));
+        const hasCycle = menuItems.some((item) => {
+          const visited = new Set([item.title.toLocaleLowerCase()]);
+          let parent = item.parent.toLocaleLowerCase();
+          while (parent && parentByName.has(parent)) {
+            if (visited.has(parent)) return true;
+            visited.add(parent);
+            parent = parentByName.get(parent) ?? '';
+          }
+          return false;
+        });
+        if (hasCycle) next.structure = 'Cấu trúc mục cha không được tạo vòng lặp.';
+        if (menuItems.length > 100) next.structure = 'Mỗi menu tối đa 100 liên kết.';
+      }
+      if (['home', 'about', 'contact', 'policy', 'terms', 'faq'].includes(module.slug)) {
+        const blockName = String(form.values.block ?? '').trim().toLocaleLowerCase();
+        if (blockName && rows.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index) &&
+          String(row.block ?? '').trim().toLocaleLowerCase() === blockName
+        )) next.block = 'Mã khối này đã tồn tại trên trang.';
+      }
+      ['image', 'imageMobile', 'cover', 'ogImage', 'ctaLink'].forEach((key) => {
+        if (!isSafeCmsUrl(form.values[key])) next[key] = 'Chỉ hỗ trợ URL http(s) hoặc đường dẫn nội bộ bắt đầu bằng /.';
+      });
+      const startAt = toDateInput(form.values.startAt);
+      const endAt = toDateInput(form.values.endAt);
+      if (startAt && endAt && endAt < startAt) next.endAt = 'Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.';
+      if (module.slug === 'slider' && Number(form.values.interval) < 1) {
+        next.interval = 'Thời gian chuyển slide tối thiểu là 1 giây.';
+      }
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -499,6 +619,40 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     });
     if (group.slug === 'access' && module.slug === 'users') {
       clean.email = String(clean.email ?? '').toLowerCase();
+    }
+    if (group.slug === 'cms' && ['blog', 'static-pages'].includes(module.slug)) {
+      clean.slug = canonicalCmsSlug(module.slug, clean.slug, clean[titleKey]);
+    }
+    if (group.slug === 'cms' && module.slug === 'seo') {
+      clean.page = `/${String(clean.page ?? '').trim().replace(/^\/+/, '').replace(/\/+$/, '')}`;
+      clean.length = String(clean.title ?? '').length;
+      const titleLength = Number(clean.length);
+      const descriptionLength = String(clean.description ?? '').length;
+      clean.status = !titleLength
+        ? 'Thiếu meta'
+        : titleLength <= 60 && descriptionLength > 0 && descriptionLength <= 160
+          ? 'Tốt'
+          : 'Cần cải thiện';
+    }
+    if (group.slug === 'cms' && module.slug === 'menu') {
+      const items = parseCmsMenuStructure(clean.structure);
+      clean.items = items.length;
+      const parentByName = new Map(items.map((item) => [item.title.toLocaleLowerCase(), item.parent.toLocaleLowerCase()]));
+      clean.depth = items.reduce((max, item) => {
+        let depth = 1;
+        let parent = item.parent.toLocaleLowerCase();
+        const visited = new Set<string>();
+        while (parent && parentByName.has(parent) && !visited.has(parent)) {
+          visited.add(parent);
+          depth += 1;
+          parent = parentByName.get(parent) ?? '';
+        }
+        return Math.max(max, depth);
+      }, 1);
+    }
+    if (group.slug === 'cms' && module.slug === 'slider') {
+      const slideCount = String(clean.slidesData ?? '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean).length;
+      if (slideCount) clean.slides = slideCount;
     }
     if (group.slug === 'access' && module.slug === 'roles' && !String(clean.code ?? '').trim()) {
       clean.code = sofa2Slugify(String(clean.role ?? ''));
@@ -563,7 +717,13 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       copy.email = '';
       copy.portalAccess = 'Không';
     }
-    if (copy.slug) copy.slug = `${sofa2Slugify(String(row[titleKey]))}-copy`;
+    if (group.slug === 'cms') delete copy.id;
+    if (copy.slug) {
+      copy.slug =
+        group.slug === 'cms'
+          ? `${sofa2Slugify(String(row[titleKey]))}-${Date.now().toString(36)}`
+          : `${sofa2Slugify(String(row[titleKey]))}-copy`;
+    }
     createRow(copy);
     const synced = await syncDealerModule();
     setToast(synced ? `Đã nhân bản ${entity}.` : 'Đã lưu thay đổi trên trình duyệt demo.');
@@ -710,9 +870,10 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         select={field.type === 'select'}
         multiline={field.type === 'textarea'}
         minRows={field.multiline}
-        type={field.type === 'number' ? 'number' : 'text'}
+        type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
         label={field.label}
-        value={value}
+        disabled={field.disabled}
+        value={field.type === 'date' ? toDateInput(value) : value}
         error={!!error}
         placeholder={field.placeholder}
         helperText={
@@ -723,8 +884,13 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         }
         onChange={(e) => setValue(field.key, e.target.value)}
         onBlur={() => {
-          if (field.key === 'slug' && !String(value).trim()) {
-            setValue('slug', `${clientPath}/${sofa2Slugify(String(form.values[titleKey] ?? ''))}`);
+          if (
+            field.key === 'slug' &&
+            !String(value).trim() &&
+            group.slug === 'cms' &&
+            ['blog', 'static-pages'].includes(module.slug)
+          ) {
+            setValue('slug', canonicalCmsSlug(module.slug, '', form.values[titleKey]));
           }
         }}
       >
@@ -819,6 +985,68 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         ],
       };
       return statsByModule[module.slug] ?? module.stats;
+    }
+
+    if (group.slug === 'cms') {
+      const publishedCount = rows.filter((row) => ['Đã xuất bản', 'Đang chạy', 'Tốt'].includes(String(row.status))).length;
+      const draftCount = rows.filter((row) => ['Bản nháp', 'Chờ duyệt', 'Cần cải thiện', 'Thiếu meta'].includes(String(row.status))).length;
+      const lastUpdated = rows.map((row) => getDate(row.updated)).filter((date): date is Date => !!date).sort((a, b) => b.getTime() - a.getTime())[0]?.toLocaleDateString('vi-VN') ?? '—';
+      if (['home', 'about', 'contact', 'policy', 'terms', 'faq'].includes(module.slug)) {
+        return [
+          { label: 'Khối nội dung', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Đang hiển thị', value: publishedCount.toLocaleString('vi-VN') },
+          { label: 'Bản nháp / chờ duyệt', value: draftCount.toLocaleString('vi-VN') },
+          { label: 'Cập nhật gần nhất', value: lastUpdated },
+        ];
+      }
+      if (module.slug === 'blog') {
+        return [
+          { label: 'Bài viết', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Đã xuất bản', value: publishedCount.toLocaleString('vi-VN') },
+          { label: 'Chờ duyệt / nháp', value: rows.filter((row) => ['Chờ duyệt', 'Bản nháp'].includes(String(row.status))).length.toLocaleString('vi-VN') },
+          { label: 'Lượt đọc', value: rows.reduce((sum, row) => sum + asNumber(row.views), 0).toLocaleString('vi-VN') },
+        ];
+      }
+      if (module.slug === 'menu') {
+        return [
+          { label: 'Menu', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Đang xuất bản', value: publishedCount.toLocaleString('vi-VN') },
+          { label: 'Tổng mục điều hướng', value: rows.reduce((sum, row) => sum + asNumber(row.items), 0).toLocaleString('vi-VN') },
+          { label: 'Vị trí sử dụng', value: new Set(rows.map((row) => String(row.position))).size.toLocaleString('vi-VN') },
+        ];
+      }
+      if (module.slug === 'banner') {
+        return [
+          { label: 'Tổng banner', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Đang chạy', value: rows.filter((row) => row.status === 'Đang chạy').length.toLocaleString('vi-VN') },
+          { label: 'Hết hạn', value: rows.filter((row) => row.status === 'Hết hạn').length.toLocaleString('vi-VN') },
+          { label: 'Vị trí', value: new Set(rows.map((row) => String(row.position))).size.toLocaleString('vi-VN') },
+        ];
+      }
+      if (module.slug === 'slider') {
+        return [
+          { label: 'Slider', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Slide', value: rows.reduce((sum, row) => sum + asNumber(row.slides), 0).toLocaleString('vi-VN') },
+          { label: 'Đã xuất bản', value: publishedCount.toLocaleString('vi-VN') },
+          { label: 'Cập nhật gần nhất', value: lastUpdated },
+        ];
+      }
+      if (module.slug === 'seo') {
+        return [
+          { label: 'Trang có cấu hình', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Tốt', value: rows.filter((row) => row.status === 'Tốt').length.toLocaleString('vi-VN') },
+          { label: 'Cần cải thiện', value: rows.filter((row) => row.status === 'Cần cải thiện').length.toLocaleString('vi-VN') },
+          { label: 'Thiếu meta', value: rows.filter((row) => row.status === 'Thiếu meta').length.toLocaleString('vi-VN') },
+        ];
+      }
+      if (module.slug === 'static-pages') {
+        return [
+          { label: 'Trang tĩnh', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Đã xuất bản', value: publishedCount.toLocaleString('vi-VN') },
+          { label: 'Bản nháp', value: draftCount.toLocaleString('vi-VN') },
+          { label: 'Cập nhật gần nhất', value: lastUpdated },
+        ];
+      }
     }
 
     if (group.slug === 'access') {
@@ -927,6 +1155,11 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         title={module.name}
         subtitle={module.description}
       >
+        {group.slug === 'cms' && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Dữ liệu CMS hiện lưu trên trình duyệt để đồng bộ tức thời với các component Sofa2 cùng thiết bị. Trạng thái nháp không hiển thị cho khách; nội dung xuất bản, menu, banner, SEO và trang tĩnh sẽ được website đọc từ cùng store localStorage này. Muốn vận hành nhiều thiết bị hoặc xuất bản an toàn cần API/CMS server-side.
+          </Alert>
+        )}
         {group.slug === 'access' && rowsLoading && (
           <Alert severity="info" sx={{ mb: 2 }}>
             Đang tải cấu hình phân quyền demo…
@@ -1236,6 +1469,30 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
                         )}
                         <TableCell align="right">
                           <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                            {group.slug === 'cms' && (
+                              <Tooltip title={
+                                ['Đã xuất bản', 'Đang chạy', 'Tốt'].includes(String(row[statusKey]))
+                                  ? 'Mở trang đã xuất bản trên website'
+                                  : 'Chỉ có thể xem trước nội dung đã xuất bản'
+                              }>
+                                <IconButton
+                                  size="small"
+                                  disabled={!['Đã xuất bản', 'Đang chạy', 'Tốt'].includes(String(row[statusKey]))}
+                                  component={RouterLink}
+                                  href={
+                                    module.slug === 'blog'
+                                      ? `/sofa2/blog/${String(row.slug ?? '')}`
+                                      : module.slug === 'static-pages'
+                                        ? canonicalCmsSlug('static-pages', row.slug, row.title)
+                                        : clientPath
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Iconify icon="solar:link-circle-bold-duotone" width={18} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                             <Tooltip title="Xem chi tiết">
                               <IconButton size="small" onClick={() => setDetail(row)}>
                                 <Iconify icon="solar:eye-bold-duotone" width={18} />
