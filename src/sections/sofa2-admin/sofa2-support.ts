@@ -23,7 +23,8 @@ const schema = (
   titleKey: string,
   statusOptions: string[],
   fields: Sofa2CmsField[],
-  clientPath = '/sofa2/support'
+  clientPath = '/sofa2/support',
+  statusToggle = true
 ): Sofa2CmsSchema => ({
   clientPath,
   entity,
@@ -32,6 +33,7 @@ const schema = (
   statusOptions,
   defaultStatus: statusOptions[1] ?? statusOptions[0],
   publishLabel: statusOptions[0],
+  statusToggle,
   fields: [
     ...fields,
     f('status', 'Trạng thái', 'select', 'display', { required: true, options: statusOptions }),
@@ -61,6 +63,20 @@ export const SOFA2_SUPPORT_CATEGORIES = [
 
 const PUBLISHED = ['Đã xuất bản', 'Bản nháp', 'Tạm ẩn'];
 const TICKET_STATUSES = ['Đã giải quyết', 'Mới', 'Đang xử lý', 'Chờ khách phản hồi', 'Đã đóng'];
+
+/** Href cho kênh liên hệ được giới hạn để tránh scheme tuỳ ý từ dữ liệu CMS/localStorage. */
+export const isSofa2SupportHref = (value: unknown) => {
+  const href = String(value ?? '').trim();
+  if (!href || href === '#chat') return true;
+  if (href.startsWith('/') && !href.startsWith('//')) return true;
+  if (/^tel:[+\\d\\s().-]+$/i.test(href)) return true;
+  if (/^mailto:[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/i.test(href)) return true;
+  try {
+    return ['http:', 'https:'].includes(new URL(href).protocol);
+  } catch {
+    return false;
+  }
+};
 const PRIORITIES = ['Thấp', 'Trung bình', 'Cao', 'Khẩn cấp'];
 const AGENTS = ['Hà My (CSKH)', 'Quốc Đạt (Kỹ thuật)', 'Thanh Tâm (Kho vận)', 'Chưa phân công'];
 
@@ -191,7 +207,7 @@ export const SOFA2_SUPPORT_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('answer', 'Câu trả lời', 'textarea', 'content', { required: true, multiline: 4 }),
     f('category', 'Danh mục', 'select', 'display', { options: SOFA2_SUPPORT_CATEGORIES }),
     f('order', 'Thứ tự hiển thị', 'number', 'display'),
-  ], '/sofa2/support#faq'),
+  ], '/sofa2/faq'),
   'help-center': schema('bài viết', 'title', PUBLISHED, [
     f('title', 'Tiêu đề', 'text', 'content', { required: true }),
     f('summary', 'Mô tả ngắn', 'textarea', 'content', { required: true, multiline: 3 }),
@@ -209,7 +225,7 @@ export const SOFA2_SUPPORT_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('reply', 'Phản hồi của tư vấn viên', 'textarea', 'content', { multiline: 3 }),
     f('agent', 'Tư vấn viên', 'select', 'display', { options: AGENTS }),
     f('started', 'Bắt đầu', 'text', 'display'),
-  ], '/sofa2/support#chat'),
+  ], '/sofa2/support#chat', false),
   tickets: schema('ticket', 'subject', TICKET_STATUSES, [
     f('code', 'Mã ticket', 'text', 'content', { required: true }),
     f('customer', 'Khách hàng', 'text', 'content', { required: true }),
@@ -221,7 +237,7 @@ export const SOFA2_SUPPORT_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('priority', 'Ưu tiên', 'select', 'display', { options: PRIORITIES }),
     f('agent', 'Phụ trách', 'select', 'display', { options: AGENTS }),
     f('created', 'Ngày tạo', 'text', 'display'),
-  ], '/sofa2/support#ticket'),
+  ], '/sofa2/support#ticket', false),
   ...Object.fromEntries(ARTICLE_SLUGS.map((s) => [s, articleSchema('mục')])),
   channels: schema('kênh', 'title', ['Đang bật', 'Tạm tắt'], [
     f('title', 'Tên kênh', 'text', 'content', { required: true }),

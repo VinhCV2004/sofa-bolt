@@ -23,29 +23,33 @@ import { varAlpha } from 'src/theme/styles';
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
+import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { SOFA2_PAGE_IMAGES, SOFA2_COMPANY_INFO } from 'src/sections/sofa2/sofa2-pages-data';
-import { sofa2Visible, SOFA2_SUPPORT_ARTICLE_TABS } from 'src/sections/sofa2-admin/sofa2-support';
+import {
+  sofa2Visible,
+  isSofa2SupportHref,
+  SOFA2_SUPPORT_CATEGORIES,
+  SOFA2_SUPPORT_ARTICLE_TABS,
+} from 'src/sections/sofa2-admin/sofa2-support';
 
 // ----------------------------------------------------------------------
 
 const metadata = { title: 'Hỗ trợ khách hàng' };
 
-const OPTIONS = [
-  { icon: 'solar:phone-bold-duotone', title: 'Hotline', value: SOFA2_COMPANY_INFO.phone, href: 'tel:19006868', sub: 'Gọi ngay 8:00 - 20:00' },
-  { icon: 'solar:letter-bold-duotone', title: 'Email', value: SOFA2_COMPANY_INFO.email, href: 'mailto:support@sofa2.vn', sub: 'Phản hồi trong 24h' },
-  { icon: 'solar:chat-round-dots-bold-duotone', title: 'Chat trực tuyến', value: 'Chat với tư vấn viên', href: '#chat', sub: 'Hỗ trợ trực tiếp trên web' },
-];
+const CATEGORY_ICONS: Record<string, string> = {
+  'Đặt hàng & thanh toán': 'solar:cart-bold-duotone',
+  'Giao hàng & lắp đặt': 'solar:delivery-bold-duotone',
+  'Bảo hành & sửa chữa': 'solar:shield-check-bold-duotone',
+  'Đổi trả & hoàn tiền': 'solar:refresh-circle-bold-duotone',
+  'Chất liệu & bảo quản': 'solar:sofa-bold-duotone',
+  'Tài khoản': 'solar:user-bold-duotone',
+};
 
-const CATEGORIES = [
-  { icon: 'solar:cart-bold-duotone', label: 'Đặt hàng & thanh toán' },
-  { icon: 'solar:delivery-bold-duotone', label: 'Giao hàng & lắp đặt' },
-  { icon: 'solar:shield-check-bold-duotone', label: 'Bảo hành & sửa chữa' },
-  { icon: 'solar:water-bold-duotone', label: 'Vệ sinh sofa' },
-  { icon: 'solar:refresh-circle-bold-duotone', label: 'Đổi trả hàng' },
-  { icon: 'solar:card-bold-duotone', label: 'Trả góp' },
-];
+const CATEGORIES = SOFA2_SUPPORT_CATEGORIES.map((label) => ({
+  label,
+  icon: CATEGORY_ICONS[label] ?? 'solar:question-circle-bold-duotone',
+}));
 
 export default function Page() {
   const [sent, setSent] = useState(false);
@@ -72,9 +76,7 @@ export default function Page() {
   const [tab, setTab] = useState(0);
   const faqs = sofa2Visible(faqRows).map((r) => ({ question: String(r.question), answer: String(r.answer) }));
   const channels = sofa2Visible(channelRows, 'Đang bật');
-  const options = channels.length
-    ? channels.map((c) => ({ icon: String(c.icon || 'solar:chat-bold-duotone'), title: String(c.title), value: String(c.value), href: String(c.href ?? ''), sub: String(c.sub ?? '') }))
-    : OPTIONS;
+  const options = channels.map((c) => ({ icon: String(c.icon || 'solar:chat-bold-duotone'), title: String(c.title), value: String(c.value), href: isSofa2SupportHref(c.href) ? String(c.href ?? '') : '', sub: String(c.sub ?? '') }));
   const chatChannelIndex = options.findIndex(
     (option) => option.href === '#chat' || option.title.toLowerCase().includes('chat')
   );
@@ -185,6 +187,7 @@ export default function Page() {
       {/* Contact options */}
       <Box id="contact-options">
       <Sofa2Section>
+        {!options.length && <Alert severity="info" sx={{ mb: 3 }}>Hiện chưa có kênh liên hệ nào được bật. Vui lòng gửi yêu cầu qua biểu mẫu hỗ trợ bên dưới.</Alert>}
         <Grid container spacing={3}>
           {options.map((opt, index) => (
             <Grid key={opt.title} xs={12} md={4}>
