@@ -15,12 +15,12 @@ import Typography from '@mui/material/Typography';
 import { Iconify } from 'src/components/iconify';
 
 import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
-import { SOFA2_DEMO_CUSTOMER_ID } from 'src/sections/sofa2-admin/sofa2-customer';
+import { SOFA2_DEMO_CUSTOMER_ID, SOFA2_CUSTOMER_COMPLAINT_TYPES } from 'src/sections/sofa2-admin/sofa2-customer';
 import { Sofa2CustomerPortalNav, formatSofa2Date } from 'src/sections/sofa2/sofa2-customer-portal';
 import { Sofa2PageHero, Sofa2Section } from 'src/sections/sofa2/sofa2-page-hero';
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 
-const TYPES = ['Sản phẩm', 'Giao hàng', 'Lắp đặt', 'Dịch vụ', 'Thanh toán', 'Khác'];
+const TYPES = SOFA2_CUSTOMER_COMPLAINT_TYPES;
 
 export default function Page() {
   const complaintStore = useSofa2AdminRows('customer', 'complaints');

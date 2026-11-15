@@ -282,7 +282,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     fields.forEach((field) => {
       if (field.type === 'number') values[field.key] = 0;
       else if (field.type === 'switch')
-        values[field.key] = group.slug === 'dealer' && field.key === 'portalAccess' ? 'Không' : 'Có';
+        values[field.key] = group.slug === 'dealer' || group.slug === 'customer' ? 'Không' : 'Có';
       else if (field.key === statusKey) values[field.key] = defaultDraft;
       else if (field.type === 'date') values[field.key] = field.key === 'updated' ? sofa2Today() : '';
       else values[field.key] = '';
@@ -328,29 +328,106 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         next[field.key] = `Tối đa ${field.maxLength} ký tự (hiện ${value.length})`;
     });
     if (group.slug === 'customer') {
-      const uniqueKey =
-        module.slug === 'profiles'
-          ? 'customerId'
-          : ['customer-orders', 'warranties', 'complaints'].includes(module.slug)
-            ? 'code'
-            : undefined;
-      if (uniqueKey) {
-        const candidate = String(form.values[uniqueKey] ?? '').trim().toLowerCase();
-        const duplicate = candidate && rows.some((row, index) =>
+      const uniqueValue = (key: string, message = 'Giá trị này đã tồn tại.') => {
+        const candidate = String(form.values[key] ?? '').trim().toLowerCase();
+        if (candidate && rows.some((row, index) =>
           !(form.mode === 'edit' && index === form.index) &&
-          String(row[uniqueKey] ?? '').trim().toLowerCase() === candidate
-        );
-        if (duplicate) next[uniqueKey] = 'Giá trị này đã tồn tại.';
+          String(row[key] ?? '').trim().toLowerCase() === candidate
+        )) next[key] = message;
+      };
+      if (['dashboard', 'profiles'].includes(module.slug)) uniqueValue('customerId', 'Mã khách hàng đã được sử dụng.');
+      if (['customer-orders', 'warranties', 'complaints'].includes(module.slug)) uniqueValue('code', 'Mã này đã được sử dụng.');
+      if (module.slug === 'warranties') uniqueValue('serial', 'Serial đã được đăng ký bảo hành.');
+
+      const profiles = getSofa2AdminRows('customer', 'profiles');
+      const customerId = String(form.values.customerId ?? '').trim();
+      const profile = profiles.find((item) => String(item.customerId ?? '') === customerId);
+      if (form.mode === 'edit' && ['customer-orders', 'warranties', 'points', 'complaints'].includes(module.slug)
+        && customerId !== String(rows[form.index]?.customerId ?? '')) {
+        next.customerId = 'Không thể chuyển giao dịch sang hồ sơ khách khác sau khi tạo.';
+      }
+      if (module.slug === 'customer-orders' && form.mode === 'edit'
+        && String(form.values.code ?? '') !== String(rows[form.index]?.code ?? '')) {
+        const oldCode = String(rows[form.index]?.code ?? '');
+        const isLinked = getSofa2AdminRows('customer', 'warranties').some((item) => String(item.orderCode ?? '') === oldCode)
+          || getSofa2AdminRows('customer', 'complaints').some((item) => String(item.orderCode ?? '') === oldCode)
+          || getSofa2AdminRows('shopping', 'transactions').some((item) => String(item.order ?? '') === oldCode);
+        if (isLinked) next.code = 'Không thể đổi mã đơn đã được liên kết với bảo hành, khiếu nại hoặc thanh toán.';
+      }
+      if (!['dashboard', 'profiles'].includes(module.slug) && module.slug !== 'vouchers' && customerId && !profile) {
+        next.customerId = 'Mã khách hàng chưa có hồ sơ.';
+      }
+      if (module.slug === 'vouchers' && customerId && customerId !== 'Tất cả thành viên' && !profile) {
+        next.customerId = 'Chỉ phát voucher cho khách hàng đã có hồ sơ hoặc chọn tất cả thành viên.';
+      }
+      if (profile && String(form.values.customer ?? '').trim() && String(form.values.customer).trim() !== String(profile.name ?? '').trim()) {
+        next.customer = 'Tên khách hàng không khớp với mã hồ sơ đã chọn.';
+      }
+      if (module.slug === 'profiles') {
+        const email = String(form.values.email ?? '').trim().toLowerCase();
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Vui lòng nhập email hợp lệ.';
+        if (email && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+          && String(row.email ?? '').trim().toLowerCase() === email)) next.email = 'Email này đã thuộc hồ sơ khách hàng khác.';
+        const phone = String(form.values.phone ?? '').replace(/\D/g, '');
+        if (phone && (phone.length < 9 || phone.length > 15)) next.phone = 'Số điện thoại cần có từ 9 đến 15 chữ số.';
+        if (phone && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+          && String(row.phone ?? '').replace(/\D/g, '') === phone)) next.phone = 'Số điện thoại này đã thuộc hồ sơ khác.';
+        const birthday = toDateInput(form.values.birthday);
+        if (birthday && birthday > new Date().toISOString().slice(0, 10)) next.birthday = 'Ngày sinh không thể nằm trong tương lai.';
+        if (form.mode === 'edit' && String(form.values.customerId) !== String(rows[form.index]?.customerId)) {
+          next.customerId = 'Không thể đổi mã khách hàng sau khi tạo vì các giao dịch đang liên kết mã này.';
+        }
+      }
+      if (module.slug === 'customer-orders') {
+        if (Number(form.values.total) <= 0) next.total = 'Tổng tiền đơn hàng phải lớn hơn 0.';
+        if (Number(form.values.points) < 0) next.points = 'Điểm thưởng không thể âm; dùng giao dịch điểm riêng để trừ điểm.';
+        const date = toDateInput(form.values.orderDate);
+        if (date && date > new Date().toISOString().slice(0, 10)) next.orderDate = 'Ngày đặt không thể nằm trong tương lai.';
+      }
+      if (module.slug === 'warranties') {
+        const purchase = toDateInput(form.values.purchaseDate);
+        const expiry = toDateInput(form.values.expiry);
+        if (purchase && expiry && expiry < purchase) next.expiry = 'Ngày hết hạn phải sau ngày mua.';
+      }
+      if (module.slug === 'points') {
+        const points = Number(form.values.points);
+        if (!Number.isInteger(points) || points === 0) next.points = 'Điểm phải là số nguyên khác 0.';
+        if (!String(form.values.reason ?? '').trim()) next.reason = 'Cần ghi rõ lý do cộng/trừ điểm.';
+        if (points < 0 && String(form.values.status) === 'Đã ghi nhận') {
+          const balance = rows.reduce((total, row, index) => {
+            if (form.mode === 'edit' && index === form.index) return total;
+            if (String(row.customerId ?? '') !== customerId || String(row.status) !== 'Đã ghi nhận') return total;
+            const expiry = toDateInput(row.expiry);
+            return expiry && expiry < new Date().toISOString().slice(0, 10) ? total : total + Number(row.points || 0);
+          }, 0);
+          if (Math.abs(points) > balance) next.points = `Số dư khả dụng chỉ còn ${balance.toLocaleString('vi-VN')} điểm.`;
+        }
       }
       if (module.slug === 'vouchers') {
-        const code = String(form.values.code ?? '').trim().toLowerCase();
-        const customerId = String(form.values.customerId ?? '').trim().toLowerCase();
-        const duplicate = code && customerId && rows.some((row, index) =>
-          !(form.mode === 'edit' && index === form.index) &&
-          String(row.code ?? '').trim().toLowerCase() === code &&
-          String(row.customerId ?? '').trim().toLowerCase() === customerId
-        );
-        if (duplicate) next.code = 'Voucher này đã tồn tại cho khách hàng.';
+        const code = String(form.values.code ?? '').trim().toUpperCase();
+        const recipient = String(form.values.customerId ?? '').trim().toLowerCase();
+        if (code && !/^[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(code)) next.code = 'Mã chỉ gồm chữ in hoa, số và dấu gạch nối.';
+        if (code && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+          && String(row.code ?? '').trim().toLowerCase() === code.toLowerCase()
+          && String(row.customerId ?? '').trim().toLowerCase() === recipient)) next.code = 'Mã voucher đã tồn tại cho khách này.';
+        const value = String(form.values.value ?? '').trim();
+        const percentage = value.match(/^(\d+(?:[.,]\d+)?)\s*%$/);
+        const amount = value.replace(/[^\d]/g, '');
+        if (!percentage && !amount && !/miễn phí\s*(ship|vận chuyển)/i.test(value)) next.value = 'Nhập mức giảm như 10%, 500.000đ hoặc Miễn phí ship.';
+        if (percentage && (Number(percentage[1].replace(',', '.')) <= 0 || Number(percentage[1].replace(',', '.')) > 100)) next.value = 'Phần trăm giảm phải lớn hơn 0 và không quá 100%.';
+        if (Number(form.values.minOrder) < 0) next.minOrder = 'Đơn tối thiểu không thể âm.';
+        if (Number(form.values.quantity) < 0) next.quantity = 'Số lượng không thể âm.';
+        if (Number(form.values.pointsCost) < 0) next.pointsCost = 'Điểm đổi không thể âm.';
+        const start = toDateInput(form.values.startDate);
+        const end = toDateInput(form.values.endDate);
+        if (start && end && end < start) next.endDate = 'Ngày hết hạn phải bằng hoặc sau ngày bắt đầu.';
+      }
+      if (module.slug === 'complaints') {
+        const orderCode = String(form.values.orderCode ?? '').trim();
+        if (orderCode) {
+          const order = getSofa2AdminRows('customer', 'customer-orders').find((item) => String(item.code ?? '') === orderCode);
+          if (!order || String(order.customerId ?? '') !== customerId) next.orderCode = 'Đơn liên quan không thuộc khách hàng đã chọn.';
+        }
       }
     }
     if (group.slug === 'hr') {
@@ -871,6 +948,21 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   };
 
   const catalogDeleteBlockReason = (row: AdminRow) => {
+    if (group.slug === 'customer') {
+      const customerId = String(row.customerId ?? '');
+      const linked = (moduleName: string, predicate: (item: AdminRow) => boolean) =>
+        getSofa2AdminRows('customer', moduleName).some(predicate);
+      if (module.slug === 'dashboard') return 'Dashboard là bản tổng hợp khách hàng; hãy quản lý hồ sơ tại mục Hồ sơ.';
+      if (module.slug === 'profiles' && ['customer-orders', 'warranties', 'points', 'complaints', 'vouchers'].some((name) =>
+        linked(name, (item) => String(item.customerId ?? '') === customerId)
+      )) return 'Khách hàng còn giao dịch liên kết; hãy lưu trữ hồ sơ thay vì xoá.';
+      if (module.slug === 'customer-orders' && (
+        linked('warranties', (item) => String(item.orderCode ?? '') === String(row.code ?? ''))
+        || getSofa2AdminRows('shopping', 'transactions').some((item) => String(item.order ?? '') === String(row.code ?? ''))
+      )) return 'Đơn hàng có giao dịch thanh toán hoặc phiếu bảo hành liên kết; hãy cập nhật trạng thái thay vì xoá.';
+      if (module.slug === 'points' && String(row.status) === 'Đã ghi nhận') return 'Giao dịch điểm đã ghi nhận; hãy tạo giao dịch điều chỉnh thay vì xoá lịch sử.';
+      return '';
+    }
     if (group.slug !== 'catalog') return '';
     const linked = (moduleName: string, predicate: (item: AdminRow) => boolean) =>
       getSofa2AdminRows('catalog', moduleName).some(predicate);
@@ -921,7 +1013,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     const skipped = selected.length - removable.length;
     if (!removable.length) {
       setBulkConfirm(false);
-      setToast('Không thể xoá: một số bản ghi còn liên kết với sản phẩm, tồn kho hoặc bảng giá.');
+      setToast(group.slug === 'customer'
+        ? 'Không thể xoá các bản ghi đã được dùng; hãy cập nhật trạng thái hoặc lưu trữ thay vì xoá lịch sử.'
+        : 'Không thể xoá: một số bản ghi còn liên kết với sản phẩm, tồn kho hoặc bảng giá.');
       return;
     }
     const deletedCount = removable.length;
@@ -1000,6 +1094,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   const renderField = (field: Sofa2CmsField) => {
     const value = form.values[field.key] ?? '';
     const error = errors[field.key];
+    const isCustomerLookup = group.slug === 'customer'
+      && !['dashboard', 'profiles'].includes(module.slug)
+      && ['customerId', 'customer', 'orderCode'].includes(field.key);
     const fieldOptions = (() => {
       if (field.key === 'dealer' && group.slug === 'dealer') {
         return Array.from(
@@ -1020,6 +1117,26 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           .map((row) => String(row.role ?? '').trim())
           .filter(Boolean);
         return Array.from(new Set([...activeRoles, String(value).trim()])).filter(Boolean);
+      }
+      if (group.slug === 'customer') {
+        const profiles = getSofa2AdminRows('customer', 'profiles');
+        if (field.key === 'customerId') {
+          const ids = profiles.map((row) => String(row.customerId ?? '').trim()).filter(Boolean);
+          if (module.slug === 'vouchers') ids.unshift('Tất cả thành viên');
+          return Array.from(new Set([...ids, String(value).trim()])).filter(Boolean);
+        }
+        if (field.key === 'customer') {
+          const names = profiles.map((row) => String(row.name ?? '').trim()).filter(Boolean);
+          if (module.slug === 'vouchers') names.unshift('Tất cả thành viên');
+          return Array.from(new Set([...names, String(value).trim()])).filter(Boolean);
+        }
+        if (field.key === 'orderCode') {
+          const customerId = String(form.values.customerId ?? '');
+          const codes = getSofa2AdminRows('customer', 'customer-orders')
+            .filter((row) => !customerId || String(row.customerId ?? '') === customerId)
+            .map((row) => String(row.code ?? '').trim()).filter(Boolean);
+          return Array.from(new Set([...codes, String(value).trim()])).filter(Boolean);
+        }
       }
       if (group.slug === 'catalog') {
         const products = getSofa2AdminRows('catalog', 'products');
@@ -1055,7 +1172,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           key={field.key}
           control={
             <Switch
-              checked={String(value) === 'Có'}
+              checked={isPortalEnabled(value)}
               onChange={(e) => setValue(field.key, e.target.checked ? 'Có' : 'Không')}
             />
           }
@@ -1068,7 +1185,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       <TextField
         key={field.key}
         fullWidth
-        select={field.type === 'select'}
+        select={field.type === 'select' || isCustomerLookup}
         multiline={field.type === 'textarea'}
         minRows={field.multiline}
         type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
@@ -1083,7 +1200,22 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
             ? `${String(value).length}/${field.maxLength} ký tự${field.helper ? ` — ${field.helper}` : ''}`
             : field.helper)
         }
-        onChange={(e) => setValue(field.key, e.target.value)}
+        onChange={(e) => {
+          const nextValue = e.target.value;
+          setValue(field.key, nextValue);
+          if (group.slug === 'customer' && field.key === 'customerId') {
+            const profile = getSofa2AdminRows('customer', 'profiles')
+              .find((item) => String(item.customerId ?? '') === String(nextValue));
+            if (profile) setValue('customer', String(profile.name ?? ''));
+            else if (nextValue === 'Tất cả thành viên') setValue('customer', 'Tất cả thành viên');
+          }
+          if (group.slug === 'customer' && field.key === 'customer') {
+            const profile = getSofa2AdminRows('customer', 'profiles')
+              .find((item) => String(item.name ?? '') === String(nextValue));
+            if (profile) setValue('customerId', String(profile.customerId ?? ''));
+            else if (nextValue === 'Tất cả thành viên') setValue('customerId', 'Tất cả thành viên');
+          }
+        }}
         onBlur={() => {
           if (
             field.key === 'slug' &&
