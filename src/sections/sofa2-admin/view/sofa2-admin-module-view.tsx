@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Navigate, useLocation, useParams } from 'react-router-dom';
+import { Navigate, useParams, useLocation } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -31,11 +31,12 @@ import TablePagination from '@mui/material/TablePagination';
 
 import { Iconify } from 'src/components/iconify';
 
-import { type AdminRow, useSofa2AdminRows } from '../sofa2-admin-store';
 import { getSofa2HrSchema } from '../sofa2-hr';
 import { useSofa2HrT } from '../sofa2-hr-i18n';
 import { getSofa2CmsSchema } from '../sofa2-cms';
+import { getSofa2CatalogSchema } from '../sofa2-catalog';
 import { Sofa2AdminCmsView } from './sofa2-admin-cms-view';
+import { type AdminRow, useSofa2AdminRows } from '../sofa2-admin-store';
 import { Sofa2AdminLayout, SOFA2_ADMIN_THEME } from './sofa2-admin-layout';
 import { SOFA2_ADMIN_ROOT, SOFA2_ADMIN_GROUPS, findSofa2AdminModule } from '../sofa2-admin-data';
 
@@ -116,6 +117,7 @@ export function Sofa2AdminModuleView() {
   }
 
   const hrSchema = group.slug === 'hr' ? getSofa2HrSchema(module.slug) : undefined;
+  const catalogSchema = group.slug === 'catalog' ? getSofa2CatalogSchema(module.slug) : undefined;
   const cmsSchema = group.slug === 'cms' ? getSofa2CmsSchema(module.slug) : undefined;
   if (hrSchema) {
     const translatedGroup = {
@@ -144,6 +146,9 @@ export function Sofa2AdminModuleView() {
         schema={translatedSchema}
       />
     );
+  }
+  if (catalogSchema) {
+    return <Sofa2AdminCmsView group={group} module={module} schema={catalogSchema} />;
   }
   if (cmsSchema) {
     return (

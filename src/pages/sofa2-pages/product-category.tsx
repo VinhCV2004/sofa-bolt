@@ -18,11 +18,12 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { formatSofa2Price } from 'src/sections/sofa2/sofa2-pages-data';
 import {
-  SOFA2_PRODUCTS,
-  formatSofa2Price,
-  SOFA2_PRODUCT_CATEGORIES,
-} from 'src/sections/sofa2/sofa2-pages-data';
+  useSofa2CatalogProducts,
+  useSofa2CatalogCategories,
+  filterSofa2CatalogProducts,
+} from 'src/sections/sofa2/sofa2-catalog-client';
 
 // ----------------------------------------------------------------------
 
@@ -36,26 +37,27 @@ const FILTER_GROUPS = [
 
 export default function Page() {
   const { slug = '' } = useParams();
+  const { products: allProducts } = useSofa2CatalogProducts();
+  const categories = useSofa2CatalogCategories();
+  const selectedCategory = Object.values(categories).flat().find((category) => category.slug === slug);
 
   // find matching label across all filter groups
   const matchLabel = FILTER_GROUPS.reduce<string | null>((result, group) => {
     if (result) return result;
-    const found = SOFA2_PRODUCT_CATEGORIES[group.key].find((c) => c.slug === slug);
+    const found = categories[group.key].find((c) => c.slug === slug);
     return found ? found.label : null;
   }, null);
 
-  // filter products by category or style matching slug
-  const filtered = slug
-    ? SOFA2_PRODUCTS.filter((p) => p.category === slug || p.style === slug)
-    : SOFA2_PRODUCTS;
-
-  const products = filtered.length > 0 ? filtered : SOFA2_PRODUCTS;
+  const products = filterSofa2CatalogProducts(allProducts, categories, slug);
   const label = matchLabel ?? 'Tất cả sản phẩm';
 
   return (
     <>
       <Helmet>
-        <title>{label} - LUXE Sofa</title>
+        <title>{selectedCategory?.metaTitle || `${label} - LUXE Sofa`}</title>
+        {selectedCategory?.metaDescription && <meta name="description" content={selectedCategory.metaDescription} />}
+        <meta name="robots" content={selectedCategory?.indexable === false ? 'noindex, nofollow' : 'index, follow'} />
+        <link rel="canonical" href={`/sofa2/products/category/${slug}`} />
       </Helmet>
 
       <Sofa2PageHero
@@ -76,7 +78,7 @@ export default function Page() {
                   <Stack key={group.key} spacing={1}>
                     <Typography variant="subtitle2">{group.label}</Typography>
                     <Stack spacing={0.5}>
-                      {SOFA2_PRODUCT_CATEGORIES[group.key].map((item) => (
+                      {categories[group.key].map((item) => (
                         <Button
                           key={item.slug}
                           component={RouterLink}
@@ -96,6 +98,11 @@ export default function Page() {
             {/* Products */}
             <Grid xs={12} md={9}>
               <Grid container spacing={3}>
+                {!products.length && (
+                  <Grid xs={12}>
+                    <Typography color="text.secondary">Danh mục này hiện chưa có sản phẩm được xuất bản.</Typography>
+                  </Grid>
+                )}
                 {products.map((product) => (
                   <Grid key={product.id} xs={12} sm={6} md={4}>
                     <Stack

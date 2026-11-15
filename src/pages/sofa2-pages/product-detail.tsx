@@ -9,9 +9,11 @@ import Tabs from '@mui/material/Tabs';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Rating from '@mui/material/Rating';
+import MenuItem from '@mui/material/MenuItem';
 import Grid from '@mui/material/Unstable_Grid2';
 import Container from '@mui/material/Container';
 import { useTheme } from '@mui/material/styles';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
@@ -22,20 +24,18 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import {
-  SOFA2_PRODUCTS,
-  formatSofa2Price,
-} from 'src/sections/sofa2/sofa2-pages-data';
+import { formatSofa2Price } from 'src/sections/sofa2/sofa2-pages-data';
 import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { findSofa2CatalogProduct, useSofa2CatalogProducts } from 'src/sections/sofa2/sofa2-catalog-client';
+import {
+  SOFA2_PORTAL_CUSTOMER_ID,
+  SOFA2_PORTAL_CUSTOMER_NAME,
+} from 'src/sections/sofa2/sofa2-customer-portal';
 import {
   addSofa2CartLine,
   makeSofa2CartRow,
   parseSofa2CartItems,
 } from 'src/sections/sofa2/sofa2-commerce-store';
-import {
-  SOFA2_PORTAL_CUSTOMER_ID,
-  SOFA2_PORTAL_CUSTOMER_NAME,
-} from 'src/sections/sofa2/sofa2-customer-portal';
 
 // ----------------------------------------------------------------------
 
@@ -59,8 +59,10 @@ const TABS = [
 export default function Page() {
   const theme = useTheme();
   const { id = '' } = useParams();
+  const { products } = useSofa2CatalogProducts();
   const [tab, setTab] = useState('info');
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedVariantSku, setSelectedVariantSku] = useState('');
   const [added, setAdded] = useState(false);
   const cartStore = useSofa2AdminRows('shopping', 'cart');
   const profileStore = useSofa2AdminRows('customer', 'profiles');
@@ -68,7 +70,9 @@ export default function Page() {
     (row) => String(row.customerId) === SOFA2_PORTAL_CUSTOMER_ID
   );
 
-  const product = SOFA2_PRODUCTS.find((p) => p.id === id);
+  const product = findSofa2CatalogProduct(products, id);
+  const selectedVariant = product?.variants.find((variant) => String(variant.sku ?? '') === selectedVariantSku);
+  const variantUnavailable = selectedVariant ? Number(selectedVariant.stock ?? 0) <= 0 : false;
 
   if (!product) {
     return (
@@ -83,18 +87,19 @@ export default function Page() {
     );
   }
 
-  const related = SOFA2_PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
+  const related = products.filter((p) => p.id !== product.id).slice(0, 4);
   const images = product.images?.length ? product.images : [product.image];
   const addToCart = () => {
     const cartIndex = cartStore.rows.findIndex(
       (row) => String(row.customerId) === SOFA2_PORTAL_CUSTOMER_ID
     );
     const existing = cartIndex >= 0 ? cartStore.rows[cartIndex] : undefined;
+    if (!product.available || variantUnavailable) return;
     const nextItems = addSofa2CartLine(parseSofa2CartItems(existing?.items), {
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
+      id: String(selectedVariant?.sku ?? product.id),
+      name: selectedVariant ? `${product.name} — ${selectedVariant.option}` : product.name,
+      price: Number(selectedVariant?.price ?? product.price),
+      image: String(selectedVariant?.image ?? product.image),
       material: product.material,
       qty: 1,
     });
@@ -115,7 +120,12 @@ export default function Page() {
 
   return (
     <>
-      <Helmet><title>{product.name} - LUXE Sofa</title></Helmet>
+      <Helmet>
+        <title>{product.metaTitle || `${product.name} - LUXE Sofa`}</title>
+        <meta name="description" content={product.metaDescription || product.description} />
+        <meta name="robots" content={product.indexable ? 'index, follow' : 'noindex, nofollow'} />
+        <link rel="canonical" href={`/sofa2/products/${product.id}`} />
+      </Helmet>
 
       <Sofa2PageHero overline="Chi tiết sản phẩm" title={product.name} subtitle={product.description} image={product.image} />
 
@@ -151,7 +161,7 @@ export default function Page() {
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>{product.rating} ({product.reviews} đánh giá)</Typography>
                 </Stack>
                 <Stack direction="row" alignItems="center" spacing={2}>
-                  <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'fontWeightBold' }}>{formatSofa2Price(product.price)}</Typography>
+                  <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'fontWeightBold' }}>{formatSofa2Price(Number(selectedVariant?.price ?? product.price))}</Typography>
                   {product.oldPrice && (
                     <Typography variant="h6" sx={{ color: 'text.disabled', textDecoration: 'line-through' }}>{formatSofa2Price(product.oldPrice)}</Typography>
                   )}
@@ -162,11 +172,39 @@ export default function Page() {
                 <Stack spacing={1}>
                   <Typography variant="subtitle2">Màu sắc</Typography>
                   <Stack direction="row" spacing={1.5}>
-                    {(product.colors ?? []).map((color) => (
-                      <Box key={color} title={color} sx={{ width: 28, height: 28, borderRadius: '50%', border: (t) => `2px solid ${t.vars.palette.divider}`, bgcolor: COLOR_SWATCH[color] ?? '#ccc', cursor: 'pointer' }} />
-                    ))}
+                    {(product.colors ?? []).map((color) => {
+                      const variant = product.variants.find((item) => String(item.option ?? '').toLowerCase().includes(color.toLowerCase()));
+                      return (
+                        <Box
+                          key={color}
+                          title={color}
+                          onClick={() => setSelectedVariantSku(String(variant?.sku ?? ''))}
+                          sx={{ width: 28, height: 28, borderRadius: '50%', border: (t) => `2px solid ${selectedVariant?.sku === variant?.sku ? t.vars.palette.primary.main : t.vars.palette.divider}`, bgcolor: COLOR_SWATCH[color] ?? '#ccc', cursor: 'pointer' }}
+                        />
+                      );
+                    })}
                   </Stack>
                 </Stack>
+                {product.variants.length > 0 && (
+                  <TextField
+                    select
+                    fullWidth
+                    label="Phiên bản sản phẩm"
+                    value={selectedVariantSku}
+                    onChange={(event) => setSelectedVariantSku(event.target.value)}
+                  >
+                    <MenuItem value="">Chọn sau / mặc định</MenuItem>
+                    {product.variants.map((variant) => (
+                      <MenuItem key={String(variant.sku)} value={String(variant.sku)}>
+                        {String(variant.option ?? variant.sku)} — {formatSofa2Price(Number(variant.price ?? product.price))} — tồn {Number(variant.stock ?? 0)}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+
+                <Typography color={product.available && !variantUnavailable ? 'success.main' : 'error.main'} variant="body2">
+                  {variantUnavailable || !product.available ? 'Sản phẩm hiện đã hết hàng.' : `Còn ${selectedVariant ? Number(selectedVariant.stock ?? 0) : product.stock} sản phẩm có thể đặt.`}
+                </Typography>
 
                 {/* Add to cart */}
                 <Stack direction="row" spacing={2}>
@@ -176,8 +214,9 @@ export default function Page() {
                     color={added ? 'success' : 'primary'}
                     startIcon={<Iconify icon={added ? 'solar:check-circle-bold-duotone' : 'solar:cart-bold-duotone'} />}
                     onClick={addToCart}
+                    disabled={!product.available || variantUnavailable}
                   >
-                    {added ? 'Đã thêm vào giỏ' : 'Thêm vào giỏ'}
+                    {added ? 'Đã thêm vào giỏ' : !product.available || variantUnavailable ? 'Hết hàng' : 'Thêm vào giỏ'}
                   </Button>
                   <Button component={RouterLink} href="/sofa2/showrooms" size="large" variant="outlined" startIcon={<Iconify icon="solar:phone-bold-duotone" />}>
                     Tư vấn miễn phí

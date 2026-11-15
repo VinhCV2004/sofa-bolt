@@ -11,6 +11,8 @@ import Grid from '@mui/material/Unstable_Grid2';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
+import { RouterLink } from 'src/routes/components';
+
 import { fCurrency } from 'src/utils/format-number';
 
 import { varAlpha } from 'src/theme/styles';
@@ -19,11 +21,14 @@ import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
-import { SOFA2_PRODUCTS } from './sofa2-data';
+import { useSofa2CatalogProducts } from './sofa2-catalog-client';
 
 // ----------------------------------------------------------------------
 
 export function Sofa2Products({ sx, ...other }: BoxProps) {
+  const { products } = useSofa2CatalogProducts();
+  const featuredProducts = products.slice(0, 6);
+
   return (
     <Box component="section" id="products" sx={{ py: { xs: 8, md: 12 }, ...sx }} {...other}>
       <Container component={MotionViewport}>
@@ -44,7 +49,7 @@ export function Sofa2Products({ sx, ...other }: BoxProps) {
         </Stack>
 
         <Grid container spacing={3}>
-          {SOFA2_PRODUCTS.map((product, index) => (
+          {featuredProducts.map((product, index) => (
             <Grid key={product.name} xs={12} sm={6} md={4}>
               <Card
                 component={m.div}
@@ -77,7 +82,7 @@ export function Sofa2Products({ sx, ...other }: BoxProps) {
                     }}
                   />
                   <Label
-                    color={product.badge.includes('-') ? 'error' : 'primary'}
+                    color={(product.badge ?? '').includes('-') ? 'error' : 'primary'}
                     sx={{ top: 12, left: 12, position: 'absolute' }}
                   >
                     {product.badge}
@@ -120,13 +125,15 @@ export function Sofa2Products({ sx, ...other }: BoxProps) {
                     </Typography>
                   </Stack>
                   <Button
+                    component={RouterLink}
+                    href={`/sofa2/products/${product.id}`}
                     fullWidth
                     size="medium"
                     variant="soft"
                     color="primary"
                     startIcon={<Iconify icon="solar:cart-large-2-bold-duotone" />}
                   >
-                    Thêm vào giỏ
+                    Xem sản phẩm
                   </Button>
                 </Stack>
               </Card>

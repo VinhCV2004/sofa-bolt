@@ -159,6 +159,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   const { rows: accessRoles } = useSofa2AdminRows('access', 'roles', {
     load: group.slug === 'access' && module.slug === 'users',
   });
+  const { rows: catalogProducts } = useSofa2AdminRows('catalog', 'products', {
+    load: group.slug === 'catalog' && module.slug === 'categories',
+  });
 
   const [dealerLoading, setDealerLoading] = useState(group.slug === 'dealer');
   const [accessSaveStarted, setAccessSaveStarted] = useState(false);
@@ -244,7 +247,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       : schema.fields;
 
   const publishLabel = schema.publishLabel ?? 'Xuất bản';
-  const defaultDraft = schema.defaultStatus ?? statusOptions[1] ?? 'Bản nháp';
+  const defaultDraft = schema.defaultStatus ?? (statusOptions.includes('Bản nháp') ? 'Bản nháp' : statusOptions[1] ?? 'Bản nháp');
   const published = statusOptions[0];
   const hideClientLink = schema.hideClientLink ?? false;
   const showStatusToggle = schema.statusToggle !== false;
@@ -296,7 +299,16 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   const openEdit = (index: number) => {
     if (!canEdit) return;
     setErrors({});
-    setForm({ open: true, mode: 'edit', index, values: { ...emptyValues(), ...rows[index] } });
+    const existing = rows[index];
+    const categoryProductCount = module.slug === 'categories'
+      ? catalogProducts.filter((product) => String(product.category ?? '').toLowerCase() === String(existing.name ?? '').toLowerCase()).length
+      : undefined;
+    setForm({
+      open: true,
+      mode: 'edit',
+      index,
+      values: { ...emptyValues(), ...existing, ...(categoryProductCount !== undefined ? { products: categoryProductCount } : {}) },
+    });
   };
 
   const setValue = (key: string, value: string | number) =>
@@ -524,6 +536,99 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         }
       }
     }
+    if (group.slug === 'catalog') {
+      const unique = (key: string, message = 'Giá trị này đã tồn tại.') => {
+        const candidate = String(form.values[key] ?? '').trim().toLowerCase();
+        if (candidate && rows.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index) &&
+          String(row[key] ?? '').trim().toLowerCase() === candidate
+        )) next[key] = message;
+      };
+      const products = getSofa2AdminRows('catalog', 'products');
+      const categories = getSofa2AdminRows('catalog', 'categories');
+      const variants = getSofa2AdminRows('catalog', 'variants');
+      const product = products.find((row) =>
+        String(row.name ?? '').trim().toLowerCase() === String(form.values.product ?? '').trim().toLowerCase()
+        || String(row.sku ?? '').trim().toLowerCase() === String(form.values.product ?? '').trim().toLowerCase()
+      );
+
+      if (module.slug === 'categories') {
+        unique('name', 'Tên danh mục đã tồn tại.');
+        const slug = sofa2Slugify(String(form.values.slug || form.values.name));
+        if (categories.some((row, index) => !(form.mode === 'edit' && index === form.index)
+          && sofa2Slugify(String(row.slug || row.name)) === slug)) next.slug = 'Slug danh mục đã được sử dụng.';
+        const original = form.mode === 'edit' ? rows[form.index] : undefined;
+        if (original && String(original.name ?? '') !== String(form.values.name ?? '')
+          && products.some((row) => String(row.category ?? '').toLowerCase() === String(original.name ?? '').toLowerCase())) {
+          next.name = 'Danh mục đang được sản phẩm sử dụng; hãy chuyển sản phẩm sang danh mục khác trước khi đổi tên.';
+        }
+        if (String(form.values.image ?? '').trim() && !isSafeCmsUrl(form.values.image)) next.image = 'Ảnh cần là URL http(s) hoặc đường dẫn nội bộ an toàn.';
+      }
+      if (module.slug === 'products') {
+        unique('sku', 'Mã SKU đã được sử dụng.');
+        unique('name', 'Tên sản phẩm đã tồn tại.');
+        const previousSku = form.mode === 'edit' ? String(rows[form.index]?.sku ?? '') : '';
+        const previousName = form.mode === 'edit' ? String(rows[form.index]?.name ?? '') : '';
+        const nextSku = String(form.values.sku ?? '').trim();
+        if (previousName && previousName !== String(form.values.name ?? '') && variants.some((variant) =>
+          String(variant.product ?? '').trim().toLowerCase() === previousName.trim().toLowerCase()
+        )) next.name = 'Không thể đổi tên sản phẩm khi biến thể đang tham chiếu sản phẩm này.';
+        if (previousSku && previousSku !== nextSku) {
+          const linked = [...variants, ...getSofa2AdminRows('catalog', 'inventory'), ...getSofa2AdminRows('catalog', 'pricing')]
+            .some((row) => String(row.sku ?? '').toLowerCase() === previousSku.toLowerCase());
+          if (linked) next.sku = 'Không thể đổi SKU khi đã có biến thể, tồn kho hoặc bảng giá liên kết.';
+        }
+        const sku = String(form.values.sku ?? '').trim();
+        if (sku && !/^[A-Za-z0-9][A-Za-z0-9._-]{2,39}$/.test(sku)) next.sku = 'SKU cần dài 3–40 ký tự, chỉ gồm chữ, số, dấu chấm, gạch ngang hoặc gạch dưới.';
+        if (Number(form.values.price) <= 0) next.price = 'Giá bán phải lớn hơn 0.';
+        if (Number(form.values.compareAt) > 0 && Number(form.values.compareAt) < Number(form.values.price)) next.compareAt = 'Giá niêm yết phải bằng hoặc cao hơn giá bán.';
+        if (String(form.values.image ?? '').trim() && !isSafeCmsUrl(form.values.image)) next.image = 'Ảnh cần là URL http(s) hoặc đường dẫn nội bộ an toàn.';
+        const gallery = String(form.values.gallery ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+        if (gallery.some((image) => !isSafeCmsUrl(image))) next.gallery = 'Mọi ảnh trong thư viện phải là URL http(s) hoặc đường dẫn nội bộ an toàn.';
+      }
+      if (module.slug === 'attributes') {
+        unique('name', 'Tên thuộc tính đã tồn tại.');
+        const code = sofa2Slugify(String(form.values.code || form.values.name));
+        if (rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+          && sofa2Slugify(String(row.code || row.name)) === code)) next.code = 'Mã thuộc tính đã được sử dụng.';
+        if (!String(form.values.valueList ?? '').split(',').map((item) => item.trim()).filter(Boolean).length) next.valueList = 'Hãy nhập ít nhất một giá trị thuộc tính.';
+      }
+      if (module.slug === 'variants') {
+        unique('sku', 'SKU biến thể đã được sử dụng.');
+        if (!product) next.product = 'Hãy chọn một sản phẩm đang tồn tại.';
+        if (!String(form.values.option ?? '').trim()) next.option = 'Hãy mô tả tổ hợp thuộc tính của biến thể.';
+        if (Number(form.values.stock) < 0) next.stock = 'Tồn kho không thể âm.';
+        if (Number(form.values.price) <= 0) next.price = 'Giá biến thể phải lớn hơn 0.';
+      }
+      if (module.slug === 'inventory') {
+        const sku = String(form.values.sku ?? '').trim().toLowerCase();
+        const duplicate = rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+          && String(row.sku ?? '').trim().toLowerCase() === sku
+          && String(row.warehouse ?? '').trim().toLowerCase() === String(form.values.warehouse ?? '').trim().toLowerCase());
+        if (duplicate) next.warehouse = 'SKU này đã có dòng tồn kho tại kho đã chọn.';
+        if (Number(form.values.stock) < 0 || Number(form.values.reserved) < 0) next.stock = 'Tồn kho và số lượng giữ không thể âm.';
+        if (Number(form.values.reserved) > Number(form.values.stock)) next.reserved = 'Số lượng đang giữ không thể lớn hơn tồn thực tế.';
+        if (Number(form.values.minStock) < 0) next.minStock = 'Ngưỡng cảnh báo không thể âm.';
+        const validSku = products.some((row) => String(row.sku ?? '').toLowerCase() === sku)
+          || variants.some((row) => String(row.sku ?? '').toLowerCase() === sku);
+        if (sku && !validSku) next.sku = 'SKU phải thuộc một sản phẩm hoặc biến thể đã tạo.';
+      }
+      if (module.slug === 'pricing') {
+        const sku = String(form.values.sku ?? '').trim().toLowerCase();
+        const priceList = String(form.values.priceList ?? '').trim().toLowerCase();
+        if (rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+          && String(row.sku ?? '').trim().toLowerCase() === sku
+          && String(row.priceList ?? '').trim().toLowerCase() === priceList)) next.priceList = 'SKU này đã có bảng giá cùng loại.';
+        if (Number(form.values.list) <= 0 || Number(form.values.sale) <= 0) next.sale = 'Giá niêm yết và giá bán phải lớn hơn 0.';
+        if (Number(form.values.sale) > Number(form.values.list)) next.sale = 'Giá bán không thể cao hơn giá niêm yết.';
+        const validSku = products.some((row) => String(row.sku ?? '').toLowerCase() === sku)
+          || variants.some((row) => String(row.sku ?? '').toLowerCase() === sku);
+        if (sku && !validSku) next.sku = 'SKU phải thuộc một sản phẩm hoặc biến thể đã tạo.';
+        const start = toDateInput(form.values.startDate);
+        const end = toDateInput(form.values.endDate);
+        if (start && end && end < start) next.endDate = 'Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.';
+      }
+    }
     if (group.slug === 'cms') {
       const isBlog = module.slug === 'blog';
       const isStatic = module.slug === 'static-pages';
@@ -654,6 +759,42 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       const slideCount = String(clean.slidesData ?? '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean).length;
       if (slideCount) clean.slides = slideCount;
     }
+    if (group.slug === 'catalog') {
+      const makeId = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      if (['categories', 'products'].includes(module.slug)) {
+        const title = String(clean[module.slug === 'products' ? 'name' : 'name'] ?? '');
+        clean.slug = sofa2Slugify(String(clean.slug || title));
+      }
+      if (module.slug === 'categories') {
+        clean.products = getSofa2AdminRows('catalog', 'products').filter(
+          (row) => String(row.category ?? '').toLowerCase() === String(clean.name ?? '').toLowerCase()
+        ).length;
+      }
+      if (module.slug === 'products' && form.mode === 'create' && !clean.id) {
+        clean.id = `sp-${makeId()}`;
+      }
+      if (module.slug === 'attributes') {
+        clean.code = sofa2Slugify(String(clean.code || clean.name));
+        clean.values = String(clean.valueList ?? '').split(',').map((item) => item.trim()).filter(Boolean).length;
+      }
+      if (module.slug === 'inventory') {
+        const available = Number(clean.stock) - Number(clean.reserved);
+        clean.status = available <= 0 ? 'Hết hàng' : available <= Number(clean.minStock) ? 'Sắp hết' : 'Đủ hàng';
+      }
+      if (module.slug === 'variants' && Number(clean.stock) <= 0) clean.status = 'Hết hàng';
+      if (module.slug === 'pricing') {
+        const today = new Date().toISOString().slice(0, 10);
+        const starts = toDateInput(clean.startDate);
+        const ends = toDateInput(clean.endDate);
+        clean.status = clean.status === 'Hết hiệu lực' || (ends && ends < today)
+          ? 'Hết hiệu lực'
+          : starts && starts > today
+            ? 'Chờ bắt đầu'
+            : Number(clean.sale) < Number(clean.list) ? 'Đang giảm' : 'Giá gốc';
+      }
+    }
     if (group.slug === 'access' && module.slug === 'roles' && !String(clean.code ?? '').trim()) {
       clean.code = sofa2Slugify(String(clean.role ?? ''));
     }
@@ -729,6 +870,26 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     setToast(synced ? `Đã nhân bản ${entity}.` : 'Đã lưu thay đổi trên trình duyệt demo.');
   };
 
+  const catalogDeleteBlockReason = (row: AdminRow) => {
+    if (group.slug !== 'catalog') return '';
+    const linked = (moduleName: string, predicate: (item: AdminRow) => boolean) =>
+      getSofa2AdminRows('catalog', moduleName).some(predicate);
+    if (module.slug === 'categories' && linked('products', (item) =>
+      String(item.category ?? '').toLowerCase() === String(row.name ?? '').toLowerCase()
+    )) return 'Danh mục đang được sản phẩm sử dụng.';
+    if (module.slug === 'products' && linked('variants', (item) =>
+      String(item.product ?? '').toLowerCase() === String(row.name ?? '').toLowerCase()
+      || String(item.product ?? '').toLowerCase() === String(row.sku ?? '').toLowerCase()
+    )) return 'Sản phẩm đang có biến thể; hãy xử lý biến thể trước.';
+    if (module.slug === 'products' && ['inventory', 'pricing'].some((name) => linked(name, (item) =>
+      String(item.sku ?? '').toLowerCase() === String(row.sku ?? '').toLowerCase()
+    ))) return 'Sản phẩm đang có tồn kho hoặc bảng giá liên kết.';
+    if (module.slug === 'variants' && ['inventory', 'pricing'].some((name) => linked(name, (item) =>
+      String(item.sku ?? '').toLowerCase() === String(row.sku ?? '').toLowerCase()
+    ))) return 'Biến thể đang có tồn kho hoặc bảng giá liên kết.';
+    return '';
+  };
+
   const doDelete = async () => {
     if (!canDelete) {
       setConfirm({ open: false, index: null });
@@ -736,6 +897,12 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       return;
     }
     if (confirm.index !== null) {
+      const reason = catalogDeleteBlockReason(rows[confirm.index]);
+      if (reason) {
+        setToast(reason);
+        setConfirm({ open: false, index: null });
+        return;
+      }
       deleteRow(confirm.index);
       setSelected([]);
       const synced = await syncDealerModule();
@@ -750,15 +917,24 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       setToast('Tài khoản chưa được cấp quyền xoá.');
       return;
     }
-    const deletedCount = selected.length;
-    deleteRows(selected);
+    const removable = selected.filter((index) => !catalogDeleteBlockReason(rows[index]));
+    const skipped = selected.length - removable.length;
+    if (!removable.length) {
+      setBulkConfirm(false);
+      setToast('Không thể xoá: một số bản ghi còn liên kết với sản phẩm, tồn kho hoặc bảng giá.');
+      return;
+    }
+    const deletedCount = removable.length;
+    deleteRows(removable);
     setSelected([]);
     setBulkConfirm(false);
     const synced = await syncDealerModule();
     setToast(
-      synced
-        ? `Đã xoá ${deletedCount} ${entity}.`
-        : 'Đã xoá dữ liệu trong trình duyệt demo.'
+      skipped
+        ? `Đã xoá ${deletedCount} ${entity}; bỏ qua ${skipped} bản ghi đang được liên kết.`
+        : synced
+          ? `Đã xoá ${deletedCount} ${entity}.`
+          : 'Đã xoá dữ liệu trong trình duyệt demo.'
     );
   };
 
@@ -844,6 +1020,31 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           .map((row) => String(row.role ?? '').trim())
           .filter(Boolean);
         return Array.from(new Set([...activeRoles, String(value).trim()])).filter(Boolean);
+      }
+      if (group.slug === 'catalog') {
+        const products = getSofa2AdminRows('catalog', 'products');
+        const categories = getSofa2AdminRows('catalog', 'categories');
+        const variants = getSofa2AdminRows('catalog', 'variants');
+        if (field.key === 'category') {
+          return Array.from(new Set([
+            ...(field.options ?? []),
+            ...categories.filter((row) => row.status !== 'Ẩn').map((row) => String(row.name ?? '').trim()),
+            String(value).trim(),
+          ])).filter(Boolean);
+        }
+        if (field.key === 'product') {
+          return Array.from(new Set([
+            ...products.filter((row) => !['Bản nháp', 'Ngừng bán'].includes(String(row.status))).map((row) => String(row.name ?? '').trim()),
+            String(value).trim(),
+          ])).filter(Boolean);
+        }
+        if (field.key === 'sku') {
+          return Array.from(new Set([
+            ...products.map((row) => String(row.sku ?? '').trim()),
+            ...variants.map((row) => String(row.sku ?? '').trim()),
+            String(value).trim(),
+          ])).filter(Boolean);
+        }
       }
       return field.options ?? [];
     })();
@@ -1093,6 +1294,54 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       }
     }
 
+    if (group.slug === 'catalog') {
+      const sum = (key: string, items = rows) => items.reduce((total, row) => total + asNumber(row[key]), 0);
+      if (module.slug === 'categories') {
+        const products = getSofa2AdminRows('catalog', 'products');
+        return [
+          { label: 'Danh mục', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Danh mục đang hiển thị', value: rows.filter((row) => row.status !== 'Ẩn').length.toLocaleString('vi-VN') },
+          { label: 'Sản phẩm đã gán', value: products.filter((product) => rows.some((category) => String(category.name).toLowerCase() === String(product.category).toLowerCase())).length.toLocaleString('vi-VN') },
+          { label: 'Ẩn', value: rows.filter((row) => row.status === 'Ẩn').length.toLocaleString('vi-VN') },
+        ];
+      }
+      if (module.slug === 'products') return [
+        { label: 'Tổng sản phẩm', value: rows.length.toLocaleString('vi-VN') },
+        { label: 'Đang bán', value: rows.filter((row) => row.status === 'Đang bán').length.toLocaleString('vi-VN') },
+        { label: 'Hết hàng', value: rows.filter((row) => row.status === 'Hết hàng').length.toLocaleString('vi-VN') },
+        { label: 'Bản nháp / ngừng bán', value: rows.filter((row) => ['Bản nháp', 'Ngừng bán'].includes(String(row.status))).length.toLocaleString('vi-VN') },
+      ];
+      if (module.slug === 'attributes') return [
+        { label: 'Nhóm thuộc tính', value: rows.length.toLocaleString('vi-VN') },
+        { label: 'Giá trị cấu hình', value: sum('values').toLocaleString('vi-VN') },
+        { label: 'Đang hoạt động', value: rows.filter((row) => row.status === 'Hoạt động').length.toLocaleString('vi-VN') },
+        { label: 'Dùng cho biến thể', value: rows.filter((row) => String(row.usage).includes('Biến thể')).length.toLocaleString('vi-VN') },
+      ];
+      if (module.slug === 'variants') return [
+        { label: 'Biến thể', value: rows.length.toLocaleString('vi-VN') },
+        { label: 'Có tồn kho', value: rows.filter((row) => asNumber(row.stock) > 0).length.toLocaleString('vi-VN') },
+        { label: 'Tổng số lượng', value: sum('stock').toLocaleString('vi-VN') },
+        { label: 'Hết hàng', value: rows.filter((row) => asNumber(row.stock) <= 0).length.toLocaleString('vi-VN') },
+      ];
+      if (module.slug === 'inventory') return [
+        { label: 'Dòng tồn kho', value: rows.length.toLocaleString('vi-VN') },
+        { label: 'Tồn khả dụng', value: rows.reduce((total, row) => total + Math.max(0, asNumber(row.stock) - asNumber(row.reserved)), 0).toLocaleString('vi-VN') },
+        { label: 'Sắp hết', value: rows.filter((row) => row.status === 'Sắp hết').length.toLocaleString('vi-VN') },
+        { label: 'Hết hàng', value: rows.filter((row) => row.status === 'Hết hàng').length.toLocaleString('vi-VN') },
+      ];
+      if (module.slug === 'pricing') {
+        const averageDiscount = rows.length
+          ? rows.reduce((total, row) => total + Math.max(0, (asNumber(row.list) - asNumber(row.sale)) / Math.max(1, asNumber(row.list)) * 100), 0) / rows.length
+          : 0;
+        return [
+          { label: 'Bảng giá / SKU', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Đang khuyến mãi', value: rows.filter((row) => row.status === 'Đang giảm').length.toLocaleString('vi-VN') },
+          { label: 'Giá gốc', value: rows.filter((row) => row.status === 'Giá gốc').length.toLocaleString('vi-VN') },
+          { label: 'Giảm trung bình', value: `${Math.round(averageDiscount)}%` },
+        ];
+      }
+    }
+
     if (group.slug !== 'hr') return module.stats;
 
     const sum = (key: string, items = rows) =>
@@ -1158,6 +1407,11 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         {group.slug === 'cms' && (
           <Alert severity="info" sx={{ mb: 2 }}>
             Dữ liệu CMS hiện lưu trên trình duyệt để đồng bộ tức thời với các component Sofa2 cùng thiết bị. Trạng thái nháp không hiển thị cho khách; nội dung xuất bản, menu, banner, SEO và trang tĩnh sẽ được website đọc từ cùng store localStorage này. Muốn vận hành nhiều thiết bị hoặc xuất bản an toàn cần API/CMS server-side.
+          </Alert>
+        )}
+        {group.slug === 'catalog' && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Danh mục, sản phẩm, biến thể, tồn kho và bảng giá đang lưu bằng localStorage trên trình duyệt này; thay đổi đồng bộ với cửa hàng khách hàng cùng trình duyệt. Đây là dữ liệu demo, chưa có API, đồng bộ nhiều thiết bị hay kiểm soát tồn kho giao dịch phía máy chủ.
           </Alert>
         )}
         {group.slug === 'access' && rowsLoading && (
@@ -1427,7 +1681,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
                           const value =
                             group.slug === 'access' && module.slug === 'roles' && col.key === 'users'
                               ? assignedCount
-                              : row[col.key] ?? '—';
+                              : group.slug === 'catalog' && module.slug === 'categories' && col.key === 'products'
+                                ? catalogProducts.filter((product) => String(product.category ?? '').toLowerCase() === String(row.name ?? '').toLowerCase()).length
+                                : row[col.key] ?? '—';
                           return (
                             <TableCell key={col.key}>
                               {col.type === 'status' ? (
@@ -1615,16 +1871,18 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           <Button color="inherit" onClick={() => setForm((prev) => ({ ...prev, open: false }))}>
             Huỷ
           </Button>
-          <Button
-            color="inherit"
-            variant="outlined"
-            onClick={() => {
-              setValue(statusKey, defaultDraft);
-              setTimeout(submitForm, 0);
-            }}
-          >
-            Lưu nháp
-          </Button>
+          {statusOptions.includes('Bản nháp') && (
+            <Button
+              color="inherit"
+              variant="outlined"
+              onClick={() => {
+                setValue(statusKey, 'Bản nháp');
+                setTimeout(submitForm, 0);
+              }}
+            >
+              Lưu nháp
+            </Button>
+          )}
           <Button
             variant="contained"
             color="inherit"
