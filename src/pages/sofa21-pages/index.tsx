@@ -38,64 +38,76 @@ function resolvePage(pathname: string) {
     .sort((a, b) => b.path.length - a.path.length)
     .find((item) => normalize(item.path) === path);
   if (match) return match;
-  if (path.startsWith('/sofa21/products/'))
+  if (path.startsWith('/sofa21/products/')) {
     return {
       title: 'Chi tiết sản phẩm',
       path,
       parent: ALL_NODES.find((item) => item.path === '/sofa21/products'),
     };
+  }
   const last = path.split('/').filter(Boolean).at(-1) || 'support';
-  const root = ALL_NODES.find((item) => path.startsWith(item.path) && item.path !== '/sofa21');
-  return { title: titleCase(last), path, parent: root };
+  const parent = SOFA21_SITE_MAP.find(
+    (item) => path === item.path || path.startsWith(`${item.path}/`)
+  );
+  return { title: titleCase(last), path, parent };
+}
+
+function sectionOf(path: string) {
+  return (
+    SOFA21_SITE_MAP.find((item) => path === item.path || path.startsWith(`${item.path}/`))?.title ||
+    'Sofa21'
+  );
 }
 
 function descriptionFor(title: string, section: string) {
   if (section === 'Sản phẩm')
-    return `Khám phá ${title.toLowerCase()} được chọn lọc theo công năng, chất liệu và phong cách. Mỗi mẫu sofa được thiết kế để phù hợp với không gian sống thực tế.`;
+    return `Khám phá ${title.toLowerCase()} được chọn lọc theo công năng, chất liệu và phong cách — thiết kế để hợp với không gian sống thực tế.`;
   if (section === 'Giới thiệu')
     return `${title} là một phần trong hành trình Sofa21 tạo nên những sản phẩm chỉn chu, bền đẹp và phù hợp với nhịp sống gia đình Việt.`;
   if (section === 'Dự án')
-    return `Cùng nhìn lại những không gian Sofa21 đã đồng hành hoàn thiện, từ khâu lựa chọn sản phẩm đến tư vấn bố trí và bàn giao.`;
+    return `Cùng nhìn lại những không gian Sofa21 đã đồng hành hoàn thiện — từ lựa chọn sản phẩm đến tư vấn bố trí và bàn giao.`;
   if (section === 'Showroom')
-    return `Trải nghiệm trực tiếp kiểu dáng, chất liệu và độ êm của sofa. Đội ngũ tư vấn giúp bạn lựa chọn giải pháp phù hợp với nhà mình.`;
+    return `Trải nghiệm trực tiếp kiểu dáng, chất liệu và độ êm của sofa. Đội ngũ tư vấn giúp bạn tìm lựa chọn vừa vặn với nhà mình.`;
   if (section === 'Dịch vụ')
     return `Từ ý tưởng ban đầu đến sản phẩm hoàn thiện, Sofa21 đồng hành bằng dịch vụ tư vấn, thiết kế và sản xuất linh hoạt.`;
   if (section === 'Blog')
     return `Góc chia sẻ Sofa21: kinh nghiệm chọn sofa, thông tin vật liệu và cảm hứng thiết kế giúp bạn chăm chút không gian sống.`;
   if (section.includes('Tài khoản') || section === 'Khu vực thành viên')
-    return `Quản lý thông tin, đơn hàng và quyền lợi thành viên Sofa21 một cách thuận tiện, tập trung và an toàn.`;
+    return `Quản lý thông tin, đơn hàng và quyền lợi thành viên Sofa21 thuận tiện, tập trung và an toàn.`;
   if (section === 'Hỗ trợ')
     return `Tìm câu trả lời, chính sách và hướng dẫn sử dụng dịch vụ. Đội ngũ chăm sóc khách hàng luôn sẵn sàng hỗ trợ bạn.`;
   if (section === 'Đại lý B2B')
     return `Cùng phát triển thị trường với các giải pháp phân phối, báo giá dự án và sản xuất theo yêu cầu từ Sofa21.`;
   if (section === 'Khuyến mãi / Hậu mãi')
     return `Dịch vụ chăm sóc sofa minh bạch, giúp sản phẩm luôn bền đẹp và đồng hành cùng gia đình qua nhiều năm sử dụng.`;
-  return `Tìm hiểu ${title.toLowerCase()} và nhận hỗ trợ trực tiếp từ đội ngũ Sofa21. Chúng tôi luôn sẵn sàng giúp bạn có trải nghiệm thuận tiện hơn.`;
+  return `Tìm hiểu ${title.toLowerCase()} và nhận hỗ trợ trực tiếp từ đội ngũ Sofa21.`;
 }
 
-function sectionOf(path: string) {
-  const section = ALL_NODES.find((item) => item.path === path.split('/').slice(0, 3).join('/'));
-  const root = ALL_NODES.find(
-    (item) => item.children?.some((child) => path.startsWith(child.path)) || path === item.path
-  );
-  return root?.title || section?.title || 'Sofa21';
+function heroImageFor(section: string, path: string) {
+  if (path.includes('factory') || path.includes('process') || path.includes('production'))
+    return SOFA21_IMAGES.factory;
+  if (section === 'Sản phẩm') return SOFA21_IMAGES.sofa;
+  if (section === 'Dự án') return SOFA21_IMAGES.project;
+  if (section === 'Dịch vụ') return SOFA21_IMAGES.interior;
+  if (section === 'Blog') return SOFA21_IMAGES.journal;
+  return SOFA21_IMAGES.living;
 }
 
-const categoryIntro = [
+const quickTips = [
   {
-    label: 'Tư vấn chọn kích thước',
+    label: 'Đúng kích thước',
+    text: 'Đo lối đi, khoảng cách ngồi và phần diện tích cần chừa quanh ghế.',
     icon: 'solar:ruler-angular-bold-duotone',
-    text: 'Đo đạc lối đi và khoảng cách sử dụng để chọn tỷ lệ ghế vừa vặn.',
   },
   {
-    label: 'Chọn chất liệu phù hợp',
+    label: 'Đúng chất liệu',
+    text: 'Chọn theo thói quen sử dụng, trẻ nhỏ, thú cưng và thời gian vệ sinh.',
     icon: 'solar:layers-bold-duotone',
-    text: 'Cân nhắc tần suất sử dụng, gia đình có trẻ nhỏ và cách vệ sinh.',
   },
   {
-    label: 'Xem thử tại showroom',
-    icon: 'solar:map-point-bold-duotone',
-    text: 'Ngồi thử, chạm chất liệu và nhận gợi ý phối màu tại cửa hàng.',
+    label: 'Đúng cảm giác',
+    text: 'Ngồi thử, tựa lưng, duỗi chân — cảm giác thoải mái rất riêng.',
+    icon: 'solar:chair-2-bold-duotone',
   },
 ];
 
@@ -108,6 +120,7 @@ export default function Sofa21Pages() {
   const isProduct = current.path.includes('/products');
   const needsForm =
     /contact|visit|consult|register|quote|ticket|apply|forgot-password|chat|oem/.test(current.path);
+  const image = heroImageFor(section, current.path);
   const actionLabel =
     current.path.includes('account') || current.path.includes('member')
       ? 'Mở tài khoản'
@@ -125,72 +138,143 @@ export default function Sofa21Pages() {
         />
       </Helmet>
       <Box sx={{ bgcolor: SOFA21_COLORS.cream, minHeight: '70vh', pb: { xs: 8, md: 12 } }}>
+        {/* Editorial cover keeps the same vivid Sofa21 art direction on every route. */}
         <Box
           component="section"
           sx={{
-            py: { xs: 7, md: 10 },
+            position: 'relative',
+            overflow: 'hidden',
+            bgcolor: SOFA21_COLORS.midnight,
             color: 'common.white',
-            backgroundImage: `linear-gradient(105deg, rgba(24,53,43,.94), rgba(37,72,59,.78) 55%, rgba(37,72,59,.5)), url(${SOFA21_IMAGES.living})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            py: { xs: 7, md: 10 },
           }}
         >
-          <Container>
-            <Stack spacing={2.5} sx={{ maxWidth: 820 }}>
-              <Stack direction="row" alignItems="center" spacing={1}>
-                <Iconify
-                  icon="solar:leaf-bold-duotone"
-                  width={20}
-                  sx={{ color: SOFA21_COLORS.lime }}
-                />
-                <Typography variant="overline" sx={{ letterSpacing: 2, color: SOFA21_COLORS.lime }}>
-                  {section.toUpperCase()}
-                </Typography>
-              </Stack>
-              <Typography
-                component="h1"
-                sx={{
-                  fontSize: { xs: 40, md: 64 },
-                  lineHeight: 1.1,
-                  fontWeight: 700,
-                  letterSpacing: '-.04em',
-                }}
-              >
-                {current.title}
-              </Typography>
-              <Typography
-                sx={{
-                  maxWidth: 680,
-                  fontSize: { xs: 16, md: 19 },
-                  lineHeight: 1.8,
-                  color: 'rgba(255,255,255,.8)',
-                }}
-              >
-                {descriptionFor(current.title, section)}
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" useFlexGap>
-                <Button
-                  component={RouterLink}
-                  href="/sofa21"
-                  size="small"
-                  sx={{ color: 'rgba(255,255,255,.8)', minWidth: 0 }}
-                >
-                  Trang chủ
-                </Button>
-                {crumb.map((part, index) => (
-                  <Chip
-                    key={`${part}-${index}`}
-                    label={titleCase(part)}
-                    size="small"
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: `linear-gradient(100deg, rgba(32,33,59,.96) 0%, rgba(32,33,59,.86) 50%, rgba(32,33,59,.2) 100%), url(${image})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              width: 300,
+              height: 300,
+              top: -150,
+              right: { xs: -120, md: '8%' },
+              border: `1px solid ${SOFA21_COLORS.butter}77`,
+              borderRadius: '50%',
+              boxShadow: `0 0 0 34px ${SOFA21_COLORS.butter}12, 0 0 0 72px ${SOFA21_COLORS.butter}0a`,
+            }}
+          />
+          <Container sx={{ position: 'relative', zIndex: 1 }}>
+            <Grid container spacing={4} alignItems="center">
+              <Grid xs={12} md={8}>
+                <Stack spacing={2.2} sx={{ maxWidth: 750 }}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Box sx={{ width: 28, height: 2, bgcolor: SOFA21_COLORS.persimmon }} />
+                    <Typography
+                      variant="overline"
+                      sx={{ letterSpacing: 2.5, color: SOFA21_COLORS.butter }}
+                    >
+                      {section.toUpperCase()} · SOFA21
+                    </Typography>
+                  </Stack>
+                  <Typography
+                    component="h1"
                     sx={{
-                      color: 'white',
-                      bgcolor: 'rgba(255,255,255,.14)',
-                      border: '1px solid rgba(255,255,255,.18)',
+                      fontSize: { xs: 40, md: 66 },
+                      lineHeight: 1.02,
+                      letterSpacing: '-.055em',
+                      fontWeight: 850,
+                    }}
+                  >
+                    {current.title}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      maxWidth: 660,
+                      fontSize: { xs: 16, md: 19 },
+                      lineHeight: 1.8,
+                      color: 'rgba(255,255,255,.77)',
+                    }}
+                  >
+                    {descriptionFor(current.title, section)}
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    flexWrap="wrap"
+                    alignItems="center"
+                    useFlexGap
+                    sx={{ pt: 0.5 }}
+                  >
+                    <Button
+                      component={RouterLink}
+                      href="/sofa21"
+                      size="small"
+                      startIcon={<Iconify icon="solar:home-2-bold-duotone" />}
+                      sx={{ color: 'rgba(255,255,255,.8)', minWidth: 0 }}
+                    >
+                      Trang chủ
+                    </Button>
+                    {crumb.map((part, index) => (
+                      <Chip
+                        key={`${part}-${index}`}
+                        label={titleCase(part)}
+                        size="small"
+                        sx={{
+                          color: 'white',
+                          bgcolor: 'rgba(255,255,255,.12)',
+                          border: '1px solid rgba(255,255,255,.2)',
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Stack>
+              </Grid>
+              <Grid xs={12} md={4} sx={{ display: { xs: 'none', md: 'block' } }}>
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: 270,
+                    ml: 'auto',
+                    p: 1.2,
+                    bgcolor: 'rgba(255,254,251,.94)',
+                    borderRadius: '140px 140px 18px 18px',
+                    transform: 'rotate(3deg)',
+                    boxShadow: '0 25px 60px rgba(0,0,0,.24)',
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={image}
+                    alt={current.title}
+                    sx={{
+                      width: 1,
+                      height: 290,
+                      objectFit: 'cover',
+                      borderRadius: '140px 140px 12px 12px',
                     }}
                   />
-                ))}
-              </Stack>
-            </Stack>
+                  <Typography
+                    sx={{
+                      py: 1.1,
+                      textAlign: 'center',
+                      color: SOFA21_COLORS.ink,
+                      fontSize: 11,
+                      letterSpacing: 2,
+                    }}
+                  >
+                    CHẠM · THỬ · CHỌN
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
           </Container>
         </Box>
 
@@ -207,7 +291,7 @@ export default function Sofa21Pages() {
                 <Box>
                   <Typography
                     variant="overline"
-                    sx={{ color: SOFA21_COLORS.clay, letterSpacing: 2 }}
+                    sx={{ color: SOFA21_COLORS.persimmonDeep, letterSpacing: 2 }}
                   >
                     KHÁM PHÁ THEO NHU CẦU
                   </Typography>
@@ -215,9 +299,9 @@ export default function Sofa21Pages() {
                     variant="h3"
                     sx={{
                       mt: 0.5,
-                      fontWeight: 650,
-                      letterSpacing: '-.03em',
-                      fontSize: { xs: 28, md: 38 },
+                      fontWeight: 800,
+                      letterSpacing: '-.04em',
+                      fontSize: { xs: 30, md: 44 },
                     }}
                   >
                     {children.length > 8 ? 'Các nội dung nổi bật' : 'Nội dung liên quan'}
@@ -230,7 +314,7 @@ export default function Sofa21Pages() {
                   Chọn một nội dung để xem thông tin chi tiết và các lựa chọn phù hợp.
                 </Typography>
               </Stack>
-              <Grid container spacing={2.25}>
+              <Grid container spacing={2}>
                 {children.map((item, index) => (
                   <Grid
                     key={`${item.title}-${item.path}`}
@@ -242,22 +326,21 @@ export default function Sofa21Pages() {
                       component={RouterLink}
                       href={item.path}
                       sx={{
-                        p: 2.75,
+                        p: 2.5,
                         height: 1,
-                        minHeight: 176,
+                        minHeight: 185,
                         display: 'flex',
                         flexDirection: 'column',
                         textDecoration: 'none',
                         color: SOFA21_COLORS.ink,
-                        borderRadius: 2.5,
-                        bgcolor: SOFA21_COLORS.paper,
+                        borderRadius: index % 4 === 1 ? '48px 16px 16px' : 2.5,
+                        bgcolor: index % 4 === 1 ? SOFA21_COLORS.periwinkle : SOFA21_COLORS.paper,
                         border: `1px solid ${SOFA21_COLORS.line}`,
                         boxShadow: 'none',
-                        transition: 'all .25s',
+                        transition: 'transform .25s, box-shadow .25s',
                         '&:hover': {
-                          transform: 'translateY(-4px)',
-                          borderColor: SOFA21_COLORS.sage,
-                          boxShadow: '0 14px 35px rgba(24,53,43,.09)',
+                          transform: 'translateY(-5px)',
+                          boxShadow: '0 18px 35px rgba(32,33,59,.12)',
                         },
                       }}
                     >
@@ -265,18 +348,17 @@ export default function Sofa21Pages() {
                         direction="row"
                         justifyContent="space-between"
                         alignItems="center"
-                        sx={{ mb: 2.5 }}
+                        sx={{ mb: 2.2 }}
                       >
                         <Box
                           sx={{
-                            width: 42,
-                            height: 42,
+                            width: 44,
+                            height: 44,
                             display: 'grid',
                             placeItems: 'center',
-                            bgcolor:
-                              index % 3 === 0 ? 'rgba(168,185,166,.35)' : 'rgba(200,135,104,.13)',
-                            color: SOFA21_COLORS.forest,
-                            borderRadius: 1.5,
+                            bgcolor: index % 3 === 0 ? SOFA21_COLORS.butter : 'rgba(77,95,234,.12)',
+                            color: SOFA21_COLORS.cobalt,
+                            borderRadius: '50%',
                           }}
                         >
                           <Iconify
@@ -284,26 +366,35 @@ export default function Sofa21Pages() {
                               item.icon ||
                               (isProduct
                                 ? 'solar:armchair-bold-duotone'
-                                : 'solar:arrow-right-up-linear')
+                                : 'solar:stars-bold-duotone')
                             }
                             width={22}
                           />
                         </Box>
-                        <Iconify
-                          icon="solar:arrow-right-up-linear"
-                          width={20}
-                          sx={{ color: SOFA21_COLORS.inkSoft }}
-                        />
+                        <Typography
+                          sx={{ fontSize: 12, fontWeight: 800, color: SOFA21_COLORS.persimmon }}
+                        >{`${String(index + 1).padStart(2, '0')}`}</Typography>
                       </Stack>
-                      <Typography variant="h6" sx={{ fontWeight: 650, mb: 0.8 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.7 }}>
                         {item.title}
                       </Typography>
                       <Typography
                         variant="body2"
-                        sx={{ color: SOFA21_COLORS.inkSoft, lineHeight: 1.7 }}
+                        sx={{ color: SOFA21_COLORS.inkSoft, lineHeight: 1.65 }}
                       >
                         {descriptionFor(item.title, section)}
                       </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={0.8}
+                        alignItems="center"
+                        sx={{ mt: 'auto', pt: 1.5, color: SOFA21_COLORS.cobalt }}
+                      >
+                        <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: 0.5 }}>
+                          KHÁM PHÁ
+                        </Typography>
+                        <Iconify icon="solar:arrow-right-linear" width={17} />
+                      </Stack>
                     </Card>
                   </Grid>
                 ))}
@@ -312,28 +403,28 @@ export default function Sofa21Pages() {
           )}
 
           {isProduct && (
-            <Box sx={{ mt: children.length ? 8 : 0 }}>
+            <Box sx={{ mt: children.length ? 9 : 1 }}>
               <Stack
-                direction="row"
+                direction={{ xs: 'column', md: 'row' }}
                 justifyContent="space-between"
-                alignItems="end"
+                alignItems={{ md: 'end' }}
                 spacing={2}
                 sx={{ mb: 3 }}
               >
                 <Box>
                   <Typography
                     variant="overline"
-                    sx={{ color: SOFA21_COLORS.clay, letterSpacing: 2 }}
+                    sx={{ color: SOFA21_COLORS.persimmonDeep, letterSpacing: 2 }}
                   >
-                    GỢI Ý TỪ SOFA21
+                    SOFA21 SELECTED
                   </Typography>
                   <Typography
                     variant="h3"
                     sx={{
                       mt: 0.5,
-                      fontWeight: 650,
-                      letterSpacing: '-.03em',
-                      fontSize: { xs: 28, md: 38 },
+                      fontWeight: 800,
+                      letterSpacing: '-.04em',
+                      fontSize: { xs: 30, md: 44 },
                     }}
                   >
                     Sản phẩm được yêu thích
@@ -342,24 +433,28 @@ export default function Sofa21Pages() {
                 <Button
                   component={RouterLink}
                   href="/sofa21/compare"
-                  sx={{ color: SOFA21_COLORS.forest }}
+                  endIcon={<Iconify icon="solar:arrow-right-linear" />}
+                  sx={{ color: SOFA21_COLORS.cobalt }}
                 >
                   So sánh sản phẩm
                 </Button>
               </Stack>
-              <Grid container spacing={3}>
-                {SOFA21_PRODUCTS.map((product) => (
+              <Grid container spacing={2.5}>
+                {SOFA21_PRODUCTS.map((product, index) => (
                   <Grid key={product.name} xs={12} sm={6} md={4}>
                     <Card
                       component={RouterLink}
                       href="/sofa21/products/detail/information"
                       sx={{
                         display: 'block',
+                        p: 1.3,
                         textDecoration: 'none',
                         color: SOFA21_COLORS.ink,
                         bgcolor: SOFA21_COLORS.paper,
                         boxShadow: 'none',
-                        borderRadius: 2.5,
+                        borderRadius: index === 1 ? '80px 80px 16px 16px' : 2.5,
+                        transition: 'transform .25s',
+                        '&:hover': { transform: 'translateY(-5px)' },
                       }}
                     >
                       <Box
@@ -368,19 +463,19 @@ export default function Sofa21Pages() {
                         alt={product.name}
                         sx={{
                           width: 1,
-                          height: { xs: 270, md: 320 },
+                          height: { xs: 250, md: 310 },
                           objectFit: 'cover',
-                          borderRadius: 2.5,
+                          borderRadius: index === 1 ? '80px 80px 12px 12px' : 2,
                         }}
                       />
-                      <Stack spacing={0.6} sx={{ pt: 2 }}>
+                      <Stack spacing={0.5} sx={{ px: 1, pt: 1.5, pb: 1 }}>
                         <Typography variant="caption" color="text.secondary">
                           {product.category}
                         </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 650 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 800 }}>
                           {product.name}
                         </Typography>
-                        <Typography sx={{ color: SOFA21_COLORS.forest, fontWeight: 700 }}>
+                        <Typography sx={{ color: SOFA21_COLORS.cobalt, fontWeight: 800 }}>
                           {product.price}
                         </Typography>
                       </Stack>
@@ -392,23 +487,26 @@ export default function Sofa21Pages() {
           )}
 
           {!children.length && !isProduct && (
-            <Grid container spacing={4} sx={{ mt: 1 }}>
+            <Grid container spacing={3.5} sx={{ mt: { xs: 3, md: 5 } }}>
               <Grid xs={12} md={7}>
                 <Box
                   sx={{
-                    p: { xs: 3, md: 5 },
+                    p: { xs: 3, md: 4.5 },
                     bgcolor: SOFA21_COLORS.paper,
                     border: `1px solid ${SOFA21_COLORS.line}`,
-                    borderRadius: 2.5,
+                    borderRadius: '16px 80px 16px 16px',
                   }}
                 >
                   <Typography
                     variant="overline"
-                    sx={{ color: SOFA21_COLORS.clay, letterSpacing: 2 }}
+                    sx={{ color: SOFA21_COLORS.persimmonDeep, letterSpacing: 2 }}
                   >
                     SOFA21 · TẬN TÂM TỪ TƯ VẤN
                   </Typography>
-                  <Typography variant="h4" sx={{ mt: 1.5, mb: 2, fontWeight: 650 }}>
+                  <Typography
+                    variant="h4"
+                    sx={{ mt: 1.5, mb: 2, fontWeight: 800, letterSpacing: '-.035em' }}
+                  >
                     Giải pháp phù hợp bắt đầu từ nhu cầu thật.
                   </Typography>
                   <Typography sx={{ color: SOFA21_COLORS.inkSoft, lineHeight: 1.9 }}>
@@ -445,8 +543,10 @@ export default function Sofa21Pages() {
                         variant="contained"
                         sx={{
                           alignSelf: 'flex-start',
-                          bgcolor: SOFA21_COLORS.forest,
-                          '&:hover': { bgcolor: SOFA21_COLORS.forestDeep },
+                          px: 2.5,
+                          borderRadius: 99,
+                          bgcolor: SOFA21_COLORS.cobalt,
+                          '&:hover': { bgcolor: SOFA21_COLORS.cobaltDeep },
                         }}
                       >
                         Gửi yêu cầu
@@ -456,35 +556,44 @@ export default function Sofa21Pages() {
                 </Box>
               </Grid>
               <Grid xs={12} md={5}>
-                <Stack spacing={2}>
-                  {categoryIntro.map((item) => (
+                <Stack spacing={1.5}>
+                  {quickTips.map((tip, index) => (
                     <Card
-                      key={item.label}
+                      key={tip.label}
                       sx={{
-                        p: 2.5,
+                        p: 2.2,
                         display: 'flex',
                         gap: 2,
                         alignItems: 'flex-start',
-                        bgcolor: 'rgba(255,254,250,.72)',
+                        bgcolor: index === 1 ? SOFA21_COLORS.periwinkle : SOFA21_COLORS.paper,
                         border: `1px solid ${SOFA21_COLORS.line}`,
-                        borderRadius: 2,
+                        borderRadius: 2.5,
                         boxShadow: 'none',
                       }}
                     >
-                      <Iconify
-                        icon={item.icon}
-                        width={24}
-                        sx={{ mt: 0.4, color: SOFA21_COLORS.forest }}
-                      />
+                      <Box
+                        sx={{
+                          width: 42,
+                          height: 42,
+                          flex: '0 0 auto',
+                          display: 'grid',
+                          placeItems: 'center',
+                          color: SOFA21_COLORS.cobalt,
+                          bgcolor: SOFA21_COLORS.butter,
+                          borderRadius: '50%',
+                        }}
+                      >
+                        <Iconify icon={tip.icon} width={22} />
+                      </Box>
                       <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 650 }}>
-                          {item.label}
+                        <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                          {tip.label}
                         </Typography>
                         <Typography
                           variant="body2"
-                          sx={{ mt: 0.5, color: SOFA21_COLORS.inkSoft, lineHeight: 1.7 }}
+                          sx={{ mt: 0.45, color: SOFA21_COLORS.inkSoft, lineHeight: 1.65 }}
                         >
-                          {item.text}
+                          {tip.text}
                         </Typography>
                       </Box>
                     </Card>
@@ -494,38 +603,62 @@ export default function Sofa21Pages() {
             </Grid>
           )}
 
+          {/* A secondary discovery band makes category and detail pages feel authored, not empty templates. */}
           <Box
             sx={{
               mt: 8,
-              p: { xs: 3, md: 4 },
-              borderRadius: 2.5,
-              bgcolor: SOFA21_COLORS.forestDeep,
-              color: 'common.white',
+              overflow: 'hidden',
+              bgcolor: SOFA21_COLORS.midnight,
+              color: 'white',
+              borderRadius: { xs: 3, md: '18px 100px 18px 18px' },
             }}
           >
-            <Grid container spacing={2} alignItems="center">
-              <Grid xs={12} md={8}>
-                <Typography variant="h5" sx={{ fontWeight: 650 }}>
-                  Bạn cần một gợi ý phù hợp hơn?
+            <Grid container alignItems="stretch">
+              <Grid xs={12} md={7} sx={{ p: { xs: 3, md: 4.5 } }}>
+                <Typography
+                  variant="overline"
+                  sx={{ color: SOFA21_COLORS.butter, letterSpacing: 2 }}
+                >
+                  BẠN CẦN MỘT GỢI Ý RIÊNG?
                 </Typography>
-                <Typography sx={{ mt: 0.8, color: 'rgba(255,255,255,.72)' }}>
-                  Chia sẻ không gian và nhu cầu của bạn, chuyên viên Sofa21 sẽ liên hệ tư vấn.
+                <Typography variant="h4" sx={{ mt: 1, fontWeight: 800, letterSpacing: '-.035em' }}>
+                  Cùng tìm chiếc sofa đúng nhà.
                 </Typography>
-              </Grid>
-              <Grid xs={12} md={4} sx={{ textAlign: { md: 'right' } }}>
+                <Typography sx={{ mt: 1, color: 'rgba(255,255,255,.72)', lineHeight: 1.8 }}>
+                  Chia sẻ không gian, ngân sách và thói quen sử dụng — chuyên viên Sofa21 sẽ gợi ý
+                  phương án phù hợp.
+                </Typography>
                 <Button
                   component={RouterLink}
                   href={current.path.includes('/contact') ? '/sofa21/showrooms' : '/sofa21/contact'}
                   variant="contained"
                   endIcon={<Iconify icon="solar:arrow-right-linear" />}
                   sx={{
-                    bgcolor: SOFA21_COLORS.lime,
-                    color: SOFA21_COLORS.ink,
-                    '&:hover': { bgcolor: '#e2edc2' },
+                    mt: 2.5,
+                    px: 2.5,
+                    borderRadius: 99,
+                    bgcolor: SOFA21_COLORS.persimmon,
+                    color: 'white',
+                    '&:hover': { bgcolor: SOFA21_COLORS.persimmonDeep },
                   }}
                 >
                   {actionLabel}
                 </Button>
+              </Grid>
+              <Grid xs={12} md={5}>
+                <Box
+                  component="img"
+                  src={image}
+                  alt="Không gian Sofa21"
+                  sx={{
+                    display: 'block',
+                    width: 1,
+                    height: { xs: 220, md: '100%' },
+                    minHeight: { md: 260 },
+                    objectFit: 'cover',
+                    clipPath: { md: 'ellipse(95% 110% at 100% 50%)' },
+                  }}
+                />
               </Grid>
             </Grid>
           </Box>
