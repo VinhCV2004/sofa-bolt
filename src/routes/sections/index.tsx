@@ -23,7 +23,7 @@ import { sofa17NavData } from 'src/layouts/config-nav-sofa17';
 import { sofa18NavData } from 'src/layouts/config-nav-sofa18';
 import { sofa19NavData } from 'src/layouts/config-nav-sofa19';
 import { sofa20NavData } from 'src/layouts/config-nav-sofa20';
-import { sofa20PagesNavData } from 'src/layouts/config-nav-sofa20-pages';
+import { sofa21NavData } from 'src/layouts/config-nav-sofa21';
 import { sofa8PagesNavData } from 'src/layouts/config-nav-sofa8-pages';
 import { sofa1PagesNavData } from 'src/layouts/config-nav-sofa1-pages';
 import { sofa2PagesNavData } from 'src/layouts/config-nav-sofa2-pages';
@@ -33,6 +33,8 @@ import { sofa6PagesNavData } from 'src/layouts/config-nav-sofa6-pages';
 import { sofa7PagesNavData } from 'src/layouts/config-nav-sofa7-pages';
 import { sofa9PagesNavData } from 'src/layouts/config-nav-sofa9-pages';
 import { sofa5PagesNavData } from 'src/layouts/config-nav-sofa5-pages';
+import { sofa20PagesNavData } from 'src/layouts/config-nav-sofa20-pages';
+import { sofa21PagesNavData } from 'src/layouts/config-nav-sofa21-pages';
 import { sofa10PagesNavData } from 'src/layouts/config-nav-sofa10-pages';
 import { sofa11PagesNavData } from 'src/layouts/config-nav-sofa11-pages';
 import { sofa12PagesNavData } from 'src/layouts/config-nav-sofa12-pages';
@@ -866,6 +868,8 @@ const Sofa18Page = lazy(() => import('src/pages/sofa18'));
 const Sofa19Page = lazy(() => import('src/pages/sofa19'));
 const Sofa20Page = lazy(() => import('src/pages/sofa20'));
 const Sofa20PagesPage = lazy(() => import('src/pages/sofa20-pages'));
+const Sofa21Page = lazy(() => import('src/pages/sofa21'));
+const Sofa21PagesPage = lazy(() => import('src/pages/sofa21-pages'));
 const Sofa19PagesPage = lazy(() => import('src/pages/sofa19-pages'));
 
 export function Router() {
@@ -1116,6 +1120,26 @@ export function Router() {
         <Suspense fallback={<SplashScreen />}>
           <MainLayout data={{ nav: sofa20PagesNavData }}>
             <Sofa20PagesPage />
+          </MainLayout>
+        </Suspense>
+      ),
+    },
+    {
+      path: '/sofa21',
+      element: (
+        <Suspense fallback={<SplashScreen />}>
+          <MainLayout data={{ nav: sofa21NavData }}>
+            <Sofa21Page />
+          </MainLayout>
+        </Suspense>
+      ),
+    },
+    {
+      path: '/sofa21/*',
+      element: (
+        <Suspense fallback={<SplashScreen />}>
+          <MainLayout data={{ nav: sofa21PagesNavData }}>
+            <Sofa21PagesPage />
           </MainLayout>
         </Suspense>
       ),
