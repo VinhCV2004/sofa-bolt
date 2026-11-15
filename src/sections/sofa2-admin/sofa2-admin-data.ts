@@ -1,3 +1,5 @@
+import { SOFA2_PRODUCT_CATEGORIES, SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
+
 import { SOFA2_SHOP_GROUP } from './sofa2-shop';
 import { SOFA2_SUPPORT_GROUP } from './sofa2-support';
 import { SOFA2_CUSTOMER_GROUP } from './sofa2-customer';
@@ -512,6 +514,29 @@ const CMS_GROUP: Sofa2AdminGroup = {
 // SẢN PHẨM
 // ----------------------------------------------------------------------
 
+const PRODUCT_SKUS = ['LX-OSL-01', 'LX-BER-04', 'LX-COP-12', 'LX-TOK-03', 'LX-MUN-07', 'LX-HEL-02', 'LX-FRA-01', 'LX-AMS-01'];
+const SOFA2_PRODUCT_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PRODUCTS.map((product, index) => ({
+  id: product.id,
+  sku: PRODUCT_SKUS[index],
+  name: product.name,
+  slug: product.slug,
+  category: SOFA2_PRODUCT_CATEGORIES.types.find((item) => item.slug === product.category)?.label ?? product.category,
+  style: SOFA2_PRODUCT_CATEGORIES.styles.find((item) => item.slug === product.style)?.label ?? product.style,
+  space: '',
+  material: product.material,
+  dimensions: product.size,
+  shortDescription: product.description.slice(0, 180),
+  description: product.description,
+  image: product.image,
+  gallery: product.images.join(', '),
+  price: product.price,
+  compareAt: product.oldPrice ?? product.price,
+  warranty: 60,
+  status: product.id === '4' ? 'Hết hàng' : 'Đang bán',
+  featured: index < 3 ? 'Có' : 'Không',
+  isNew: product.badge === 'Mới' ? 'Có' : 'Không',
+}));
+
 const PRODUCT_GROUP: Sofa2AdminGroup = {
   slug: 'catalog',
   name: 'Sản phẩm',
@@ -561,43 +586,7 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
         { key: 'price', label: 'Giá bán', type: 'money' },
         STATUS_COL,
       ],
-      [
-        {
-          sku: 'LX-OSL-01',
-          name: 'Sofa Oslo 3 Chỗ',
-          category: 'Scandinavian',
-          price: money(14500000),
-          status: 'Đang bán',
-        },
-        {
-          sku: 'LX-BER-04',
-          name: 'Sofa Berlin Góc',
-          category: 'Industrial Loft',
-          price: money(22000000),
-          status: 'Đang bán',
-        },
-        {
-          sku: 'LX-COP-12',
-          name: 'Sofa Copenhagen',
-          category: 'Scandinavian',
-          price: money(11900000),
-          status: 'Đang bán',
-        },
-        {
-          sku: 'LX-TOK-03',
-          name: 'Sofa Tokyo Đơn',
-          category: 'Mid-Century',
-          price: money(7500000),
-          status: 'Hết hàng',
-        },
-        {
-          sku: 'LX-MUN-07',
-          name: 'Sofa Munich 2 Chỗ',
-          category: 'Industrial Loft',
-          price: money(16800000),
-          status: 'Đang bán',
-        },
-      ],
+      SOFA2_PRODUCT_SEEDS,
       ['Thêm sản phẩm', 'Nhập Excel']
     ),
     mod(
@@ -728,6 +717,9 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
           reserved: 2,
           status: 'Sắp hết',
         },
+        { sku: 'LX-HEL-02', warehouse: 'Kho TP.HCM', stock: 7, reserved: 1, minStock: 2, status: 'Đủ hàng' },
+        { sku: 'LX-FRA-01', warehouse: 'Showroom Q.1', stock: 5, reserved: 0, minStock: 1, status: 'Đủ hàng' },
+        { sku: 'LX-AMS-01', warehouse: 'Kho Hà Nội', stock: 3, reserved: 1, minStock: 1, status: 'Đủ hàng' },
       ],
       ['Nhập kho', 'Kiểm kê']
     ),

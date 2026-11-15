@@ -11,23 +11,22 @@ import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
 
+import { useTranslate } from 'src/locales';
 import { varAlpha } from 'src/theme/styles';
 
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
-import { useTranslate } from 'src/locales';
 import { Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import {
-  SOFA2_PRODUCTS,
-  formatSofa2Price,
-  SOFA2_PRODUCT_CATEGORIES,
-} from 'src/sections/sofa2/sofa2-pages-data';
+import { formatSofa2Price } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2CatalogProducts, useSofa2CatalogCategories } from 'src/sections/sofa2/sofa2-catalog-client';
 
 // ----------------------------------------------------------------------
 
 export default function Page() {
   const { t } = useTranslate('sofa2');
+  const { products } = useSofa2CatalogProducts();
+  const categories = useSofa2CatalogCategories();
 
   const FILTER_GROUPS = [
     { key: 'types', label: t('products.filterTypes') },
@@ -61,7 +60,7 @@ export default function Page() {
                   <Stack key={group.key} spacing={1}>
                     <Typography variant="subtitle2">{group.label}</Typography>
                     <Stack spacing={0.5}>
-                      {SOFA2_PRODUCT_CATEGORIES[group.key].map((item) => (
+                      {categories[group.key].map((item) => (
                         <Button
                           key={item.slug}
                           component={RouterLink}
@@ -81,7 +80,12 @@ export default function Page() {
             {/* Products */}
             <Grid xs={12} md={9}>
               <Grid container spacing={3}>
-                {SOFA2_PRODUCTS.map((product) => (
+                {!products.length && (
+                  <Grid xs={12}>
+                    <Typography color="text.secondary">Hiện chưa có sản phẩm phù hợp được xuất bản.</Typography>
+                  </Grid>
+                )}
+                {products.map((product) => (
                   <Grid key={product.id} xs={12} sm={6} md={4}>
                     <Stack
                       component={m.div}

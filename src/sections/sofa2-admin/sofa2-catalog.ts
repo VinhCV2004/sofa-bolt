@@ -19,14 +19,13 @@ const labels = (list: { label: string }[] = []) => list.map((x) => x.label);
 
 const CATEGORY_NAMES = Array.from(
   new Set([
-    'Scandinavian',
-    'Industrial Loft',
-    'Mid-Century',
-    ...labels((SOFA2_PRODUCT_CATEGORIES as any)?.styles),
-    ...labels((SOFA2_PRODUCT_CATEGORIES as any)?.types),
-    ...labels((SOFA2_PRODUCT_CATEGORIES as any)?.spaces),
+    ...labels(SOFA2_PRODUCT_CATEGORIES.types),
+    ...labels(SOFA2_PRODUCT_CATEGORIES.styles),
+    ...labels(SOFA2_PRODUCT_CATEGORIES.spaces),
   ])
 );
+const STYLE_NAMES = labels(SOFA2_PRODUCT_CATEGORIES.styles);
+const SPACE_NAMES = labels(SOFA2_PRODUCT_CATEGORIES.spaces);
 
 const WAREHOUSES = ['Kho TP.HCM', 'Kho Hà Nội', 'Kho Bình Dương', 'Showroom Q.1', 'Showroom Tây Hồ'];
 
@@ -44,6 +43,8 @@ export const SOFA2_CATALOG_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     titleKey: 'name',
     statusKey: 'status',
     statusOptions: ['Hiển thị', 'Ẩn'],
+    defaultStatus: 'Hiển thị',
+    statusToggle: false,
     fields: [
       f('name', 'Tên danh mục', 'text', 'content', { required: true }),
       f('parent', 'Danh mục cha', 'select', 'content', {
@@ -52,7 +53,7 @@ export const SOFA2_CATALOG_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       }),
       f('description', 'Mô tả danh mục', 'textarea', 'content', { multiline: 4 }),
       f('image', 'Ảnh đại diện', 'url', 'content', { placeholder: 'https://...' }),
-      f('products', 'Số sản phẩm', 'number', 'display'),
+      f('products', 'Số sản phẩm', 'number', 'display', { disabled: true, helper: 'Tự đếm sản phẩm được gán danh mục này.' }),
       f('status', 'Trạng thái', 'select', 'display', { required: true, options: ['Hiển thị', 'Ẩn'] }),
       f('order', 'Thứ tự hiển thị', 'number', 'display'),
       f('showInMenu', 'Hiện trên menu', 'switch', 'display'),
@@ -67,13 +68,15 @@ export const SOFA2_CATALOG_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     titleKey: 'name',
     statusKey: 'status',
     statusOptions: ['Đang bán', 'Hết hàng', 'Bản nháp', 'Ngừng bán'],
+    defaultStatus: 'Bản nháp',
+    statusToggle: false,
     fields: [
       f('name', 'Tên sản phẩm', 'text', 'content', { required: true }),
       f('sku', 'Mã SKU', 'text', 'content', { required: true, placeholder: 'LX-XXX-00' }),
-      f('category', 'Danh mục', 'select', 'content', { required: true, options: CATEGORY_NAMES }),
-      f('material', 'Chất liệu', 'select', 'content', {
-        options: ['Vải linen', 'Da thật', 'Da công nghiệp', 'Nỉ', 'Nhung', 'Bố canvas'],
-      }),
+      f('category', 'Danh mục sản phẩm', 'select', 'content', { required: true, options: CATEGORY_NAMES }),
+      f('style', 'Phong cách', 'select', 'content', { options: STYLE_NAMES }),
+      f('space', 'Không gian phù hợp', 'select', 'content', { options: SPACE_NAMES }),
+      f('material', 'Chất liệu', 'text', 'content', { placeholder: 'Vải linen, khung gỗ sồi FSC' }),
       f('dimensions', 'Kích thước (D x R x C cm)', 'text', 'content', { placeholder: '220 x 90 x 80' }),
       f('shortDescription', 'Mô tả ngắn', 'textarea', 'content', { multiline: 2, maxLength: 200 }),
       f('description', 'Mô tả chi tiết', 'textarea', 'content', { multiline: 6 }),
@@ -99,6 +102,8 @@ export const SOFA2_CATALOG_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     titleKey: 'name',
     statusKey: 'status',
     statusOptions: ['Hoạt động', 'Tạm ẩn'],
+    defaultStatus: 'Hoạt động',
+    statusToggle: false,
     fields: [
       f('name', 'Tên thuộc tính', 'text', 'content', { required: true }),
       f('code', 'Mã thuộc tính', 'text', 'content', { placeholder: 'color' }),
@@ -125,9 +130,11 @@ export const SOFA2_CATALOG_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     titleKey: 'sku',
     statusKey: 'status',
     statusOptions: ['Đang bán', 'Hết hàng', 'Ngừng bán'],
+    defaultStatus: 'Đang bán',
+    statusToggle: false,
     fields: [
       f('sku', 'SKU biến thể', 'text', 'content', { required: true }),
-      f('product', 'Sản phẩm gốc', 'text', 'content', { required: true }),
+      f('product', 'Sản phẩm gốc', 'select', 'content', { required: true }),
       f('option', 'Tuỳ chọn (Chất liệu / Màu / Kích thước)', 'text', 'content', {
         required: true,
         placeholder: 'Linen / Beige / 3 chỗ',
@@ -151,8 +158,10 @@ export const SOFA2_CATALOG_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     titleKey: 'sku',
     statusKey: 'status',
     statusOptions: ['Đủ hàng', 'Sắp hết', 'Hết hàng'],
+    defaultStatus: 'Đủ hàng',
+    statusToggle: false,
     fields: [
-      f('sku', 'SKU', 'text', 'content', { required: true }),
+      f('sku', 'SKU', 'select', 'content', { required: true }),
       f('warehouse', 'Kho', 'select', 'content', { required: true, options: WAREHOUSES }),
       f('location', 'Vị trí kệ', 'text', 'content', { placeholder: 'A-03-2' }),
       f('note', 'Ghi chú nhập/xuất', 'textarea', 'content', { multiline: 3 }),
@@ -172,9 +181,11 @@ export const SOFA2_CATALOG_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     entity: 'bảng giá',
     titleKey: 'sku',
     statusKey: 'status',
-    statusOptions: ['Đang giảm', 'Giá gốc', 'Hết hiệu lực'],
+    statusOptions: ['Đang giảm', 'Giá gốc', 'Chờ bắt đầu', 'Hết hiệu lực'],
+    defaultStatus: 'Giá gốc',
+    statusToggle: false,
     fields: [
-      f('sku', 'SKU', 'text', 'content', { required: true }),
+      f('sku', 'SKU', 'select', 'content', { required: true }),
       f('priceList', 'Bảng giá', 'select', 'content', {
         options: ['Bán lẻ', 'Đại lý cấp 1', 'Đại lý cấp 2', 'Dự án', 'Flash sale'],
       }),
@@ -186,7 +197,7 @@ export const SOFA2_CATALOG_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('endDate', 'Kết thúc', 'date', 'display'),
       f('status', 'Trạng thái', 'select', 'display', {
         required: true,
-        options: ['Đang giảm', 'Giá gốc', 'Hết hiệu lực'],
+        options: ['Đang giảm', 'Giá gốc', 'Chờ bắt đầu', 'Hết hiệu lực'],
       }),
       f('showBadge', 'Hiện nhãn % giảm trên web', 'switch', 'display'),
     ],
