@@ -35,6 +35,7 @@ import { getSofa2HrSchema } from '../sofa2-hr';
 import { useSofa2HrT } from '../sofa2-hr-i18n';
 import { getSofa2CmsSchema } from '../sofa2-cms';
 import { getSofa2CatalogSchema } from '../sofa2-catalog';
+import { getSofa2CustomerSchema } from '../sofa2-customer';
 import { Sofa2AdminCmsView } from './sofa2-admin-cms-view';
 import { type AdminRow, useSofa2AdminRows } from '../sofa2-admin-store';
 import { Sofa2AdminLayout, SOFA2_ADMIN_THEME } from './sofa2-admin-layout';
@@ -118,6 +119,7 @@ export function Sofa2AdminModuleView() {
 
   const hrSchema = group.slug === 'hr' ? getSofa2HrSchema(module.slug) : undefined;
   const catalogSchema = group.slug === 'catalog' ? getSofa2CatalogSchema(module.slug) : undefined;
+  const customerSchema = group.slug === 'customer' ? getSofa2CustomerSchema(module.slug) : undefined;
   const cmsSchema = group.slug === 'cms' ? getSofa2CmsSchema(module.slug) : undefined;
   if (hrSchema) {
     const translatedGroup = {
@@ -149,6 +151,9 @@ export function Sofa2AdminModuleView() {
   }
   if (catalogSchema) {
     return <Sofa2AdminCmsView group={group} module={module} schema={catalogSchema} />;
+  }
+  if (customerSchema) {
+    return <Sofa2AdminCmsView group={group} module={module} schema={customerSchema} />;
   }
   if (cmsSchema) {
     return (

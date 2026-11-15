@@ -29,8 +29,10 @@ const schema = (
   statusKey: 'status',
   statusOptions,
   defaultStatus,
-  publishLabel: statusOptions[0],
-  fields: [...fields, f('status', 'Trạng thái', 'select', 'display', { required: true, options: statusOptions })],
+  statusToggle: false,
+  fields: fields.some((field) => field.key === 'status')
+    ? fields
+    : [...fields, f('status', 'Trạng thái', 'select', 'display', { required: true, options: statusOptions })],
 });
 
 const mod = (
@@ -55,6 +57,7 @@ const STAFF = ['Minh Anh', 'Thu Hà', 'Hoàng Long', 'Quốc Bảo', 'Chưa gán
 const STYLES = ['Hiện đại', 'Tối giản', 'Bắc Âu', 'Cổ điển', 'Indochine'];
 const PAYMENTS = ['COD', 'Chuyển khoản', 'Thẻ tín dụng', 'Trả góp 0%', 'Ví điện tử'];
 const PRODUCTS = ['Sofa góc Milano', 'Sofa da Verona', 'Sofa băng Oslo', 'Ghế thư giãn Luna', 'Sofa nỉ Kyoto', 'Bàn trà Marble'];
+export const SOFA2_CUSTOMER_COMPLAINT_TYPES = ['Sản phẩm', 'Giao hàng', 'Lắp đặt', 'Dịch vụ', 'Thanh toán', 'Khác', 'Sản phẩm lỗi', 'Giao hàng trễ', 'Sai màu/kích thước', 'Thái độ nhân viên'];
 const NAMES = [SOFA2_DEMO_CUSTOMER_NAME, 'Trần Minh Khoa', 'Lê Hoàng Yến', 'Phạm Quốc Huy', 'Võ Ngọc Hân', 'Đặng Gia Bảo', 'Bùi Thanh Tâm', 'Hồ Mỹ Linh', 'Ngô Đức Thắng', 'Đỗ Phương Anh'];
 const CUSTOMER_IDS = NAMES.map((_, i) => `KH-${1001 + i}`);
 const pick = <T,>(arr: T[], i: number) => arr[i % arr.length];
@@ -65,7 +68,7 @@ const gen = (n: number, fn: (i: number) => Row) => Array.from({ length: n }, (_,
 const ST = {
   dashboard: ['Hoạt động', 'Cần chăm sóc', 'Không hoạt động', 'Đã khoá'],
   profile: ['Đã xác minh', 'Chưa xác minh', 'Đã khoá'],
-  order: ['Chờ xác nhận', 'Đang xử lý', 'Đang giao', 'Hoàn thành', 'Đã huỷ'],
+  order: ['Chờ xác nhận', 'Đang xử lý', 'Đang sản xuất', 'Đang giao', 'Đã giao', 'Hoàn thành', 'Đã huỷ'],
   warranty: ['Còn hiệu lực', 'Tiếp nhận', 'Đang kiểm tra', 'Đang sửa chữa', 'Hoàn tất', 'Hết hạn', 'Từ chối'],
   points: ['Đã ghi nhận', 'Chờ duyệt', 'Đã huỷ'],
   voucher: ['Đang phát hành', 'Bản nháp', 'Tạm dừng', 'Hết hạn', 'Đã nhận', 'Đã sử dụng'],
@@ -85,7 +88,7 @@ export const SOFA2_CUSTOMER_GROUP: Sofa2AdminGroup = {
     mod('profiles', 'Hồ sơ', 'Thông tin cá nhân, địa chỉ giao hàng và tuỳ chọn nhận tin của khách.', 'solar:user-id-bold-duotone',
       [{ label: 'Hồ sơ', value: '2.846' }, { label: 'Đã xác minh', value: '91%' }, { label: 'Nhận email', value: '64%' }, { label: 'Nhận Zalo/SMS', value: '72%' }],
       [{ key: 'customerId', label: 'Mã khách' }, { key: 'name', label: 'Họ tên' }, { key: 'phone', label: 'Điện thoại' }, { key: 'email', label: 'Email' }, { key: 'city', label: 'Tỉnh/thành' }, S],
-      gen(10, (i) => ({ customerId: CUSTOMER_IDS[i], name: NAMES[i], phone: `09${String(12345678 + i * 1111).slice(0, 8)}`, email: `khach${i + 1}@gmail.com`, birthday: `199${i % 10}-0${(i % 9) + 1}-15`, gender: i % 2 ? 'Nam' : 'Nữ', address: `${12 + i} Nguyễn Huệ`, city: pick(CITIES, i), style: pick(STYLES, i), emailOptIn: i % 3 ? 'true' : 'false', smsOptIn: 'true', status: pick(ST.profile, i % 7 === 6 ? 1 : 0) }))),
+      gen(10, (i) => ({ customerId: CUSTOMER_IDS[i], name: NAMES[i], phone: `09${String(12345678 + i * 1111).slice(0, 8)}`, email: `khach${i + 1}@gmail.com`, birthday: `199${i % 10}-0${(i % 9) + 1}-15`, gender: i % 2 ? 'Nam' : 'Nữ', address: `${12 + i} Nguyễn Huệ`, city: pick(CITIES, i), style: pick(STYLES, i), emailOptIn: i % 3 ? 'Có' : 'Không', smsOptIn: 'Có', status: pick(ST.profile, i % 7 === 6 ? 1 : 0) }))),
     mod('customer-orders', 'Đơn hàng', 'Đơn mua của khách, hiển thị trong mục "Đơn hàng của tôi".', 'solar:bag-4-bold-duotone',
       [{ label: 'Đơn tháng', value: '468', trend: '+14%' }, { label: 'Giá trị TB', value: '21,6tr' }, { label: 'Đang giao', value: '37' }, { label: 'Tỷ lệ huỷ', value: '2,1%' }],
       [{ key: 'code', label: 'Mã đơn' }, { key: 'customer', label: 'Khách hàng' }, { key: 'product', label: 'Sản phẩm' }, { key: 'total', label: 'Tổng tiền', type: 'money' }, { key: 'payment', label: 'Thanh toán' }, S],
@@ -150,7 +153,7 @@ export const SOFA2_CUSTOMER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('style', 'Phong cách yêu thích', 'select', 'display', { options: STYLES }),
     f('emailOptIn', 'Nhận email khuyến mãi', 'switch', 'display'),
     f('smsOptIn', 'Nhận SMS/Zalo', 'switch', 'display'),
-    f('status', 'Trạng thái hồ sơ', 'select', 'display', { options: ['Đầy đủ', 'Thiếu thông tin'] }),
+    f('status', 'Trạng thái hồ sơ', 'select', 'display', { options: ST.profile }),
   ], ST.profile[1], '/sofa2/profile'),
   'customer-orders': schema('đơn hàng', 'code', ST.order, [
     f('code', 'Mã đơn', 'text', 'content', { required: true, placeholder: 'DH1001' }),
@@ -167,7 +170,6 @@ export const SOFA2_CUSTOMER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('points', 'Điểm được cộng', 'number', 'display'),
     f('voucher', 'Voucher đã dùng', 'text', 'display'),
     f('note', 'Ghi chú đơn hàng', 'textarea', 'seo', { multiline: 2 }),
-    f('status', 'Trạng thái đơn hàng', 'select', 'display', { options: ['Chờ xác nhận', 'Đang xử lý', 'Đang sản xuất', 'Đang giao', 'Đã giao', 'Hoàn thành', 'Đã huỷ'] }),
   ], ST.order[0], '/sofa2/my-orders'),
   warranties: schema('phiếu bảo hành', 'code', ST.warranty, [
     f('code', 'Mã phiếu', 'text', 'content', { required: true }),
@@ -181,7 +183,6 @@ export const SOFA2_CUSTOMER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('expiry', 'Hết hạn bảo hành', 'date', 'display'),
     f('technician', 'Kỹ thuật viên', 'select', 'display', { options: STAFF }),
     f('appointment', 'Lịch hẹn', 'date', 'display'),
-    f('status', 'Trạng thái bảo hành', 'select', 'display', { options: ['Còn hiệu lực', 'Đang sửa chữa', 'Hết hạn', 'Sắp hết hạn', 'Đã hoàn tất'] }),
   ], ST.warranty[0], '/sofa2/warranty'),
   points: schema('giao dịch điểm', 'reason', ST.points, [
     f('customerId', 'Mã khách hàng', 'text', 'content', { required: true, placeholder: 'KH-1001' }),
@@ -207,9 +208,11 @@ export const SOFA2_CUSTOMER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('code', 'Mã khiếu nại', 'text', 'content', { required: true }),
     f('customerId', 'Mã khách hàng', 'text', 'content', { required: true, placeholder: 'KH-1001' }),
     f('customer', 'Khách hàng', 'text', 'content', { required: true }),
-    f('type', 'Loại vấn đề', 'select', 'content', { options: ['Giao hàng trễ', 'Sản phẩm lỗi', 'Sai màu/kích thước', 'Thái độ nhân viên', 'Thanh toán', 'Khác'] }),
+    f('type', 'Loại vấn đề', 'select', 'content', { options: SOFA2_CUSTOMER_COMPLAINT_TYPES }),
     f('orderCode', 'Mã đơn liên quan', 'text', 'content'),
+    f('subject', 'Tiêu đề', 'text', 'content', { required: true, maxLength: 120 }),
     f('content', 'Nội dung', 'textarea', 'content', { required: true }),
+    f('created', 'Ngày tiếp nhận', 'date', 'display'),
     f('resolution', 'Hướng xử lý', 'textarea', 'content', ),
     f('priority', 'Ưu tiên', 'select', 'display', { options: ['Cao', 'Trung bình', 'Thấp'] }),
     f('owner', 'Người phụ trách', 'select', 'display', { options: STAFF }),
