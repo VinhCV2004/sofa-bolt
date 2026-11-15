@@ -3,7 +3,7 @@ import type { IPostItem } from 'src/types/blog';
 import useSWR from 'swr';
 import { useMemo } from 'react';
 
-import { fetcher, endpoints } from 'src/utils/axios';
+import { fetcher, endpoints } from 'src/utils/mock-api';
 
 // ----------------------------------------------------------------------
 

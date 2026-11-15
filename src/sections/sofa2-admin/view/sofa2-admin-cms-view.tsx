@@ -57,6 +57,7 @@ import {
   hasSofa2AdminPermission,
   type Sofa2AdminAccessSession,
 } from '../sofa2-access-control';
+import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
 
 // ----------------------------------------------------------------------
 
@@ -116,7 +117,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
 
   const [dealerLoading, setDealerLoading] = useState(group.slug === 'dealer');
   const [accessSaveStarted, setAccessSaveStarted] = useState(false);
-  const [accessSession, setAccessSession] = useState<Sofa2AdminAccessSession | null>(null);
+  const [accessSession] = useState<Sofa2AdminAccessSession | null>(() =>
+    getSofa2DemoAdminSession()
+  );
   const isAdmin = accessSession?.role === 'admin';
   const canCreate = hasSofa2AdminPermission(accessSession, group.slug, 'Tạo mới');
   const canEdit = hasSofa2AdminPermission(accessSession, group.slug, 'Sửa');
@@ -125,26 +128,11 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   const canExport = hasSofa2AdminPermission(accessSession, group.slug, 'Xuất dữ liệu');
 
   useEffect(() => {
-    let active = true;
-    fetch('/api/admin/access/session', { credentials: 'include' })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((session: Sofa2AdminAccessSession | null) => {
-        if (active) setAccessSession(session);
-      })
-      .catch(() => {
-        if (active) setAccessSession(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (group.slug !== 'access') return;
     if (rowsSaving) {
       setAccessSaveStarted(true);
     } else if (accessSaveStarted) {
-      setToast(rowsError ? `Không lưu được: ${rowsError}` : 'Đã lưu thay đổi phân quyền trên máy chủ.');
+      setToast(rowsError ? `Không lưu được: ${rowsError}` : 'Đã lưu thay đổi phân quyền trong trình duyệt.');
       setAccessSaveStarted(false);
     }
   }, [accessSaveStarted, group.slug, rowsError, rowsSaving]);
@@ -155,7 +143,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     setDealerLoading(true);
     loadSofa2DealerRows(module.slug, module.rows)
       .catch(() => {
-        if (active) setToast('Không tải được dữ liệu máy chủ; các thay đổi chưa thể đồng bộ.');
+        if (active) setToast('Không tải được dữ liệu đại lý demo.');
       })
       .finally(() => {
         if (active) setDealerLoading(false);
@@ -484,7 +472,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         ? form.mode === 'create'
           ? `Đã thêm ${entity} mới.`
           : `Đã cập nhật ${entity}.`
-        : 'Đã lưu tạm trên trình duyệt nhưng chưa đồng bộ được với máy chủ.'
+        : 'Đã lưu thay đổi trên trình duyệt demo.'
     );
     setForm((prev) => ({ ...prev, open: false }));
   };
@@ -501,7 +489,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         ? isPublished
           ? `Đã gỡ ${publishLabel.toLowerCase()} ${entity}.`
           : `Đã ${publishLabel.toLowerCase()} ${entity}.`
-        : 'Đã lưu tạm trên trình duyệt nhưng chưa đồng bộ được với máy chủ.'
+        : 'Đã lưu thay đổi trên trình duyệt demo.'
     );
   };
 
@@ -521,7 +509,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     if (copy.slug) copy.slug = `${sofa2Slugify(String(row[titleKey]))}-copy`;
     createRow(copy);
     const synced = await syncDealerModule();
-    setToast(synced ? `Đã nhân bản ${entity}.` : 'Đã lưu tạm trên trình duyệt nhưng chưa đồng bộ được với máy chủ.');
+    setToast(synced ? `Đã nhân bản ${entity}.` : 'Đã lưu thay đổi trên trình duyệt demo.');
   };
 
   const doDelete = async () => {
@@ -534,7 +522,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       deleteRow(confirm.index);
       setSelected([]);
       const synced = await syncDealerModule();
-      setToast(synced ? `Đã xoá ${entity}.` : 'Đã xoá tạm trên trình duyệt nhưng chưa đồng bộ được với máy chủ.');
+      setToast(synced ? `Đã xoá ${entity}.` : 'Đã xoá dữ liệu trong trình duyệt demo.');
     }
     setConfirm({ open: false, index: null });
   };
@@ -553,7 +541,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     setToast(
       synced
         ? `Đã xoá ${deletedCount} ${entity}.`
-        : 'Đã xoá tạm trên trình duyệt nhưng chưa đồng bộ được với máy chủ.'
+        : 'Đã xoá dữ liệu trong trình duyệt demo.'
     );
   };
 
@@ -567,7 +555,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     setToast(
       synced
         ? `Đã ${publishLabel.toLowerCase()} ${selected.length} ${entity}.`
-        : 'Đã lưu tạm trên trình duyệt nhưng chưa đồng bộ được với máy chủ.'
+        : 'Đã lưu thay đổi trên trình duyệt demo.'
     );
     setSelected([]);
   };
@@ -866,7 +854,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       >
         {group.slug === 'access' && rowsLoading && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            Đang tải cấu hình phân quyền từ máy chủ…
+            Đang tải cấu hình phân quyền demo…
           </Alert>
         )}
         {group.slug === 'access' && rowsError && (
@@ -889,7 +877,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         )}
         {group.slug === 'access' && module.slug === 'users' && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            Thêm email đã đăng ký Clerk. Người dùng phải đăng nhập và xác minh đúng email; quyền sẽ được liên kết tự động. Thao tác này không gửi thư mời.
+            Danh sách người dùng và quyền chỉ là dữ liệu demo lưu trong trình duyệt; email không được xác minh và không cấp quyền đăng nhập thật.
           </Alert>
         )}
         {group.slug === 'access' && module.slug === 'permissions' && (
@@ -899,7 +887,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         )}
         {group.slug === 'dealer' && dealerLoading && (
           <Alert severity="info" sx={{ mb: 2 }}>
-            Đang tải dữ liệu đại lý đã đồng bộ…
+            Đang tải dữ liệu đại lý demo…
           </Alert>
         )}
         <Grid container spacing={3}>
@@ -1045,7 +1033,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
                           setToast(
                             synced
                               ? 'Đã khôi phục dữ liệu gốc.'
-                              : 'Đã khôi phục tạm trên trình duyệt nhưng chưa đồng bộ được với máy chủ.'
+                              : 'Đã khôi phục dữ liệu trên trình duyệt demo.'
                           )
                         );
                       }}

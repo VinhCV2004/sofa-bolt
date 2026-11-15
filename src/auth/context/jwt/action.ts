@@ -1,7 +1,4 @@
-import axios, { endpoints } from 'src/utils/axios';
-
 import { setSession } from './utils';
-import { STORAGE_KEY } from './constant';
 
 // ----------------------------------------------------------------------
 
@@ -17,22 +14,23 @@ export type SignUpParams = {
   lastName: string;
 };
 
+function createDemoToken(email: string) {
+  const payload = {
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
+    email: email.trim(),
+    role: 'admin',
+  };
+  const encoded = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  return `demo.${encoded}.local`;
+}
+
 /** **************************************
  * Sign in
  *************************************** */
 export const signInWithPassword = async ({ email, password }: SignInParams): Promise<void> => {
   try {
-    const params = { email, password };
-
-    const res = await axios.post(endpoints.auth.signIn, params);
-
-    const { accessToken } = res.data;
-
-    if (!accessToken) {
-      throw new Error('Access token not found in response');
-    }
-
-    setSession(accessToken);
+    if (!email.trim() || !password) throw new Error('Nhập email và mật khẩu để tiếp tục.');
+    await setSession(createDemoToken(email));
   } catch (error) {
     console.error('Error during sign in:', error);
     throw error;
@@ -42,29 +40,10 @@ export const signInWithPassword = async ({ email, password }: SignInParams): Pro
 /** **************************************
  * Sign up
  *************************************** */
-export const signUp = async ({
-  email,
-  password,
-  firstName,
-  lastName,
-}: SignUpParams): Promise<void> => {
-  const params = {
-    email,
-    password,
-    firstName,
-    lastName,
-  };
-
+export const signUp = async ({ email, password }: SignUpParams): Promise<void> => {
   try {
-    const res = await axios.post(endpoints.auth.signUp, params);
-
-    const { accessToken } = res.data;
-
-    if (!accessToken) {
-      throw new Error('Access token not found in response');
-    }
-
-    sessionStorage.setItem(STORAGE_KEY, accessToken);
+    if (!email.trim() || !password) throw new Error('Nhập email và mật khẩu để tiếp tục.');
+    await setSession(createDemoToken(email));
   } catch (error) {
     console.error('Error during sign up:', error);
     throw error;

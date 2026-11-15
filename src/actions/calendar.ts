@@ -3,18 +3,16 @@ import type { ICalendarEvent } from 'src/types/calendar';
 import { useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 
-import axios, { fetcher, endpoints } from 'src/utils/axios';
+import { fetcher, endpoints } from 'src/utils/mock-api';
 
 // ----------------------------------------------------------------------
-
-const enableServer = false;
 
 const CALENDAR_ENDPOINT = endpoints.calendar;
 
 const swrOptions = {
-  revalidateIfStale: enableServer,
-  revalidateOnFocus: enableServer,
-  revalidateOnReconnect: enableServer,
+  revalidateIfStale: false,
+  revalidateOnFocus: false,
+  revalidateOnReconnect: false,
 };
 
 // ----------------------------------------------------------------------
@@ -52,14 +50,6 @@ export function useGetEvents() {
 
 export async function createEvent(eventData: ICalendarEvent) {
   /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { eventData };
-    await axios.post(CALENDAR_ENDPOINT, data);
-  }
-
-  /**
    * Work in local
    */
   mutate(
@@ -78,14 +68,6 @@ export async function createEvent(eventData: ICalendarEvent) {
 // ----------------------------------------------------------------------
 
 export async function updateEvent(eventData: Partial<ICalendarEvent>) {
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { eventData };
-    await axios.put(CALENDAR_ENDPOINT, data);
-  }
-
   /**
    * Work in local
    */
@@ -107,14 +89,6 @@ export async function updateEvent(eventData: Partial<ICalendarEvent>) {
 // ----------------------------------------------------------------------
 
 export async function deleteEvent(eventId: string) {
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { eventId };
-    await axios.patch(CALENDAR_ENDPOINT, data);
-  }
-
   /**
    * Work in local
    */

@@ -2,11 +2,9 @@ import { useMemo, useEffect, useCallback } from 'react';
 
 import { useSetState } from 'src/hooks/use-set-state';
 
-import axios, { endpoints } from 'src/utils/axios';
-
 import { STORAGE_KEY } from './constant';
 import { AuthContext } from '../auth-context';
-import { setSession, isValidToken } from './utils';
+import { jwtDecode, setSession, isValidToken } from './utils';
 
 import type { AuthState } from '../../types';
 
@@ -35,11 +33,18 @@ export function AuthProvider({ children }: Props) {
       if (accessToken && isValidToken(accessToken)) {
         setSession(accessToken);
 
-        const res = await axios.get(endpoints.auth.me);
-
-        const { user } = res.data;
-
-        setState({ user: { ...user, accessToken }, loading: false });
+        const payload = jwtDecode(accessToken);
+        const email = typeof payload?.email === 'string' ? payload.email : 'demo@local';
+        setState({
+          user: {
+            id: 'local-demo-user',
+            email,
+            displayName: email.split('@')[0],
+            role: payload?.role ?? 'admin',
+            accessToken,
+          },
+          loading: false,
+        });
       } else {
         setState({ user: null, loading: false });
       }

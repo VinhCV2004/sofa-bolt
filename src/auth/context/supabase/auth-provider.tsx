@@ -2,8 +2,6 @@ import { useMemo, useEffect, useCallback } from 'react';
 
 import { useSetState } from 'src/hooks/use-set-state';
 
-import axios from 'src/utils/axios';
-
 import { supabase } from 'src/lib/supabase';
 
 import { AuthContext } from '../auth-context';
@@ -42,13 +40,9 @@ export function AuthProvider({ children }: Props) {
       }
 
       if (session) {
-        const accessToken = session?.access_token;
-
         setState({ user: { ...session, ...session?.user }, loading: false });
-        axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
       } else {
         setState({ user: null, loading: false });
-        delete axios.defaults.headers.common.Authorization;
       }
     } catch (error) {
       console.error(error);

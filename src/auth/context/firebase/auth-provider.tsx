@@ -4,8 +4,6 @@ import { useMemo, useEffect, useCallback } from 'react';
 
 import { useSetState } from 'src/hooks/use-set-state';
 
-import axios from 'src/utils/axios';
-
 import { AUTH, FIRESTORE } from 'src/lib/firebase';
 
 import { AuthContext } from '../auth-context';
@@ -44,13 +42,9 @@ export function AuthProvider({ children }: Props) {
 
           const profileData = docSnap.data();
 
-          const { accessToken } = user;
-
           setState({ user: { ...user, ...profileData }, loading: false });
-          axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
         } else {
           setState({ user: null, loading: false });
-          delete axios.defaults.headers.common.Authorization;
         }
       });
     } catch (error) {

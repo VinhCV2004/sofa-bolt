@@ -18,6 +18,7 @@ import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { createSofa2MockQuote } from 'src/_mock/_sofa2-demo';
 
 // ----------------------------------------------------------------------
 
@@ -58,19 +59,16 @@ export default function Page() {
     setSending(true);
     setMessage('');
     try {
-      const response = await fetch('/api/dealer/quotes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const quote = createSofa2MockQuote(
+        {
           ...form,
           products: form.note,
           address: form.address,
-        }),
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || 'Không gửi được yêu cầu báo giá.');
+        },
+        'project'
+      );
       setSent(true);
-      setMessage(`Đã tiếp nhận yêu cầu ${body.quote?.code ?? ''}. Nhân viên sẽ liên hệ sớm.`);
+      setMessage(`Đã lưu yêu cầu ${quote.code} trên thiết bị demo. Đây chưa phải yêu cầu gửi tới nhân viên.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Không gửi được yêu cầu báo giá.');
     } finally {

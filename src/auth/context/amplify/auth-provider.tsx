@@ -4,8 +4,6 @@ import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
 
 import { useSetState } from 'src/hooks/use-set-state';
 
-import axios from 'src/utils/axios';
-
 import { CONFIG } from 'src/config-global';
 
 import { AuthContext } from '../auth-context';
@@ -53,13 +51,9 @@ export function AuthProvider({ children }: Props) {
       if (authSession) {
         const userAttributes = await fetchUserAttributes();
 
-        const accessToken = authSession.accessToken.toString();
-
         setState({ user: { ...authSession, ...userAttributes }, loading: false });
-        axios.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
       } else {
         setState({ user: null, loading: false });
-        delete axios.defaults.headers.common.Authorization;
       }
     } catch (error) {
       console.error(error);

@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from 'src/lib/supabase';
-
 import { SOFA2_ADMIN_GROUPS } from './sofa2-admin-data';
 import { sofa2Slugify } from './sofa2-cms';
-
-const untypedSupabase = supabase as unknown as SupabaseClient;
 
 // ----------------------------------------------------------------------
 // Kho dữ liệu CRUD tại chỗ (in-memory) cho khu quản trị sofa2.
@@ -56,7 +51,7 @@ try {
   if (saved) {
     const savedRows = JSON.parse(saved) as Store;
     Object.entries(savedRows).forEach(([storeKey, rows]) => {
-      if (!storeKey.startsWith('access/')) store[storeKey] = rows;
+      store[storeKey] = rows;
     });
   } else {
     const addressesKey = key('shopping', 'addresses');
@@ -232,61 +227,22 @@ export const getSofa2AdminRows = (groupSlug: string, moduleSlug: string) =>
 
 export async function loadSofa2SeoRows(moduleSlug: string, defaults: AdminRow[]) {
   const k = key('seo', moduleSlug);
-  const response = await fetch(`/api/admin/seo/${encodeURIComponent(moduleSlug)}`, {
-    credentials: 'include',
-  });
-  if (!response.ok) throw new Error('Không tải được dữ liệu SEO. Hãy đăng nhập bằng tài khoản quản trị.');
-
-  let payload = (await response.json()) as { rows?: AdminRow[]; initialized?: boolean };
-  if (!payload.initialized) {
-    const seeded = await fetch(`/api/admin/seo/${encodeURIComponent(moduleSlug)}/seed`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rows: store[k] ?? defaults }),
-    });
-    if (!seeded.ok) throw new Error('Không khởi tạo được dữ liệu SEO trên máy chủ.');
-    payload = (await seeded.json()) as { rows?: AdminRow[]; initialized?: boolean };
-  }
-
-  const nextRows = (payload.rows ?? []).map((row) => ({ ...row }));
-  store[k] = nextRows;
-  savedSeoRows.set(k, nextRows.map((row) => ({ ...row })));
+  const rows = (store[k] ?? defaults).map((row) => ({ ...row }));
+  store[k] = rows;
   emit();
-  return nextRows;
+  return rows;
 }
 
 export async function syncSofa2SeoRows(moduleSlug: string, rows: AdminRow[]) {
   const k = key('seo', moduleSlug);
-  const previous = seoWriteQueues.get(k) ?? Promise.resolve([]);
-  const next = previous
-    .catch(() => [])
-    .then(async () => {
-      const response = await fetch(`/api/admin/seo/${encodeURIComponent(moduleSlug)}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows }),
-      });
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as { error?: string };
-        throw new Error(payload.error || 'Không lưu được dữ liệu SEO trên máy chủ.');
-      }
-      const payload = (await response.json()) as { rows?: AdminRow[] };
-      return (payload.rows ?? rows).map((row) => ({ ...row }));
-    });
-
-  seoWriteQueues.set(k, next);
-  try {
-    return await next;
-  } finally {
-    if (seoWriteQueues.get(k) === next) seoWriteQueues.delete(k);
-  }
+  const nextRows = rows.map((row) => ({ ...row }));
+  store[k] = nextRows;
+  emit();
+  return nextRows;
 }
 
 // ----------------------------------------------------------------------
-// CMS — đồng bộ với 7 bảng Supabase (sofa2_cms_pages, sofa2_cms_posts, ...)
-// Admin schema dùng giá trị tiếng Việt; DB dùng tiếng Anh snake_case.
+// CMS mock data is stored alongside other admin rows in browser localStorage.
 // ----------------------------------------------------------------------
 
 const CMS_TABLE_MAP: Record<string, string> = {
@@ -581,32 +537,8 @@ const savedCmsRows = new Map<string, AdminRow[]>();
 
 export async function loadSofa2CmsRows(moduleSlug: string, defaults: AdminRow[]): Promise<AdminRow[]> {
   const k = key('cms', moduleSlug);
-  const table = CMS_TABLE_MAP[moduleSlug];
-  if (!table) return store[k] ?? defaults;
-
-  let query = untypedSupabase.from(table).select('*');
-  if (PAGE_MODULES.includes(moduleSlug)) {
-    query = query.eq('slug', moduleSlug);
-  }
-  if (moduleSlug === 'seo') {
-    query = query.order('page_path', { ascending: true });
-  } else {
-    query = query.order('sort_order', { ascending: true });
-  }
-
-  const { data, error } = await query;
-  if (error || !data || data.length === 0) {
-    // Giữ dữ liệu mẫu trong store nếu DB trống
-    if (!store[k] || store[k].length === 0) {
-      store[k] = defaults.map((row) => ({ ...row }));
-      emit();
-    }
-    return store[k] ?? [];
-  }
-
-  const rows = data.map((row) => cmsDbToAdminRow(moduleSlug, row as unknown as Record<string, unknown>));
+  const rows = (store[k] ?? defaults).map((row) => ({ ...row }));
   store[k] = rows;
-  savedCmsRows.set(k, rows.map((row) => ({ ...row })));
   emit();
   return rows;
 }
@@ -618,68 +550,10 @@ export async function syncSofa2CmsRow(
   index: number
 ): Promise<AdminRow[]> {
   const k = key('cms', moduleSlug);
-  const table = CMS_TABLE_MAP[moduleSlug];
-  if (!table) return store[k] ?? [];
-
-  const previous = cmsWriteQueues.get(k) ?? Promise.resolve([]);
-  const next = previous
-    .catch(() => [])
-    .then(async () => {
-      if (mode === 'delete') {
-        const id = String(row.id ?? '');
-        if (id) {
-          const { error: delError } = await untypedSupabase.from(table).delete().eq('id', id);
-          if (delError) throw new Error(delError.message);
-        }
-        return store[k] ?? [];
-      }
-
-      const payload = cmsAdminToDbRow(moduleSlug, row);
-      if (mode === 'update') {
-        const id = String(row.id ?? '');
-        if (id) {
-          const { data: updated, error: updError } = await untypedSupabase
-            .from(table)
-            .update(payload)
-            .eq('id', id)
-            .select('*')
-            .maybeSingle();
-          if (updError) throw new Error(updError.message);
-          if (updated) {
-            return (store[k] ?? []).map((r, i) =>
-              i === index ? cmsDbToAdminRow(moduleSlug, updated as unknown as Record<string, unknown>) : r
-            );
-          }
-        }
-        // Không có id — rơi về create
-      }
-
-      // Create
-      const { data: created, error: insError } = await untypedSupabase
-        .from(table)
-        .insert(payload)
-        .select('*')
-        .maybeSingle();
-      if (insError) throw new Error(insError.message);
-      if (created) {
-        const newRow = cmsDbToAdminRow(moduleSlug, created as unknown as Record<string, unknown>);
-        return [newRow, ...(store[k] ?? [])];
-      }
-      return store[k] ?? [];
-    });
-
-  cmsWriteQueues.set(k, next);
-  try {
-    const result = await next;
-    if (result) {
-      store[k] = result;
-      savedCmsRows.set(k, result.map((r) => ({ ...r })));
-      emit();
-    }
-    return store[k] ?? [];
-  } finally {
-    if (cmsWriteQueues.get(k) === next) cmsWriteQueues.delete(k);
-  }
+  void mode;
+  void row;
+  void index;
+  return (store[k] ?? []).map((item) => ({ ...item }));
 }
 
 export async function loadSofa2DealerRows(moduleSlug: string, defaults: AdminRow[]) {
@@ -689,91 +563,28 @@ export async function loadSofa2DealerRows(moduleSlug: string, defaults: AdminRow
     if (dashboard) await loadSofa2DealerRows('dashboard', dashboard.rows);
   }
 
-  const encodedModule = encodeURIComponent(moduleSlug);
-  const response = await fetch(`/api/admin/dealer/${encodedModule}`, { credentials: 'include' });
-  if (!response.ok) throw new Error('Không tải được dữ liệu đại lý từ máy chủ.');
-
-  let payload = (await response.json()) as { rows?: AdminRow[] };
-  if ((!payload.rows || payload.rows.length === 0) && defaults.length > 0) {
-    const seeded = await fetch(`/api/admin/dealer/${encodedModule}/seed`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rows: defaults }),
-    });
-    if (!seeded.ok) throw new Error('Không khởi tạo được dữ liệu đại lý.');
-    payload = (await seeded.json()) as { rows?: AdminRow[] };
-  }
-
-  store[key('dealer', moduleSlug)] = (payload.rows ?? []).map((row) => ({ ...row }));
+  const k = key('dealer', moduleSlug);
+  store[k] = (store[k] ?? defaults).map((row) => ({ ...row }));
   emit();
 }
 
 export async function syncSofa2DealerRows(moduleSlug: string, rows: AdminRow[]) {
-  const response = await fetch(`/api/admin/dealer/${encodeURIComponent(moduleSlug)}`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rows }),
-  });
-  if (!response.ok) throw new Error('Không đồng bộ được dữ liệu đại lý với máy chủ.');
-
-  const payload = (await response.json()) as { rows?: AdminRow[] };
-  if (payload.rows) {
-    store[key('dealer', moduleSlug)] = payload.rows.map((row) => ({ ...row }));
-    emit();
-  }
+  store[key('dealer', moduleSlug)] = rows.map((row) => ({ ...row }));
+  emit();
 }
 
 export async function loadSofa2AccessRows(moduleSlug: string) {
-  const readModule = async (slug: string) => {
-    const response = await fetch(`/api/admin/access/${encodeURIComponent(slug)}`, {
-      credentials: 'include',
-    });
-    if (!response.ok) throw new Error('Không tải được dữ liệu phân quyền từ máy chủ.');
-    return (await response.json()) as { rows?: AdminRow[]; initialized?: boolean };
-  };
-  const seedModule = async (slug: string, rows: AdminRow[]) => {
-    const response = await fetch(`/api/admin/access/${encodeURIComponent(slug)}/seed`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rows }),
-    });
-    if (!response.ok) throw new Error('Không khởi tạo được cấu hình phân quyền mặc định.');
-    return (await response.json()) as { rows?: AdminRow[] };
-  };
-  const getDefaults = (slug: string) =>
+  const k = key('access', moduleSlug);
+  const defaults =
     SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'access')?.modules.find(
-      (module) => module.slug === slug
+      (module) => module.slug === moduleSlug
     )?.rows ?? [];
-
-  if (moduleSlug !== 'roles' && moduleSlug !== 'audit-log') {
-    const roles = await readModule('roles');
-    if (!roles.initialized) await seedModule('roles', getDefaults('roles'));
-  }
-
-  let payload = await readModule(moduleSlug);
-  if (!payload.initialized && moduleSlug !== 'audit-log') {
-    payload = await seedModule(moduleSlug, getDefaults(moduleSlug));
-  }
-  store[key('access', moduleSlug)] = (payload.rows ?? []).map((row) => ({ ...row }));
+  store[k] = (store[k] ?? defaults).map((row) => ({ ...row }));
   emit();
 }
 
 export async function syncSofa2AccessRows(moduleSlug: string, rows: AdminRow[]) {
-  const response = await fetch(`/api/admin/access/${encodeURIComponent(moduleSlug)}`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rows }),
-  });
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(payload.error || 'Không lưu được dữ liệu phân quyền.');
-  }
-  const payload = (await response.json()) as { rows?: AdminRow[] };
-  store[key('access', moduleSlug)] = (payload.rows ?? []).map((row) => ({ ...row }));
+  store[key('access', moduleSlug)] = rows.map((row) => ({ ...row }));
   emit();
 }
 

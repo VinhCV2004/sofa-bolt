@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -25,6 +25,7 @@ import {
   canOpenSofa2AdminGroup,
   type Sofa2AdminAccessSession,
 } from '../sofa2-access-control';
+import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
 
 // ----------------------------------------------------------------------
 
@@ -58,25 +59,12 @@ export function Sofa2AdminLayout({
   const siteLink = '/sofa2';
   const isDesktop = useMediaQuery('(min-width:1200px)');
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [adminSession, setAdminSession] = useState<Sofa2AdminAccessSession | null>(null);
+  const [adminSession] = useState<Sofa2AdminAccessSession | null>(() =>
+    getSofa2DemoAdminSession()
+  );
   const [openGroups, setOpenGroups] = useState<string[]>(
     activeGroup ? [activeGroup] : [SOFA2_ADMIN_GROUPS[0].slug]
   );
-
-  useEffect(() => {
-    let active = true;
-    fetch('/api/admin/access/session', { credentials: 'include' })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((session) => {
-        if (active) setAdminSession(session);
-      })
-      .catch(() => {
-        if (active) setAdminSession(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const visibleGroups =
     adminSession?.role === 'admin'

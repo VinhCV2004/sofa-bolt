@@ -60,6 +60,7 @@ import {
   hasSofa2AdminPermission,
   type Sofa2AdminAccessSession,
 } from '../sofa2-access-control';
+import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
 
 import { SOFA2_ADMIN_GROUPS, type Sofa2AdminGroup, type Sofa2AdminModule } from '../sofa2-admin-data';
 
@@ -224,7 +225,9 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selected, setSelected] = useState<number[]>([]);
   const [toast, setToast] = useState('');
-  const [accessSession, setAccessSession] = useState<Sofa2AdminAccessSession | null>(null);
+  const [accessSession] = useState<Sofa2AdminAccessSession | null>(() =>
+    getSofa2DemoAdminSession()
+  );
   const [detail, setDetail] = useState<AdminRow | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<{ open: boolean; index: number | null }>({
@@ -250,20 +253,6 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
   const canPublish = hasSofa2AdminPermission(accessSession, group.slug, 'Xuất bản');
   const canExport = hasSofa2AdminPermission(accessSession, group.slug, 'Xuất dữ liệu');
 
-  useEffect(() => {
-    let active = true;
-    fetch('/api/admin/access/session', { credentials: 'include' })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((session: Sofa2AdminAccessSession | null) => {
-        if (active) setAccessSession(session);
-      })
-      .catch(() => {
-        if (active) setAccessSession(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
   const seoPageModules = useMemo(
     () =>
       SOFA2_ADMIN_GROUPS.find((item) => item.slug === 'seo')?.modules.filter((item) =>
@@ -806,7 +795,7 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
                   ) : undefined
                 }
               >
-                {error || (loading ? 'Đang tải dữ liệu SEO từ máy chủ…' : 'Đang lưu thay đổi SEO…')}
+                {error || (loading ? 'Đang tải dữ liệu SEO demo…' : 'Đang lưu thay đổi SEO cục bộ…')}
               </Alert>
             </Grid>
           )}

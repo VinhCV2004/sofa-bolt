@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { SOFA2_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
+import { getSofa2AdminRows } from './sofa2-admin-store';
 
 import { SOFA2_SITE_ORIGIN } from './sofa2-seo-generator';
 
@@ -9,8 +10,6 @@ import { SOFA2_SITE_ORIGIN } from './sofa2-seo-generator';
 // Áp dụng dữ liệu module SEO (/sofa2/admin/seo/*) lên trang khách sofa2:
 // meta title/description/keywords, canonical, OG, robots noindex và JSON-LD.
 // ----------------------------------------------------------------------
-
-const EMPTY_SEO_DATA: PublicSeoData = { pages: [], schemas: [] };
 
 type PublicSeoPage = {
   url: string;
@@ -106,36 +105,25 @@ export function Sofa2SeoHead() {
   const path = norm(pathname);
   const active = path.startsWith('/sofa2') && !path.startsWith('/sofa2/admin');
 
-  const [seoData, setSeoData] = useState<PublicSeoData>(EMPTY_SEO_DATA);
-
-  useEffect(() => {
-    if (!active) {
-      clearAll();
-      return undefined;
-    }
-
-    let current = true;
-    fetch('/api/seo/public', { cache: 'no-store' })
-      .then(async (response) => {
-        if (!response.ok) throw new Error('Không tải được dữ liệu SEO công khai.');
-        return (await response.json()) as PublicSeoData;
-      })
-      .then((data) => {
-        if (current) {
-          setSeoData({
-            pages: Array.isArray(data.pages) ? data.pages : [],
-            schemas: Array.isArray(data.schemas) ? data.schemas : [],
-          });
-        }
-      })
-      .catch(() => {
-        if (current) setSeoData(EMPTY_SEO_DATA);
-      });
-
-    return () => {
-      current = false;
-    };
-  }, [active, path]);
+  const seoData = useMemo<PublicSeoData>(() => {
+    const modules = ['category', 'product', 'collection', 'project', 'showroom', 'blog', 'brand'];
+    const pages = modules.flatMap((moduleSlug) =>
+      getSofa2AdminRows('seo', moduleSlug).map((row) => ({
+        url: String(row.page ?? ''),
+        title: String(row.title ?? ''),
+        description: String(row.description ?? ''),
+        keyword: String(row.keyword ?? ''),
+        keyword2: String(row.keyword2 ?? ''),
+        h1: String(row.h1 ?? ''),
+        canonical: String(row.canonical ?? ''),
+        ogImage: String(row.ogImage ?? ''),
+        indexable: String(row.indexable ?? 'Có'),
+        follow: String(row.follow ?? 'Có'),
+        schemaType: String(row.schemaType ?? ''),
+      }))
+    );
+    return { pages, schemas: [] };
+  }, []);
 
   useEffect(() => {
     if (!active) {

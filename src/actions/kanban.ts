@@ -4,18 +4,16 @@ import type { IKanban, IKanbanTask, IKanbanColumn } from 'src/types/kanban';
 import { useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 
-import axios, { fetcher, endpoints } from 'src/utils/axios';
+import { fetcher, endpoints } from 'src/utils/mock-api';
 
 // ----------------------------------------------------------------------
-
-const enableServer = false;
 
 const KANBAN_ENDPOINT = endpoints.kanban;
 
 const swrOptions = {
-  revalidateIfStale: enableServer,
-  revalidateOnFocus: enableServer,
-  revalidateOnReconnect: enableServer,
+  revalidateIfStale: false,
+  revalidateOnFocus: false,
+  revalidateOnReconnect: false,
 };
 
 // ----------------------------------------------------------------------
@@ -51,14 +49,6 @@ export function useGetBoard() {
 
 export async function createColumn(columnData: IKanbanColumn) {
   /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { columnData };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'create-column' } });
-  }
-
-  /**
    * Work in local
    */
   mutate(
@@ -81,14 +71,6 @@ export async function createColumn(columnData: IKanbanColumn) {
 // ----------------------------------------------------------------------
 
 export async function updateColumn(columnId: UniqueIdentifier, columnName: string) {
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { columnId, columnName };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'update-column' } });
-  }
-
   /**
    * Work in local
    */
@@ -129,26 +111,11 @@ export async function moveColumn(updateColumns: IKanbanColumn[]) {
     false
   );
 
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { updateColumns };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'move-column' } });
-  }
 }
 
 // ----------------------------------------------------------------------
 
 export async function clearColumn(columnId: UniqueIdentifier) {
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { columnId };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'clear-column' } });
-  }
-
   /**
    * Work in local
    */
@@ -169,14 +136,6 @@ export async function clearColumn(columnId: UniqueIdentifier) {
 // ----------------------------------------------------------------------
 
 export async function deleteColumn(columnId: UniqueIdentifier) {
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { columnId };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'delete-column' } });
-  }
-
   /**
    * Work in local
    */
@@ -206,14 +165,6 @@ export async function deleteColumn(columnId: UniqueIdentifier) {
 
 export async function createTask(columnId: UniqueIdentifier, taskData: IKanbanTask) {
   /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { columnId, taskData };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'create-task' } });
-  }
-
-  /**
    * Work in local
    */
   mutate(
@@ -233,14 +184,6 @@ export async function createTask(columnId: UniqueIdentifier, taskData: IKanbanTa
 // ----------------------------------------------------------------------
 
 export async function updateTask(columnId: UniqueIdentifier, taskData: IKanbanTask) {
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { columnId, taskData };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'update-task' } });
-  }
-
   /**
    * Work in local
    */
@@ -290,26 +233,11 @@ export async function moveTask(updateTasks: IKanban['tasks']) {
     false
   );
 
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { updateTasks };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'move-task' } });
-  }
 }
 
 // ----------------------------------------------------------------------
 
 export async function deleteTask(columnId: UniqueIdentifier, taskId: UniqueIdentifier) {
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { columnId, taskId };
-    await axios.post(KANBAN_ENDPOINT, data, { params: { endpoint: 'delete-task' } });
-  }
-
   /**
    * Work in local
    */

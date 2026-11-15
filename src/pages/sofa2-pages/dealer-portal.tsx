@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useAuth, useClerk, useUser } from '@clerk/react';
+import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link as RouterLink, Navigate, useLocation } from 'react-router-dom';
+import { Link as RouterLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -24,17 +22,15 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import { Iconify } from 'src/components/iconify';
+import {
+  clearSofa2DemoSession,
+  createSofa2MockQuote,
+  getSofa2DealerPortalData,
+  getSofa2DemoSession,
+  type Sofa2DealerPortalData,
+} from 'src/_mock/_sofa2-demo';
 
 type DataRow = Record<string, unknown>;
-type Identity = { role: 'admin' | 'dealer'; email: string; profile?: DataRow };
-type PortalData = {
-  profile: DataRow;
-  policies: DataRow[];
-  quotes: DataRow[];
-  orders: DataRow[];
-  debts: DataRow[];
-  documents: DataRow[];
-};
 
 const NAV = [
   { label: 'Tổng quan', path: '/sofa2/dealer', icon: 'solar:widget-5-bold-duotone' },
@@ -99,53 +95,20 @@ function PortalTable({ rows, columns, emptyText }: { rows: DataRow[]; columns: [
 }
 
 export default function Sofa2DealerPortalPage() {
-  const { isLoaded, isSignedIn } = useAuth();
-  const { signOut } = useClerk();
-  const { user } = useUser();
   const { pathname } = useLocation();
-  const [identity, setIdentity] = useState<Identity | null>(null);
-  const [portal, setPortal] = useState<PortalData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const [demoSession] = useState(() => getSofa2DemoSession());
+  const [portal, setPortal] = useState<Sofa2DealerPortalData | null>(() =>
+    demoSession?.role === 'dealer' ? getSofa2DealerPortalData(demoSession) : null
+  );
   const [products, setProducts] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
   const [sentMessage, setSentMessage] = useState('');
 
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn) return undefined;
-    let active = true;
-
-    const load = async () => {
-      try {
-        const sessionResponse = await fetch('/api/dealer/session', { credentials: 'include' });
-        const sessionBody = await sessionResponse.json();
-        if (!sessionResponse.ok) throw new Error(sessionBody.error || 'Không thể xác minh quyền truy cập.');
-        if (!active) return;
-        setIdentity(sessionBody as Identity);
-
-        if (sessionBody.role === 'dealer') {
-          const dataResponse = await fetch('/api/dealer/portal', { credentials: 'include' });
-          const dataBody = await dataResponse.json();
-          if (!dataResponse.ok) throw new Error(dataBody.error || 'Không thể tải dữ liệu đại lý.');
-          if (active) setPortal(dataBody as PortalData);
-        }
-      } catch (loadError) {
-        if (active) setError(loadError instanceof Error ? loadError.message : 'Không thể tải cổng đại lý.');
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    void load();
-    return () => {
-      active = false;
-    };
-  }, [isLoaded, isSignedIn]);
-
   const section = SECTIONS[pathname] ? pathname : '/sofa2/dealer';
   const heading = SECTIONS[section];
-  const displayName = text(portal?.profile.dealer) || user?.fullName || identity?.email || 'Đại lý';
+  const displayName = text(portal?.profile.dealer) || demoSession?.name || demoSession?.email || 'Đại lý';
   const target = amount(portal?.profile.target);
   const achieved = amount(portal?.profile.achieved);
   const balance = useMemo(
@@ -154,7 +117,7 @@ export default function Sofa2DealerPortalPage() {
   );
   const progress = target ? Math.min(100, Math.round((achieved / target) * 100)) : 0;
 
-  if (isLoaded && !isSignedIn) {
+  if (!demoSession) {
     return <Navigate to="/sofa2/dealer/sign-in" replace />;
   }
 
@@ -163,18 +126,15 @@ export default function Sofa2DealerPortalPage() {
     setSending(true);
     setSentMessage('');
     try {
-      const response = await fetch('/api/dealer/portal/quotes', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ products, note }),
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || 'Gửi yêu cầu thất bại.');
-      setPortal((current) => current ? { ...current, quotes: [body.quote, ...current.quotes] } : current);
+      const quote = createSofa2MockQuote(
+        { products, note, dealer: demoSession.name },
+        'dealer',
+        demoSession.email
+      );
+      setPortal((current) => (current ? { ...current, quotes: [quote, ...current.quotes] } : current));
       setProducts('');
       setNote('');
-      setSentMessage(`Đã gửi yêu cầu ${text(body.quote?.code)}.`);
+      setSentMessage(`Đã lưu yêu cầu ${text(quote.code)} trên thiết bị demo.`);
     } catch (submitError) {
       setSentMessage(submitError instanceof Error ? submitError.message : 'Không gửi được yêu cầu.');
     } finally {
@@ -182,28 +142,7 @@ export default function Sofa2DealerPortalPage() {
     }
   };
 
-  if (loading || !isLoaded) {
-    return <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>;
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 3, bgcolor: '#f6f3ef' }}>
-        <Paper sx={{ maxWidth: 560, p: 4, textAlign: 'center' }}>
-          <Stack spacing={2} alignItems="center">
-            <Typography variant="h5">Chưa được cấp quyền truy cập</Typography>
-            <Typography color="text.secondary">{error}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Nếu bạn vừa đăng ký đại lý, hãy liên hệ quản trị viên để xác nhận email và bật quyền cổng đại lý.
-            </Typography>
-            <Button component={RouterLink} to="/sofa2/b2b" variant="outlined">Trang hợp tác B2B</Button>
-          </Stack>
-        </Paper>
-      </Box>
-    );
-  }
-
-  if (identity?.role === 'admin') {
+  if (demoSession.role === 'admin') {
     return (
       <>
         <Helmet><title>Cổng đại lý | LUXE Sofa</title><meta name="robots" content="noindex, nofollow" /></Helmet>
@@ -214,7 +153,7 @@ export default function Sofa2DealerPortalPage() {
                 <Box component="img" src="/logo.svg" alt="LUXE Sofa" sx={{ width: 160 }} />
                 <Typography variant="h3">Quản trị cổng đại lý</Typography>
                 <Typography color="text.secondary">
-                  Tài khoản quản trị đã được xác thực. Chọn module để quản lý nội dung và dữ liệu đại lý.
+                  Bạn đang sử dụng quyền quản trị demo. Dữ liệu chỉ được lưu trên thiết bị hiện tại.
                 </Typography>
                 <Grid container spacing={2}>
                   {NAV.map((item) => (
@@ -232,7 +171,13 @@ export default function Sofa2DealerPortalPage() {
                     </Grid>
                   ))}
                 </Grid>
-                <Button variant="text" onClick={() => void signOut({ redirectUrl: '/sofa2/b2b' })}>
+                <Button
+                  variant="text"
+                  onClick={() => {
+                    clearSofa2DemoSession();
+                    navigate('/sofa2/b2b');
+                  }}
+                >
                   Đăng xuất
                 </Button>
               </Stack>
@@ -243,7 +188,7 @@ export default function Sofa2DealerPortalPage() {
     );
   }
 
-  if (!portal || !identity) return null;
+  if (!portal) return null;
 
   const content = () => {
     if (section === '/sofa2/dealer') {
@@ -349,7 +294,7 @@ export default function Sofa2DealerPortalPage() {
                 <Button type="submit" variant="contained" disabled={sending} sx={{ alignSelf: 'flex-start' }}>
                   {sending ? 'Đang gửi…' : 'Gửi yêu cầu'}
                 </Button>
-                {sentMessage ? <Alert severity={sentMessage.startsWith('Đã gửi') ? 'success' : 'error'}>{sentMessage}</Alert> : null}
+                {sentMessage ? <Alert severity={sentMessage.startsWith('Đã lưu') ? 'success' : 'error'}>{sentMessage}</Alert> : null}
               </Stack>
             </CardContent>
           </Card>
@@ -429,10 +374,17 @@ export default function Sofa2DealerPortalPage() {
                 <Divider />
                 <Stack spacing={0.5}>
                   <Typography variant="subtitle2">{displayName}</Typography>
-                  <Typography variant="caption" color="text.secondary">{identity.email}</Typography>
+                  <Typography variant="caption" color="text.secondary">{demoSession.email}</Typography>
                   <Typography variant="caption" color="text.secondary">Hạng {text(portal.profile.level) || 'chưa xếp hạng'}</Typography>
                 </Stack>
-                <Button variant="outlined" color="inherit" onClick={() => void signOut({ redirectUrl: '/sofa2/b2b' })}>
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => {
+                    clearSofa2DemoSession();
+                    navigate('/sofa2/b2b');
+                  }}
+                >
                   Đăng xuất
                 </Button>
                 <Button component={RouterLink} to="/sofa2/b2b" variant="text" size="small">Trang LUXE Sofa</Button>

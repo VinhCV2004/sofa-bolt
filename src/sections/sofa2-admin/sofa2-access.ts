@@ -60,7 +60,7 @@ export const SOFA2_ACCESS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('branch', 'Chi nhánh', 'select', 'content', { options: BRANCHES }),
       f('avatar', 'Ảnh đại diện (URL)', 'url', 'content'),
       f('note', 'Ghi chú', 'textarea', 'content', { multiline: 2, maxLength: 500 }),
-      f('role', 'Vai trò', 'select', 'display', { required: true, options: ROLES, helper: 'Tài khoản phải đăng nhập bằng Clerk với email đã xác minh này.' }),
+      f('role', 'Vai trò', 'select', 'display', { required: true, options: ROLES, helper: 'Vai trò minh họa, không xác minh danh tính người dùng.' }),
       f('extraRoles', 'Vai trò phụ (cách nhau dấu phẩy)', 'text', 'display'),
       f('expiresAt', 'Hết hạn truy cập', 'date', 'display', { helper: 'Để trống nếu không giới hạn (dùng cho cộng tác viên).' }),
       f('status', 'Trạng thái', 'select', 'display', { required: true, options: ['Hoạt động', 'Chờ kích hoạt', 'Bị khoá'] }),

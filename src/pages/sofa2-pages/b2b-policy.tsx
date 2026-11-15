@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { m } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
@@ -26,6 +25,7 @@ import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { getSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 
 // ----------------------------------------------------------------------
 
@@ -47,22 +47,9 @@ const SECTIONS = [
 ];
 
 export default function Page() {
-  const [policies, setPolicies] = useState<Record<string, unknown>[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    fetch('/api/dealer/public/policies')
-      .then((response) => (response.ok ? response.json() : Promise.reject(new Error('Policies unavailable'))))
-      .then((payload: { policies?: Record<string, unknown>[] }) => {
-        if (active) setPolicies(payload.policies ?? []);
-      })
-      .catch(() => {
-        // Keep the published baseline policy visible if the admin has not published custom rows yet.
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const policies = getSofa2AdminRows('dealer', 'price-policy').filter(
+    (row) => !row.status || String(row.status).includes('áp dụng')
+  );
 
   const currency = (value: unknown) => {
     const amount = Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;

@@ -18,6 +18,9 @@ npm i
 npm run dev
 ```
 
+The app runs without a backend or Clerk configuration. Sofa2 admin/dealer access is a
+local demo only; it is not real authentication, and changes are stored in this browser.
+
 ## Build
 
 ```sh
@@ -26,15 +29,10 @@ yarn build
 npm run build
 ```
 
-## Mock server
+## Local demo data
 
-By default we provide demo data from : `https://api-dev-minimal-[version].vercel.app`
-
-To set up your local server:
-
-- **Guide:** [https://docs.minimals.cc/mock-server](https://docs.minimals.cc/mock-server).
-
-- **Resource:** [Download](https://www.dropbox.com/sh/6ojn099upi105tf/AACpmlqrNUacwbBfVdtt2t6va?dl=0).
+The UI uses local mock data. Sofa2 admin/dealer edits and quote requests persist in
+browser `localStorage`; clearing site data resets the demo.
 
 ## Full version
 
@@ -51,4 +49,4 @@ To set up your local server:
 ---
 
 **NOTE:**
-_When copying folders remember to also copy hidden files like .env. This is important because .env files often contain environment variables that are crucial for the application to run correctly._
+Optional third-party authentication providers may still require their own environment variables.

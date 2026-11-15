@@ -4,18 +4,16 @@ import { useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 
 import { keyBy } from 'src/utils/helper';
-import axios, { fetcher, endpoints } from 'src/utils/axios';
+import { fetcher, endpoints } from 'src/utils/mock-api';
 
 // ----------------------------------------------------------------------
-
-const enableServer = false;
 
 const CHART_ENDPOINT = endpoints.chat;
 
 const swrOptions = {
-  revalidateIfStale: enableServer,
-  revalidateOnFocus: enableServer,
-  revalidateOnReconnect: enableServer,
+  revalidateIfStale: false,
+  revalidateOnFocus: false,
+  revalidateOnReconnect: false,
 };
 
 // ----------------------------------------------------------------------
@@ -115,14 +113,6 @@ export async function sendMessage(conversationId: string, messageData: IChatMess
   ];
 
   /**
-   * Work on server
-   */
-  if (enableServer) {
-    const data = { conversationId, messageData };
-    await axios.put(CHART_ENDPOINT, data);
-  }
-
-  /**
    * Work in local
    */
   mutate(
@@ -164,12 +154,6 @@ export async function createConversation(conversationData: IChatConversation) {
   const url = [CHART_ENDPOINT, { params: { endpoint: 'conversations' } }];
 
   /**
-   * Work on server
-   */
-  const data = { conversationData };
-  const res = await axios.post(CHART_ENDPOINT, data);
-
-  /**
    * Work in local
    */
   mutate(
@@ -184,19 +168,12 @@ export async function createConversation(conversationData: IChatConversation) {
     false
   );
 
-  return res.data;
+  return { conversation: conversationData };
 }
 
 // ----------------------------------------------------------------------
 
 export async function clickConversation(conversationId: string) {
-  /**
-   * Work on server
-   */
-  if (enableServer) {
-    await axios.get(CHART_ENDPOINT, { params: { conversationId, endpoint: 'mark-as-seen' } });
-  }
-
   /**
    * Work in local
    */

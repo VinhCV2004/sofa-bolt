@@ -1,10 +1,12 @@
+import type { NavSectionProps } from 'src/components/nav-section';
+
 import useSWR from 'swr';
 import { useMemo } from 'react';
 
 import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 
-import { fetcher } from 'src/utils/axios';
+import { fetcher } from 'src/utils/mock-api';
 
 import { CONFIG } from 'src/config-global';
 
@@ -17,7 +19,10 @@ import { NavSectionVertical } from 'src/components/nav-section';
 function useGetNavItems() {
   const URL = '/api/navbar';
 
-  const { data, isLoading, error, isValidating } = useSWR(URL, fetcher);
+  const { data, isLoading, error, isValidating } = useSWR<{ navItems: NavSectionProps['data'] }>(
+    URL,
+    fetcher
+  );
 
   const memoizedValue = useMemo(
     () => ({
@@ -25,7 +30,7 @@ function useGetNavItems() {
       isLoading,
       error,
       isValidating,
-      isEmpty: !isLoading && !data?.navItems.length,
+      isEmpty: !isLoading && !data?.navItems?.length,
     }),
     [data?.navItems, error, isLoading, isValidating]
   );

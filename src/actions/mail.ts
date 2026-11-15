@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { useMemo } from 'react';
 
 import { keyBy } from 'src/utils/helper';
-import { fetcher, endpoints } from 'src/utils/axios';
+import { fetcher, endpoints } from 'src/utils/mock-api';
 
 // ----------------------------------------------------------------------
 

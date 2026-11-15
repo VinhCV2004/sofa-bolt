@@ -1,8 +1,6 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from 'src/integrations/supabase/client';
-import { SOFA2_BLOG_POSTS, SOFA2_PAGE_IMAGES } from './sofa2-pages-data';
+import { getSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 
-const untypedSupabase = supabase as unknown as SupabaseClient;
+import { SOFA2_BLOG_POSTS, SOFA2_PAGE_IMAGES } from './sofa2-pages-data';
 
 export type Sofa2CmsBlogPost = {
   id: string;
@@ -48,117 +46,119 @@ export type Sofa2CmsBanner = {
   sortOrder: number;
 };
 
-const DB_BLOG_TO_POST = (row: Record<string, unknown>): Sofa2CmsBlogPost => ({
-  id: String(row.id ?? ''),
-  title: String(row.title ?? ''),
-  slug: String(row.slug ?? ''),
-  category: String(row.category ?? 'Tin công ty'),
-  excerpt: String(row.excerpt ?? ''),
-  content: String(row.content ?? ''),
-  cover: String(row.cover ?? ''),
-  tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
-  status: String(row.status ?? 'draft'),
-  views: Number(row.views ?? 0),
-  author: String(row.author ?? ''),
-  publishedAt: row.publishedAt ? String(row.publishedAt) : '',
-  metaTitle: String(row.meta_title ?? ''),
-  metaDescription: String(row.meta_description ?? ''),
-});
+const isPublished = (status: unknown) =>
+  ['published', 'đã xuất bản', 'đang chạy'].includes(String(status ?? '').trim().toLowerCase());
 
-const DB_PAGE_TO_BLOCK = (row: Record<string, unknown>): Sofa2CmsPageBlock => ({
-  id: String(row.id ?? ''),
-  slug: String(row.slug ?? ''),
-  title: String(row.title ?? ''),
-  block: String(row.block ?? ''),
-  type: String(row.type ?? 'Rich text'),
-  heading: String(row.heading ?? ''),
-  content: String(row.content ?? ''),
-  image: String(row.image ?? ''),
-  ctaLabel: String(row.cta_label ?? ''),
-  ctaLink: String(row.cta_link ?? ''),
-  status: String(row.status ?? 'draft'),
-  sortOrder: Number(row.sort_order ?? 0),
-});
-
-const DB_BANNER_TO_BANNER = (row: Record<string, unknown>): Sofa2CmsBanner => ({
-  id: String(row.id ?? ''),
-  name: String(row.name ?? ''),
-  position: String(row.position ?? ''),
-  imageDesktop: String(row.image_desktop ?? ''),
-  imageMobile: String(row.image_mobile ?? ''),
-  headline: String(row.headline ?? ''),
-  ctaLink: String(row.cta_link ?? ''),
-  status: String(row.status ?? 'draft'),
-  sortOrder: Number(row.sort_order ?? 0),
-});
+const FALLBACK_BLOG_POSTS: Sofa2CmsBlogPost[] = SOFA2_BLOG_POSTS.map((post) => ({
+  id: post.id,
+  title: post.title,
+  slug: post.slug,
+  category: post.categoryLabel,
+  excerpt: post.excerpt,
+  content: post.content,
+  cover: post.image,
+  tags: [],
+  status: 'published',
+  views: 0,
+  author: post.author,
+  publishedAt: post.date,
+  metaTitle: post.title,
+  metaDescription: post.excerpt,
+}));
 
 export async function fetchPublishedBlogPosts(): Promise<Sofa2CmsBlogPost[]> {
-  const { data, error } = await untypedSupabase
-    .from('sofa2_cms_posts')
-    .select('*')
-    .eq('status', 'published')
-    .order('published_at', { ascending: false });
-  if (error || !data) return [];
-  return data.map((row) => DB_BLOG_TO_POST(row as unknown as Record<string, unknown>));
+  const rows = getSofa2AdminRows('cms', 'blog').filter((row) => isPublished(row.status));
+  if (!rows.length) return FALLBACK_BLOG_POSTS;
+
+  return rows.map((row) => ({
+    id: String(row.id ?? ''),
+    title: String(row.title ?? ''),
+    slug: String(row.slug ?? ''),
+    category: String(row.category ?? ''),
+    excerpt: String(row.excerpt ?? ''),
+    content: String(row.content ?? ''),
+    cover: String(row.cover ?? ''),
+    tags: String(row.tags ?? '')
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean),
+    status: String(row.status ?? ''),
+    views: Number(row.views ?? 0),
+    author: String(row.author ?? ''),
+    publishedAt: String(row.updated ?? ''),
+    metaTitle: String(row.metaTitle ?? ''),
+    metaDescription: String(row.metaDescription ?? ''),
+  }));
 }
 
 export async function fetchBlogPostBySlug(slug: string): Promise<Sofa2CmsBlogPost | null> {
-  const { data, error } = await untypedSupabase
-    .from('sofa2_cms_posts')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .maybeSingle();
-  if (error || !data) return null;
-  return DB_BLOG_TO_POST(data as unknown as Record<string, unknown>);
+  const posts = await fetchPublishedBlogPosts();
+  return posts.find((post) => post.slug === slug) ?? null;
 }
 
 export async function fetchPublishedPageBlocks(slug: string): Promise<Sofa2CmsPageBlock[]> {
-  const { data, error } = await untypedSupabase
-    .from('sofa2_cms_pages')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .order('sort_order', { ascending: true });
-  if (error || !data) return [];
-  return data.map((row) => DB_PAGE_TO_BLOCK(row as unknown as Record<string, unknown>));
+  return getSofa2AdminRows('cms', slug)
+    .filter((row) => isPublished(row.status))
+    .map((row, index) => ({
+      id: String(row.id ?? index),
+      slug,
+      title: String(row.title ?? row.heading ?? ''),
+      block: String(row.block ?? ''),
+      type: String(row.type ?? 'Rich text'),
+      heading: String(row.heading ?? ''),
+      content: String(row.content ?? ''),
+      image: String(row.image ?? ''),
+      ctaLabel: String(row.ctaLabel ?? ''),
+      ctaLink: String(row.ctaLink ?? ''),
+      status: String(row.status ?? ''),
+      sortOrder: Number(row.order ?? index),
+    }))
+    .sort((left, right) => left.sortOrder - right.sortOrder);
 }
 
 export async function fetchPublishedBanners(position?: string): Promise<Sofa2CmsBanner[]> {
-  let query = untypedSupabase.from('sofa2_cms_banners').select('*').eq('status', 'published');
-  if (position) query = query.eq('position', position);
-  const { data, error } = await query.order('sort_order', { ascending: true });
-  if (error || !data) return [];
-  return data.map((row) => DB_BANNER_TO_BANNER(row as unknown as Record<string, unknown>));
+  return getSofa2AdminRows('cms', 'banner')
+    .filter((row) => isPublished(row.status) && (!position || row.position === position))
+    .map((row, index) => ({
+      id: String(row.id ?? index),
+      name: String(row.name ?? ''),
+      position: String(row.position ?? ''),
+      imageDesktop: String(row.image ?? ''),
+      imageMobile: String(row.imageMobile ?? ''),
+      headline: String(row.headline ?? ''),
+      ctaLink: String(row.ctaLink ?? ''),
+      status: String(row.status ?? ''),
+      sortOrder: Number(row.order ?? index),
+    }))
+    .sort((left, right) => left.sortOrder - right.sortOrder);
 }
 
 export async function fetchPublishedSeo(pagePath: string) {
-  const { data, error } = await untypedSupabase
-    .from('sofa2_cms_seo')
-    .select('*')
-    .eq('page_path', pagePath)
-    .maybeSingle();
-  if (error || !data) return null;
+  const row = getSofa2AdminRows('cms', 'seo').find(
+    (item) => String(item.page ?? item.pagePath ?? '') === pagePath && isPublished(item.status)
+  );
+  if (!row) return null;
+
   return {
-    metaTitle: String(data.meta_title ?? ''),
-    metaDescription: String(data.meta_description ?? ''),
-    keywords: String(data.keywords ?? ''),
-    canonical: String(data.canonical ?? ''),
-    ogImage: String(data.og_image ?? ''),
-    indexable: Boolean(data.indexable),
+    metaTitle: String(row.title ?? ''),
+    metaDescription: String(row.description ?? ''),
+    keywords: String(row.keywords ?? ''),
+    canonical: String(row.canonical ?? ''),
+    ogImage: String(row.ogImage ?? ''),
+    indexable: String(row.indexable ?? 'Có') !== 'Không',
   };
 }
 
-const BLOG_IMAGE_FALLBACKS = [
-  SOFA2_PAGE_IMAGES.blog1,
-  SOFA2_PAGE_IMAGES.blog2,
-  SOFA2_PAGE_IMAGES.blog3,
-  SOFA2_PAGE_IMAGES.blog4,
-  SOFA2_PAGE_IMAGES.blog5,
-  SOFA2_PAGE_IMAGES.blog6,
-];
-
 export function cmsBlogPostToUi(post: Sofa2CmsBlogPost, index: number) {
+  const fallbackImages = [
+    SOFA2_PAGE_IMAGES.blog1,
+    SOFA2_PAGE_IMAGES.blog2,
+    SOFA2_PAGE_IMAGES.blog3,
+    SOFA2_PAGE_IMAGES.blog4,
+    SOFA2_PAGE_IMAGES.blog5,
+    SOFA2_PAGE_IMAGES.blog6,
+  ];
+
   return {
     id: post.slug || post.id,
     title: post.title,
@@ -167,7 +167,7 @@ export function cmsBlogPostToUi(post: Sofa2CmsBlogPost, index: number) {
     categoryLabel: post.category,
     excerpt: post.excerpt,
     content: post.content,
-    image: post.cover || BLOG_IMAGE_FALLBACKS[index % BLOG_IMAGE_FALLBACKS.length],
+    image: post.cover || fallbackImages[index % fallbackImages.length],
     author: post.author || 'LUXE Sofa',
     date: post.publishedAt || '',
     readTime: `${Math.max(3, Math.ceil(post.content.length / 600))} phút`,
@@ -178,88 +178,53 @@ export function useFallbackBlogPosts() {
   return SOFA2_BLOG_POSTS;
 }
 
-// ----- CMS page blocks hook -----
-
-import { useEffect, useState } from 'react';
-
 export function useCmsPageBlocks(slug: string) {
-  const [blocks, setBlocks] = useState<Sofa2CmsPageBlock[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    fetchPublishedPageBlocks(slug)
-      .then((data) => {
-        if (active) setBlocks(data);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [slug]);
-
-  return { blocks, loading };
+  return { blocks: getSofa2AdminRows('cms', slug).map((row, index) => ({
+    id: String(row.id ?? index),
+    slug,
+    title: String(row.title ?? row.heading ?? ''),
+    block: String(row.block ?? ''),
+    type: String(row.type ?? 'Rich text'),
+    heading: String(row.heading ?? ''),
+    content: String(row.content ?? ''),
+    image: String(row.image ?? ''),
+    ctaLabel: String(row.ctaLabel ?? ''),
+    ctaLink: String(row.ctaLink ?? ''),
+    status: String(row.status ?? ''),
+    sortOrder: Number(row.order ?? index),
+  })).filter((block) => isPublished(block.status)), loading: false };
 }
-
-// ----- CMS banners hook -----
 
 export function useCmsBanners(position?: string) {
-  const [banners, setBanners] = useState<Sofa2CmsBanner[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    fetchPublishedBanners(position)
-      .then((data) => {
-        if (active) setBanners(data);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [position]);
-
-  return { banners, loading };
+  const banners = getSofa2AdminRows('cms', 'banner')
+    .filter((row) => isPublished(row.status) && (!position || row.position === position))
+    .map((row, index) => ({
+      id: String(row.id ?? index),
+      name: String(row.name ?? ''),
+      position: String(row.position ?? ''),
+      imageDesktop: String(row.image ?? ''),
+      imageMobile: String(row.imageMobile ?? ''),
+      headline: String(row.headline ?? ''),
+      ctaLink: String(row.ctaLink ?? ''),
+      status: String(row.status ?? ''),
+      sortOrder: Number(row.order ?? index),
+    }));
+  return { banners, loading: false };
 }
 
-// ----- CMS SEO hook -----
-
-type CmsSeoData = {
-  metaTitle: string;
-  metaDescription: string;
-  keywords: string;
-  canonical: string;
-  ogImage: string;
-  indexable: boolean;
-} | null;
-
 export function useCmsSeo(pagePath: string) {
-  const [seo, setSeo] = useState<CmsSeoData>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    fetchPublishedSeo(pagePath)
-      .then((data) => {
-        if (active) setSeo(data as CmsSeoData);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [pagePath]);
-
-  return { seo, loading };
+  const row = getSofa2AdminRows('cms', 'seo').find(
+    (item) => String(item.page ?? item.pagePath ?? '') === pagePath && isPublished(item.status)
+  );
+  const seo = row
+    ? {
+        metaTitle: String(row.title ?? ''),
+        metaDescription: String(row.description ?? ''),
+        keywords: String(row.keywords ?? ''),
+        canonical: String(row.canonical ?? ''),
+        ogImage: String(row.ogImage ?? ''),
+        indexable: String(row.indexable ?? 'Có') !== 'Không',
+      }
+    : null;
+  return { seo, loading: false };
 }
