@@ -514,7 +514,7 @@ const CMS_GROUP: Sofa2AdminGroup = {
 // SẢN PHẨM
 // ----------------------------------------------------------------------
 
-const PRODUCT_SKUS = ['LX-OSL-01', 'LX-BER-04', 'LX-COP-12', 'LX-TOK-03', 'LX-MUN-07', 'LX-HEL-02', 'LX-FRA-01', 'LX-AMS-01'];
+const PRODUCT_SKUS = ['LX-OSL-01', 'LX-BER-04', 'LX-COP-12', 'LX-TOK-03', 'LX-MUN-07', 'LX-HEL-02', 'LX-FRA-01', 'LX-AMS-01', 'LX-ROM-06', 'LX-REY-08', 'LX-LON-10', 'LX-SEO-11', 'LX-SYD-14', 'LX-PAR-16', 'LX-IST-18', 'LX-MAD-20'];
 const SOFA2_PRODUCT_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PRODUCTS.map((product, index) => ({
   id: product.id,
   sku: PRODUCT_SKUS[index],
@@ -522,7 +522,7 @@ const SOFA2_PRODUCT_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PROD
   slug: product.slug,
   category: SOFA2_PRODUCT_CATEGORIES.types.find((item) => item.slug === product.category)?.label ?? product.category,
   style: SOFA2_PRODUCT_CATEGORIES.styles.find((item) => item.slug === product.style)?.label ?? product.style,
-  space: '',
+  space: SOFA2_PRODUCT_CATEGORIES.spaces.find((item) => item.slug === (product as any).space)?.label ?? (product as any).space ?? '',
   material: product.material,
   dimensions: product.size,
   shortDescription: product.description.slice(0, 180),
@@ -535,6 +535,94 @@ const SOFA2_PRODUCT_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PROD
   status: product.id === '4' ? 'Hết hàng' : 'Đang bán',
   featured: index < 3 ? 'Có' : 'Không',
   isNew: product.badge === 'Mới' ? 'Có' : 'Không',
+}));
+
+const PRODUCT_CATEGORY_GROUPS = [
+  { key: 'types', parent: 'Theo kiểu dáng', items: SOFA2_PRODUCT_CATEGORIES.types },
+  { key: 'styles', parent: 'Phong cách', items: SOFA2_PRODUCT_CATEGORIES.styles },
+  { key: 'spaces', parent: 'Không gian', items: SOFA2_PRODUCT_CATEGORIES.spaces },
+  { key: 'sizes', parent: 'Kích thước', items: SOFA2_PRODUCT_CATEGORIES.sizes },
+  { key: 'prices', parent: 'Khoảng giá', items: SOFA2_PRODUCT_CATEGORIES.prices },
+];
+const PRODUCT_CATEGORY_SEEDS: Record<string, string | number>[] = PRODUCT_CATEGORY_GROUPS.flatMap((group) =>
+  group.items.map((category, index) => ({
+    name: category.label,
+    slug: category.slug,
+    parent: group.parent,
+    description: `${category.label} — danh mục sản phẩm LUXE Sofa.`,
+    products: SOFA2_CLIENT_PRODUCTS.filter((product) =>
+      group.key === 'types' ? product.category === category.slug
+        : group.key === 'styles' ? product.style === category.slug
+          : group.key === 'spaces' ? (product as any).space === category.slug
+            : group.key === 'sizes' ? (() => {
+                const length = Number(String(product.size).match(/\d+(?:\.\d+)?/)?.[0] ?? 0);
+                return category.slug === 'sofa-nho' ? length > 0 && length <= 140
+                  : category.slug === 'sofa-trung' ? length > 140 && length <= 220
+                    : length > 220;
+              })()
+              : group.key === 'prices' ? (() => {
+                  const price = Number(product.price);
+                  return category.slug === 'duoi-10-trieu' ? price < 10_000_000
+                    : category.slug === '10-20-trieu' ? price >= 10_000_000 && price < 20_000_000
+                      : category.slug === '20-50-trieu' ? price >= 20_000_000 && price < 50_000_000
+                        : price >= 50_000_000;
+                })() : false
+    ).length,
+    status: 'Hiển thị',
+    builtIn: 'Có',
+    order: index + 1,
+    showInMenu: group.key === 'types' ? 'Có' : 'Không',
+    showInFilter: 'Có',
+    metaTitle: `${category.label} | LUXE Sofa`,
+    metaDescription: `Khám phá sofa ${category.label.toLowerCase()} tại LUXE Sofa.`,
+    indexable: 'Có',
+  }))
+);
+
+const PRODUCT_VARIANT_EXTRA_SEEDS: Record<string, string | number>[] = SOFA2_PRODUCT_SEEDS.map((product, index) => {
+  const clientProduct = SOFA2_CLIENT_PRODUCTS[index];
+  const color = String(clientProduct.colors?.[1] ?? clientProduct.colors?.[0] ?? 'Be');
+  const colorCode = color.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase().padEnd(3, 'X');
+  const stock = String(product.id) === '4' ? 0 : 4 + (index % 8);
+  const price = Number(product.price) + (index % 3) * 500_000;
+  return {
+    sku: `${product.sku}-${colorCode}`,
+    product: String(product.name),
+    option: `${String(product.material).split(',')[0]} / ${color} / ${String(product.dimensions).split('x')[0]}cm`,
+    image: String(product.image),
+    stock,
+    price,
+    isDefault: 'Không',
+    status: stock > 0 ? 'Đang bán' : 'Hết hàng',
+  };
+});
+const PRODUCT_VARIANT_EXTRA_INVENTORY: Record<string, string | number>[] = PRODUCT_VARIANT_EXTRA_SEEDS.map((variant, index) => {
+  const stock = Number(variant.stock);
+  const reserved = stock > 0 ? index % Math.min(3, stock + 1) : 0;
+  const available = stock - reserved;
+  const minStock = 2 + (index % 2);
+  return {
+    sku: String(variant.sku),
+    warehouse: ['Kho TP.HCM', 'Kho Hà Nội', 'Kho Bình Dương', 'Showroom Q.1'][index % 4],
+    location: `${['A', 'B', 'C', 'D'][index % 4]}-${String(1 + (index % 5)).padStart(2, '0')}-${1 + (index % 3)}`,
+    note: 'Tồn mẫu theo biến thể, kiểm kê gần nhất.',
+    stock,
+    reserved,
+    minStock,
+    updated: `2026-11-${String(10 + (index % 6)).padStart(2, '0')}`,
+    status: available <= 0 ? 'Hết hàng' : available <= minStock ? 'Sắp hết' : 'Đủ hàng',
+  };
+});
+const PRODUCT_VARIANT_EXTRA_PRICING: Record<string, string | number>[] = PRODUCT_VARIANT_EXTRA_SEEDS.map((variant) => ({
+  sku: String(variant.sku),
+  priceList: 'Bán lẻ',
+  note: 'Giá theo màu/tuỳ chọn mặc định.',
+  list: Math.round(Number(variant.price) * 1.12),
+  sale: Number(variant.price),
+  dealer: Math.round(Number(variant.price) * 0.88),
+  startDate: '2026-11-01',
+  endDate: '2026-12-31',
+  status: 'Đang giảm',
 }));
 
 const PRODUCT_GROUP: Sofa2AdminGroup = {
@@ -559,13 +647,7 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
         { key: 'products', label: 'Sản phẩm', type: 'number' },
         STATUS_COL,
       ],
-      [
-        { name: 'Scandinavian', parent: 'Phong cách', products: 64, status: 'Hiển thị' },
-        { name: 'Industrial Loft', parent: 'Phong cách', products: 48, status: 'Hiển thị' },
-        { name: 'Mid-Century', parent: 'Phong cách', products: 36, status: 'Hiển thị' },
-        { name: 'Sofa góc', parent: 'Theo kiểu dáng', products: 28, status: 'Hiển thị' },
-        { name: 'Sofa đơn', parent: 'Theo kiểu dáng', products: '8', status: 'Ẩn' },
-      ],
+      PRODUCT_CATEGORY_SEEDS,
       ['Thêm danh mục']
     ),
     mod(
@@ -607,11 +689,14 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
         STATUS_COL,
       ],
       [
-        { name: 'Màu sắc', values: 38, usage: 'Biến thể + Bộ lọc', status: 'Hoạt động' },
-        { name: 'Chất liệu', values: 12, usage: 'Biến thể + Bộ lọc', status: 'Hoạt động' },
-        { name: 'Kích thước', values: 18, usage: 'Biến thể', status: 'Hoạt động' },
-        { name: 'Kiểu chân gỗ', values: 8, usage: 'Tuỳ chọn', status: 'Hoạt động' },
-        { name: 'Độ cứng đệm', values: 4, usage: 'Tuỳ chọn', status: 'Tạm ẩn' },
+        { name: 'Màu sắc', code: 'color', displayType: 'Ô màu', valueList: 'Be, Xám, Nâu, Đen, Xám đậm, Trắng, Nâu đậm, Xanh navy, Kem, Trắng kem, Xanh rêu, Nâu cognac, Be cát, Xám đá, Xám sáng', values: 15, usage: 'Biến thể + Bộ lọc', required: 'Có', status: 'Hoạt động' },
+        { name: 'Chất liệu', code: 'material', displayType: 'Nút chọn', valueList: 'Vải linen, Vải cotton, Vải velvet, Da PU, Da bò thật, Vải bouclé, Da full-grain, Vải kháng bẩn, Vải outdoor, Da microfiber, Vải nỉ dệt, Vải technical, Linen pha', values: 13, usage: 'Biến thể + Bộ lọc', required: 'Có', status: 'Hoạt động' },
+        { name: 'Kích thước', code: 'size', displayType: 'Danh sách thả', valueList: 'Đơn, 2 chỗ, 3 chỗ, Góc chữ L, Góc chữ U, Sofa giường, Băng dài, Recliner, Lounge', values: 9, usage: 'Biến thể', required: 'Có', status: 'Hoạt động' },
+        { name: 'Kiểu chân gỗ', code: 'leg-style', displayType: 'Ảnh minh hoạ', valueList: 'Gỗ sồi sáng, Gỗ óc chó, Kim loại đen', values: 3, usage: 'Tuỳ chọn', required: 'Không', status: 'Hoạt động' },
+        { name: 'Độ cứng đệm', code: 'cushion-firmness', displayType: 'Nút chọn', valueList: 'Mềm, Trung bình, Cứng', values: 3, usage: 'Tuỳ chọn', required: 'Không', status: 'Tạm ẩn' },
+        { name: 'Hướng góc', code: 'corner-direction', displayType: 'Nút chọn', valueList: 'Góc trái, Góc phải, Đối xứng', values: 3, usage: 'Biến thể', required: 'Có', status: 'Hoạt động' },
+        { name: 'Công năng', code: 'function', displayType: 'Ảnh minh hoạ', valueList: 'Sofa giường, Recliner điện, Lưu trữ, Sạc USB', values: 4, usage: 'Biến thể + Bộ lọc', required: 'Không', status: 'Hoạt động' },
+        { name: 'Chân ghế', code: 'leg-material', displayType: 'Nút chọn', valueList: 'Gỗ sồi, Gỗ óc chó, Kim loại, Chân ẩn', values: 4, usage: 'Tuỳ chọn', required: 'Không', status: 'Hoạt động' },
       ],
       ['Thêm thuộc tính']
     ),
@@ -637,36 +722,51 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
       [
         {
           sku: 'LX-OSL-01-BGE',
-          product: 'Sofa Oslo',
-          option: 'Linen / Beige / 3 chỗ',
+          product: 'Sofa Oslo 3 Chỗ',
+          option: 'Vải linen / Be / 3 chỗ',
           stock: 12,
           price: money(14500000),
           status: 'Đang bán',
         },
         {
           sku: 'LX-OSL-01-BRN',
-          product: 'Sofa Oslo',
-          option: 'Linen / Brown / 3 chỗ',
+          product: 'Sofa Oslo 3 Chỗ',
+          option: 'Vải linen / Nâu / 3 chỗ',
           stock: 6,
           price: money(14800000),
           status: 'Đang bán',
         },
         {
           sku: 'LX-BER-04-GRY',
-          product: 'Sofa Berlin',
-          option: 'Da / Grey / Góc',
+          product: 'Sofa Berlin Góc',
+          option: 'Da PU / Xám đậm / Góc',
           stock: 24,
           price: money(22000000),
           status: 'Đang bán',
         },
         {
           sku: 'LX-TOK-03-WHT',
-          product: 'Sofa Tokyo',
-          option: 'Nỉ / White / Đơn',
+          product: 'Sofa Tokyo Đơn',
+          option: 'Vải velvet / Nâu / Đơn',
           stock: 0,
           price: money(7500000),
+          isDefault: 'Có',
           status: 'Hết hàng',
         },
+        { sku: 'LX-COP-12-BGE', product: 'Sofa Copenhagen', option: 'Vải cotton / Be / 2 chỗ', stock: 9, price: money(11900000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-MUN-07-BLK', product: 'Sofa Munich 2 Chỗ', option: 'Da bò thật / Đen / 2 chỗ', stock: 4, price: money(16800000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-HEL-02-BGE', product: 'Sofa Helsinki Tròn', option: 'Vải linen / Be / Tròn', stock: 7, price: money(13200000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-FRA-01-BRN', product: 'Sofa Frankfurt Recliner', option: 'Da bò / Nâu / Recliner', stock: 5, price: money(32000000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-AMS-01-GRY', product: 'Sofa Amsterdam Thông Minh', option: 'Vải technical / Xám / 3 chỗ', stock: 3, price: money(28000000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-ROM-06-CGN', product: 'Sofa Rome Modular', option: 'Da bò Ý / Nâu / Chữ U', stock: 4, price: money(48500000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-REY-08-CRM', product: 'Sofa Reykjavik 2 Chỗ', option: 'Vải bouclé / Trắng kem / 2 chỗ', stock: 11, price: money(17800000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-LON-10-CGN', product: 'Sofa London Chesterfield', option: 'Da full-grain / Nâu cognac / 3 chỗ', stock: 2, price: money(62500000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-SEO-11-GRY', product: 'Sofa Seoul Smart Bed', option: 'Vải kháng bẩn / Xám / Giường', stock: 6, price: money(28900000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-SYD-14-SND', product: 'Sofa Sydney Outdoor', option: 'Vải outdoor / Be cát / Băng dài', stock: 8, price: money(36500000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-PAR-16-CRM', product: 'Sofa Paris Recliner', option: 'Da microfiber / Kem / Recliner', stock: 3, price: money(39800000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-IST-18-OLV', product: 'Sofa Istanbul U', option: 'Linen pha / Xanh rêu / Chữ U', stock: 2, price: money(54200000), isDefault: 'Có', status: 'Đang bán' },
+        { sku: 'LX-MAD-20-GRY', product: 'Sofa Madrid Lounge', option: 'Vải nỉ / Xám sáng / Lounge', stock: 5, price: money(24500000), isDefault: 'Có', status: 'Đang bán' },
+        ...PRODUCT_VARIANT_EXTRA_SEEDS,
       ],
       ['Tạo biến thể']
     ),
@@ -717,9 +817,19 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
           reserved: 2,
           status: 'Sắp hết',
         },
-        { sku: 'LX-HEL-02', warehouse: 'Kho TP.HCM', stock: 7, reserved: 1, minStock: 2, status: 'Đủ hàng' },
-        { sku: 'LX-FRA-01', warehouse: 'Showroom Q.1', stock: 5, reserved: 0, minStock: 1, status: 'Đủ hàng' },
-        { sku: 'LX-AMS-01', warehouse: 'Kho Hà Nội', stock: 3, reserved: 1, minStock: 1, status: 'Đủ hàng' },
+        { sku: 'LX-COP-12-BGE', warehouse: 'Kho TP.HCM', location: 'B-02-1', stock: 9, reserved: 2, minStock: 3, status: 'Đủ hàng' },
+        { sku: 'LX-HEL-02-BGE', warehouse: 'Kho TP.HCM', location: 'C-01-4', stock: 7, reserved: 1, minStock: 2, status: 'Đủ hàng' },
+        { sku: 'LX-FRA-01-BRN', warehouse: 'Showroom Q.1', location: 'S-03-1', stock: 5, reserved: 0, minStock: 1, status: 'Đủ hàng' },
+        { sku: 'LX-AMS-01-GRY', warehouse: 'Kho Hà Nội', location: 'A-04-3', stock: 3, reserved: 1, minStock: 1, status: 'Đủ hàng' },
+        { sku: 'LX-ROM-06-CGN', warehouse: 'Kho Bình Dương', location: 'D-01-2', stock: 4, reserved: 1, minStock: 2, status: 'Đủ hàng' },
+        { sku: 'LX-REY-08-CRM', warehouse: 'Kho TP.HCM', location: 'B-03-1', stock: 11, reserved: 3, minStock: 4, status: 'Đủ hàng' },
+        { sku: 'LX-LON-10-CGN', warehouse: 'Kho Hà Nội', location: 'A-05-1', stock: 2, reserved: 1, minStock: 2, status: 'Sắp hết' },
+        { sku: 'LX-SEO-11-GRY', warehouse: 'Kho TP.HCM', location: 'C-02-3', stock: 6, reserved: 1, minStock: 2, status: 'Đủ hàng' },
+        { sku: 'LX-SYD-14-SND', warehouse: 'Kho Bình Dương', location: 'D-04-2', stock: 8, reserved: 2, minStock: 3, status: 'Đủ hàng' },
+        { sku: 'LX-PAR-16-CRM', warehouse: 'Showroom Q.1', location: 'S-01-5', stock: 3, reserved: 0, minStock: 2, status: 'Đủ hàng' },
+        { sku: 'LX-IST-18-OLV', warehouse: 'Kho Hà Nội', location: 'A-05-2', stock: 2, reserved: 1, minStock: 2, status: 'Sắp hết' },
+        { sku: 'LX-MAD-20-GRY', warehouse: 'Kho TP.HCM', location: 'C-03-2', stock: 5, reserved: 1, minStock: 2, status: 'Đủ hàng' },
+        ...PRODUCT_VARIANT_EXTRA_INVENTORY,
       ],
       ['Nhập kho', 'Kiểm kê']
     ),
@@ -758,10 +868,10 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
         },
         {
           sku: 'LX-MUN-07',
-          list: money(16800000),
+          list: money(21000000),
           sale: money(16800000),
           dealer: money(14800000),
-          status: 'Giá gốc',
+          status: 'Đang giảm',
         },
         {
           sku: 'LX-COP-12',
@@ -770,6 +880,35 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
           dealer: money(10500000),
           status: 'Đang giảm',
         },
+        { sku: 'LX-OSL-01-BGE', priceList: 'Bán lẻ', list: money(18900000), sale: money(14500000), dealer: money(12800000), status: 'Đang giảm' },
+        { sku: 'LX-BER-04-GRY', priceList: 'Bán lẻ', list: money(28000000), sale: money(22000000), dealer: money(19400000), status: 'Đang giảm' },
+        { sku: 'LX-COP-12-BGE', priceList: 'Bán lẻ', list: money(15500000), sale: money(11900000), dealer: money(10500000), status: 'Đang giảm' },
+        { sku: 'LX-MUN-07-BLK', priceList: 'Bán lẻ', list: money(21000000), sale: money(16800000), dealer: money(14800000), status: 'Đang giảm' },
+        { sku: 'LX-HEL-02-BGE', priceList: 'Bán lẻ', list: money(17500000), sale: money(13200000), dealer: money(11600000), status: 'Đang giảm' },
+        { sku: 'LX-FRA-01-BRN', priceList: 'Bán lẻ', list: money(36000000), sale: money(32000000), dealer: money(28800000), status: 'Đang giảm' },
+        { sku: 'LX-AMS-01-GRY', priceList: 'Bán lẻ', list: money(35000000), sale: money(28000000), dealer: money(25200000), status: 'Đang giảm' },
+        ...SOFA2_PRODUCT_SEEDS.slice(5).map((product) => ({
+          sku: String(product.sku),
+          priceList: 'Bán lẻ',
+          note: 'Bảng giá niêm yết online áp dụng theo từng sản phẩm.',
+          list: Number(product.compareAt ?? product.price),
+          sale: Number(product.price),
+          dealer: Math.round(Number(product.price) * 0.88),
+          startDate: '2026-11-01',
+          endDate: '2026-12-31',
+          status: Number(product.compareAt ?? product.price) > Number(product.price) ? 'Đang giảm' : 'Giá gốc',
+        })),
+        { sku: 'LX-ROM-06-CGN', priceList: 'Bán lẻ', list: money(56000000), sale: money(48500000), dealer: money(43650000), status: 'Đang giảm' },
+        { sku: 'LX-REY-08-CRM', priceList: 'Bán lẻ', list: money(20500000), sale: money(17800000), dealer: money(16020000), status: 'Đang giảm' },
+        { sku: 'LX-LON-10-CGN', priceList: 'Bán lẻ', list: money(72000000), sale: money(62500000), dealer: money(56250000), status: 'Đang giảm' },
+        { sku: 'LX-SEO-11-GRY', priceList: 'Bán lẻ', list: money(32900000), sale: money(28900000), dealer: money(26010000), status: 'Đang giảm' },
+        { sku: 'LX-SYD-14-SND', priceList: 'Bán lẻ', list: money(41000000), sale: money(36500000), dealer: money(32850000), status: 'Đang giảm' },
+        { sku: 'LX-PAR-16-CRM', priceList: 'Bán lẻ', list: money(45000000), sale: money(39800000), dealer: money(35820000), status: 'Đang giảm' },
+        { sku: 'LX-IST-18-OLV', priceList: 'Bán lẻ', list: money(61000000), sale: money(54200000), dealer: money(48780000), status: 'Đang giảm' },
+        { sku: 'LX-MAD-20-GRY', priceList: 'Bán lẻ', list: money(27900000), sale: money(24500000), dealer: money(22050000), status: 'Đang giảm' },
+        ...PRODUCT_VARIANT_EXTRA_PRICING,
+        { sku: 'LX-BER-04', priceList: 'Flash sale', note: 'Chương trình dự kiến cho đầu năm mới.', list: money(28000000), sale: money(19900000), dealer: money(18000000), startDate: '2027-01-01', endDate: '2027-01-31', status: 'Chờ bắt đầu' },
+        { sku: 'LX-TOK-03', priceList: 'Bán lẻ lưu trữ 2025', note: 'Giá chương trình đã kết thúc.', list: money(9900000), sale: money(8500000), dealer: money(7800000), startDate: '2025-01-01', endDate: '2025-12-31', status: 'Hết hiệu lực' },
       ],
       ['Tạo bảng giá']
     ),

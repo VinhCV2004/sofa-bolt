@@ -17,13 +17,7 @@ const f = (
 
 const labels = (list: { label: string }[] = []) => list.map((x) => x.label);
 
-const CATEGORY_NAMES = Array.from(
-  new Set([
-    ...labels(SOFA2_PRODUCT_CATEGORIES.types),
-    ...labels(SOFA2_PRODUCT_CATEGORIES.styles),
-    ...labels(SOFA2_PRODUCT_CATEGORIES.spaces),
-  ])
-);
+const TYPE_NAMES = labels(SOFA2_PRODUCT_CATEGORIES.types);
 const STYLE_NAMES = labels(SOFA2_PRODUCT_CATEGORIES.styles);
 const SPACE_NAMES = labels(SOFA2_PRODUCT_CATEGORIES.spaces);
 
@@ -73,7 +67,7 @@ export const SOFA2_CATALOG_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     fields: [
       f('name', 'Tên sản phẩm', 'text', 'content', { required: true }),
       f('sku', 'Mã SKU', 'text', 'content', { required: true, placeholder: 'LX-XXX-00' }),
-      f('category', 'Danh mục sản phẩm', 'select', 'content', { required: true, options: CATEGORY_NAMES }),
+      f('category', 'Danh mục sản phẩm', 'select', 'content', { required: true, options: TYPE_NAMES }),
       f('style', 'Phong cách', 'select', 'content', { options: STYLE_NAMES }),
       f('space', 'Không gian phù hợp', 'select', 'content', { options: SPACE_NAMES }),
       f('material', 'Chất liệu', 'text', 'content', { placeholder: 'Vải linen, khung gỗ sồi FSC' }),
