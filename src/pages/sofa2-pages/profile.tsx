@@ -1,16 +1,17 @@
+import { useState } from 'react';
 import { m } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { useState } from 'react';
 
 import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
+import Snackbar from '@mui/material/Snackbar';
 import TextField from '@mui/material/TextField';
 import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
-import Snackbar from '@mui/material/Snackbar';
 
 import { RouterLink } from 'src/routes/components';
 
@@ -19,7 +20,8 @@ import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { useSofa2AdminRows, type AdminRow } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { type AdminRow, useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { SOFA2_DEMO_CUSTOMER_ID, validateSofa2CustomerProfile } from 'src/sections/sofa2-admin/sofa2-customer';
 import { Sofa2CustomerPortalNav, SOFA2_PORTAL_CUSTOMER_ID, SOFA2_PORTAL_CUSTOMER_NAME } from 'src/sections/sofa2/sofa2-customer-portal';
 
 // ----------------------------------------------------------------------
@@ -42,12 +44,20 @@ export default function Page() {
   };
   const [draft, setDraft] = useState<AdminRow | null>(null);
   const [toast, setToast] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const values = draft ?? profile;
-  const setField = (key: string, value: string) =>
+  const setField = (key: string, value: string) => {
     setDraft((current) => ({ ...profile, ...(current ?? {}), [key]: value }));
+    setErrors((current) => ({ ...current, [key]: '' }));
+  };
   const saveProfile = () => {
-    if (profileIndex < 0) profileStore.createRow({ ...profile, ...(draft ?? {}) });
-    else profileStore.updateRow(profileIndex, { ...profile, ...(draft ?? {}) });
+    const candidate = { ...profile, ...(draft ?? {}) };
+    const nextErrors = validateSofa2CustomerProfile(candidate, profileStore.rows, SOFA2_DEMO_CUSTOMER_ID);
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+    const clean = { ...candidate, name: String(candidate.name).trim(), email: String(candidate.email).trim().toLowerCase(), phone: String(candidate.phone).trim() };
+    if (profileIndex < 0) profileStore.createRow(clean);
+    else profileStore.updateRow(profileIndex, clean);
     setDraft(null);
     setToast('Đã lưu thông tin hồ sơ.');
   };
@@ -65,6 +75,10 @@ export default function Page() {
 
       <Sofa2Section>
         <Sofa2CustomerPortalNav active="/sofa2/profile" />
+        <Alert severity="info" sx={{ mb: 3 }}>Đây là hồ sơ demo lưu trên trình duyệt này; không nhập thông tin cá nhân thật.</Alert>
+        {!!Object.keys(errors).filter((key) => errors[key]).length && (
+          <Alert severity="error" sx={{ mb: 3 }}>Vui lòng sửa các trường được đánh dấu trước khi lưu.</Alert>
+        )}
         <Grid container spacing={{ xs: 4, md: 5 }}>
           {/* Sidebar */}
           <Grid xs={12} md={3}>
@@ -104,10 +118,10 @@ export default function Page() {
             >
               <Typography variant="h5">Thông tin cá nhân</Typography>
               <Grid container spacing={2}>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Họ và tên" value={String(values.name ?? '')} onChange={(e) => setField('name', e.target.value)} /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Số điện thoại" value={String(values.phone ?? '')} onChange={(e) => setField('phone', e.target.value)} /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Email" type="email" value={String(values.email ?? '')} onChange={(e) => setField('email', e.target.value)} /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Ngày sinh" type="date" value={String(values.birthday ?? '')} onChange={(e) => setField('birthday', e.target.value)} InputLabelProps={{ shrink: true }} /></Grid>
+                <Grid xs={12} sm={6}><TextField fullWidth required label="Họ và tên" value={String(values.name ?? '')} error={!!errors.name} helperText={errors.name} onChange={(e) => setField('name', e.target.value)} /></Grid>
+                <Grid xs={12} sm={6}><TextField fullWidth required label="Số điện thoại" value={String(values.phone ?? '')} error={!!errors.phone} helperText={errors.phone} onChange={(e) => setField('phone', e.target.value)} /></Grid>
+                <Grid xs={12} sm={6}><TextField fullWidth required label="Email" type="email" value={String(values.email ?? '')} error={!!errors.email} helperText={errors.email} onChange={(e) => setField('email', e.target.value)} /></Grid>
+                <Grid xs={12} sm={6}><TextField fullWidth label="Ngày sinh" type="date" value={String(values.birthday ?? '')} error={!!errors.birthday} helperText={errors.birthday} onChange={(e) => setField('birthday', e.target.value)} InputLabelProps={{ shrink: true }} /></Grid>
                 <Grid xs={12} sm={6}><TextField fullWidth select label="Giới tính" value={String(values.gender ?? '')} onChange={(e) => setField('gender', e.target.value)} SelectProps={{ native: true }}><option value="">Chọn giới tính</option><option>Nam</option><option>Nữ</option><option>Khác</option></TextField></Grid>
                 <Grid xs={12} sm={6}><TextField fullWidth label="Tỉnh/thành" value={String(values.city ?? '')} onChange={(e) => setField('city', e.target.value)} /></Grid>
                 <Grid xs={12}><TextField fullWidth label="Địa chỉ giao hàng" value={String(values.address ?? '')} onChange={(e) => setField('address', e.target.value)} /></Grid>

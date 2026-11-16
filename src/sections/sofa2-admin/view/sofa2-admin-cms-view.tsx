@@ -47,6 +47,7 @@ import { Sofa2AdminLayout } from './sofa2-admin-layout';
 import { Sofa2AdminSeoGenerator } from './sofa2-admin-seo-generator';
 import { Sofa2AdminDealerInsights } from './sofa2-admin-dealer-insights';
 import { sofa2Today, sofa2Slugify, type Sofa2CmsField, type Sofa2CmsSchema } from '../sofa2-cms';
+import { SOFA2_ADMIN_ROOT, type Sofa2AdminGroup, type Sofa2AdminModule } from '../sofa2-admin-data';
 import {
   hasSofa2AdminPermission,
   type Sofa2AdminAccessSession,
@@ -58,8 +59,6 @@ import {
   loadSofa2DealerRows,
   syncSofa2DealerRows,
 } from '../sofa2-admin-store';
-
-import type { Sofa2AdminGroup, Sofa2AdminModule } from '../sofa2-admin-data';
 
 // ----------------------------------------------------------------------
 
@@ -142,8 +141,9 @@ type Props = { group: Sofa2AdminGroup; module: Sofa2AdminModule; schema: Sofa2Cm
 
 export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   const isAppendOnly = module.slug === 'audit-log';
+  const isCustomerDashboard = group.slug === 'customer' && module.slug === 'dashboard';
   const {
-    rows,
+    rows: storedRows,
     createRow,
     updateRow,
     deleteRow,
@@ -163,6 +163,38 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   const { rows: catalogProducts } = useSofa2AdminRows('catalog', 'products', {
     load: group.slug === 'catalog' && module.slug === 'categories',
   });
+  const { rows: customerProfiles } = useSofa2AdminRows('customer', 'profiles', {
+    load: isCustomerDashboard,
+  });
+  const { rows: customerOrders } = useSofa2AdminRows('customer', 'customer-orders', {
+    load: isCustomerDashboard,
+  });
+  const rows: AdminRow[] = isCustomerDashboard
+    ? customerProfiles.map((profile): AdminRow => {
+        const customerId = String(profile.customerId ?? '');
+        const orders = customerOrders.filter((order) => String(order.customerId ?? '') === customerId);
+        const validOrders = orders.filter((order) => String(order.status) !== 'Đã huỷ');
+        const lastOrder = [...validOrders].sort((a, b) =>
+          String(b.orderDate ?? '').localeCompare(String(a.orderDate ?? ''))
+        )[0];
+        const status =
+          String(profile.status) === 'Đã khoá'
+            ? 'Đã khoá'
+            : String(profile.status) === 'Chưa xác minh'
+              ? 'Cần chăm sóc'
+              : validOrders.length
+                ? 'Hoạt động'
+                : 'Không hoạt động';
+        return {
+          ...profile,
+          orders: validOrders.length,
+          spent: validOrders.reduce((sum, order) => sum + Number(order.total ?? 0), 0),
+          lastOrder: lastOrder?.orderDate ?? '',
+          staff: profile.staff ?? 'Chưa gán',
+          status,
+        };
+      })
+    : storedRows;
 
   const [dealerLoading, setDealerLoading] = useState(group.slug === 'dealer');
   const [accessSaveStarted, setAccessSaveStarted] = useState(false);
@@ -170,10 +202,10 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     getSofa2DemoAdminSession()
   );
   const isAdmin = accessSession?.role === 'admin';
-  const canCreate = !isAppendOnly && hasSofa2AdminPermission(accessSession, group.slug, 'Tạo mới');
-  const canEdit = !isAppendOnly && hasSofa2AdminPermission(accessSession, group.slug, 'Sửa');
-  const canDelete = !isAppendOnly && hasSofa2AdminPermission(accessSession, group.slug, 'Xoá');
-  const canPublish = !isAppendOnly && hasSofa2AdminPermission(accessSession, group.slug, 'Xuất bản');
+  const canCreate = !isAppendOnly && !isCustomerDashboard && hasSofa2AdminPermission(accessSession, group.slug, 'Tạo mới');
+  const canEdit = !isAppendOnly && !isCustomerDashboard && hasSofa2AdminPermission(accessSession, group.slug, 'Sửa');
+  const canDelete = !isAppendOnly && !isCustomerDashboard && hasSofa2AdminPermission(accessSession, group.slug, 'Xoá');
+  const canPublish = !isAppendOnly && !isCustomerDashboard && hasSofa2AdminPermission(accessSession, group.slug, 'Xuất bản');
   const canExport = hasSofa2AdminPermission(accessSession, group.slug, 'Xuất dữ liệu');
 
   useEffect(() => {
@@ -1090,7 +1122,23 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       const customerId = String(row.customerId ?? '');
       const linked = (moduleName: string, predicate: (item: AdminRow) => boolean) =>
         getSofa2AdminRows('customer', moduleName).some(predicate);
-      if (module.slug === 'dashboard') return 'Dashboard là bản tổng hợp khách hàng; hãy quản lý hồ sơ tại mục Hồ sơ.';
+      if (module.slug === 'dashboard') return 'Dashboard là bản tổng hợp chỉ đọc; hãy quản lý bản ghi khách tại mục Hồ sơ.';
+      if (module.slug === 'vouchers') {
+        const code = String(row.code ?? '');
+        const recipient = String(row.customerId ?? '');
+        const issuedToCustomer = recipient && recipient !== 'Tất cả thành viên';
+        const hasClaims = getSofa2AdminRows('customer', 'vouchers').some((voucher) =>
+          String(voucher.code ?? '') === code &&
+          String(voucher.customerId ?? '') !== 'Tất cả thành viên' &&
+          ['Đã nhận', 'Đã sử dụng', 'Hết hạn'].includes(String(voucher.status))
+        );
+        if (issuedToCustomer && ['Đã nhận', 'Đã sử dụng', 'Hết hạn'].includes(String(row.status))) {
+          return 'Voucher đã phát/nhận là lịch sử quyền lợi của khách; hãy cập nhật trạng thái thay vì xoá.';
+        }
+        if (recipient === 'Tất cả thành viên' && hasClaims) {
+          return 'Chiến dịch voucher đã có khách nhận; hãy tạm dừng hoặc hết hạn thay vì xoá để giữ lịch sử.';
+        }
+      }
       if (module.slug === 'profiles' && ['customer-orders', 'warranties', 'points', 'complaints', 'vouchers'].some((name) =>
         linked(name, (item) => String(item.customerId ?? '') === customerId)
       )) return 'Khách hàng còn giao dịch liên kết; hãy lưu trữ hồ sơ thay vì xoá.';
@@ -1415,6 +1463,71 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
 
   const groupedFields = (g: Sofa2CmsField['group']) => fields.filter((x) => x.group === g);
   const dashboardStats = useMemo(() => {
+    if (group.slug === 'customer') {
+      if (isCustomerDashboard) {
+        const eligibleOrders = customerOrders.filter((row) => String(row.status) !== 'Đã huỷ');
+        const customersWithRepeatOrders = customerProfiles.filter((profile) => {
+          const count = eligibleOrders.filter(
+            (order) => String(order.customerId ?? '') === String(profile.customerId ?? '')
+          ).length;
+          return count > 1;
+        }).length;
+        const totalSpent = eligibleOrders.reduce((sum, order) => sum + Number(order.total ?? 0), 0);
+        return [
+          { label: 'Hồ sơ khách hàng', value: customerProfiles.length.toLocaleString('vi-VN') },
+          {
+            label: 'Đã xác minh',
+            value: customerProfiles.filter((profile) => String(profile.status) === 'Đã xác minh').length.toLocaleString('vi-VN'),
+          },
+          { label: 'Đơn không bị huỷ', value: eligibleOrders.length.toLocaleString('vi-VN') },
+          { label: 'Doanh thu ghi nhận', value: compactMoney(totalSpent) },
+          { label: 'Khách mua lại', value: customersWithRepeatOrders.toLocaleString('vi-VN') },
+        ];
+      }
+
+      const countStatus = (status: string) => rows.filter((row) => String(row.status) === status).length;
+      const total = (key: string, source = rows) => source.reduce((sum, row) => sum + asNumber(row[key]), 0);
+      const today = sofa2Today();
+      const statsByModule: Record<string, typeof module.stats> = {
+        profiles: [
+          { label: 'Tổng hồ sơ', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Đã xác minh', value: countStatus('Đã xác minh').toLocaleString('vi-VN') },
+          { label: 'Nhận email', value: rows.filter((row) => ['Có', 'true', '1'].includes(String(row.emailOptIn))).length.toLocaleString('vi-VN') },
+          { label: 'Nhận SMS/Zalo', value: rows.filter((row) => ['Có', 'true', '1'].includes(String(row.smsOptIn))).length.toLocaleString('vi-VN') },
+        ],
+        'customer-orders': [
+          { label: 'Tổng đơn', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Chưa hoàn tất', value: rows.filter((row) => ['Chờ xác nhận', 'Đang xử lý', 'Đang sản xuất', 'Đang giao'].includes(String(row.status))).length.toLocaleString('vi-VN') },
+          { label: 'Giá trị đơn TB', value: compactMoney(rows.length ? total('total', rows.filter((row) => String(row.status) !== 'Đã huỷ')) / Math.max(1, rows.filter((row) => String(row.status) !== 'Đã huỷ').length) : 0) },
+          { label: 'Đã huỷ', value: countStatus('Đã huỷ').toLocaleString('vi-VN') },
+        ],
+        warranties: [
+          { label: 'Tổng phiếu', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Còn hiệu lực', value: countStatus('Còn hiệu lực').toLocaleString('vi-VN') },
+          { label: 'Đang xử lý', value: rows.filter((row) => ['Tiếp nhận', 'Đang kiểm tra', 'Đang sửa chữa'].includes(String(row.status))).length.toLocaleString('vi-VN') },
+          { label: 'Hoàn tất', value: countStatus('Hoàn tất').toLocaleString('vi-VN') },
+        ],
+        points: [
+          { label: 'Giao dịch', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Điểm khả dụng', value: total('points', rows.filter((row) => String(row.status) === 'Đã ghi nhận' && (!row.expiry || String(row.expiry).slice(0, 10) >= today))).toLocaleString('vi-VN') },
+          { label: 'Đang chờ duyệt', value: countStatus('Chờ duyệt').toLocaleString('vi-VN') },
+          { label: 'Điểm đã đổi', value: Math.abs(total('points', rows.filter((row) => Number(row.points) < 0 && String(row.status) === 'Đã ghi nhận'))).toLocaleString('vi-VN') },
+        ],
+        vouchers: [
+          { label: 'Chiến dịch', value: rows.filter((row) => String(row.customerId) === 'Tất cả thành viên').length.toLocaleString('vi-VN') },
+          { label: 'Đang phát hành', value: countStatus('Đang phát hành').toLocaleString('vi-VN') },
+          { label: 'Đã nhận', value: countStatus('Đã nhận').toLocaleString('vi-VN') },
+          { label: 'Đã sử dụng', value: countStatus('Đã sử dụng').toLocaleString('vi-VN') },
+        ],
+        complaints: [
+          { label: 'Tổng khiếu nại', value: rows.length.toLocaleString('vi-VN') },
+          { label: 'Đang mở', value: rows.filter((row) => ['Mới', 'Đang xử lý', 'Chờ khách phản hồi'].includes(String(row.status))).length.toLocaleString('vi-VN') },
+          { label: 'Quá hạn', value: rows.filter((row) => ['Mới', 'Đang xử lý', 'Chờ khách phản hồi'].includes(String(row.status)) && !!getDate(row.deadline) && getDate(row.deadline)! < new Date(`${today}T00:00:00`)).length.toLocaleString('vi-VN') },
+          { label: 'Đã giải quyết', value: (countStatus('Đã giải quyết') + countStatus('Đóng')).toLocaleString('vi-VN') },
+        ],
+      };
+      return statsByModule[module.slug] ?? module.stats;
+    }
     if (group.slug === 'dealer') {
       const sum = (field: string, items = rows) =>
         items.reduce((total, row) => total + asNumber(row[field]), 0);
@@ -1697,7 +1810,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     };
 
     return statsByModule[module.slug] ?? module.stats;
-  }, [accessUsers, group.slug, module, rows]);
+  }, [accessUsers, customerOrders, customerProfiles, group.slug, isCustomerDashboard, module, rows]);
 
   return (
     <>
@@ -1721,6 +1834,24 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         {group.slug === 'support' && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             Nội dung hỗ trợ, ticket và chat đang dùng localStorage trên trình duyệt này để đồng bộ với trang khách cùng thiết bị. Đây là demo: chưa có API, xác thực/phân quyền phía máy chủ, sao lưu hay đồng bộ nhiều thiết bị; người có quyền truy cập trình duyệt có thể xem hoặc sửa dữ liệu. Không nhập thông tin khách hàng thật hoặc dữ liệu nhạy cảm.
+          </Alert>
+        )}
+        {group.slug === 'customer' && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Hồ sơ, đơn hàng, điểm, voucher và khiếu nại được lưu trong localStorage và dùng chung với portal Sofa2 trên cùng trình duyệt. Tài khoản đăng nhập hiện là demo; chưa có xác thực, phân quyền dữ liệu theo khách hàng hoặc lưu trữ an toàn phía máy chủ. Không dùng dữ liệu khách thật.
+          </Alert>
+        )}
+        {isCustomerDashboard && (
+          <Alert
+            severity="info"
+            sx={{ mb: 2 }}
+            action={
+              <Button color="inherit" size="small" component={RouterLink} href={`${SOFA2_ADMIN_ROOT}/customer/profiles`}>
+                Quản lý hồ sơ
+              </Button>
+            }
+          >
+            Dashboard là bản tổng hợp chỉ đọc lấy từ Hồ sơ và Đơn hàng; số liệu được tính lại theo dữ liệu demo hiện có.
           </Alert>
         )}
         {group.slug === 'catalog' && (
@@ -1902,7 +2033,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
                       )}
                     </>
                   )}
-                  {isAdmin && group.slug !== 'hr' && group.slug !== 'access' && !isAppendOnly && (
+                  {isAdmin && group.slug !== 'hr' && group.slug !== 'access' && !isAppendOnly && !isCustomerDashboard && (
                     <Button
                       size="small"
                       variant="outlined"
