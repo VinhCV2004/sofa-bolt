@@ -1,3 +1,6 @@
+import { getSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { isSofa2DealerPolicyVisible } from 'src/sections/sofa2-admin/sofa2-dealer';
+
 export type Sofa2DemoRole = 'admin' | 'dealer';
 
 export type Sofa2DemoSession = {
@@ -105,69 +108,38 @@ export function createSofa2MockQuote(
 }
 
 export function getSofa2DealerPortalData(session: Sofa2DemoSession): Sofa2DealerPortalData {
-  const profile = {
-    dealer: session.name,
-    level: 'Vàng',
-    target: 300000000,
-    achieved: 186000000,
-  };
+  const profile = getSofa2AdminRows('dealer', 'dashboard').find((row) =>
+    String(row.email ?? '').trim().toLowerCase() === session.email.trim().toLowerCase() &&
+    ['có', 'true', '1', 'yes'].includes(String(row.portalAccess ?? '').trim().toLowerCase()) &&
+    String(row.status ?? '') !== 'Tạm ngưng'
+  ) ?? {};
+  const dealerId = String(profile.dealerId ?? '');
+  const dealerName = String(profile.dealer ?? '');
+  const related = (module: string) => getSofa2AdminRows('dealer', module).filter((row) => {
+    if (dealerId && String(row.dealerId ?? '')) return String(row.dealerId) === dealerId;
+    return String(row.dealer ?? '').trim().toLowerCase() === dealerName.trim().toLowerCase();
+  });
+  const level = String(profile.level ?? '');
+  const rank = ['Đồng', 'Bạc', 'Vàng', 'Kim cương'].indexOf(level);
+  const documents = getSofa2AdminRows('dealer', 'sales-docs').filter((row) => {
+    if (String(row.status ?? '') !== 'Đã xuất bản') return false;
+    const access = String(row.access ?? 'Tất cả đại lý');
+    if (!access || access === 'Tất cả đại lý') return true;
+    if (access === 'Đồng trở lên') return rank >= 0;
+    if (access === 'Bạc trở lên') return rank >= 1;
+    if (access === 'Vàng trở lên') return rank >= 2;
+    if (access === 'Chỉ Kim cương') return rank === 3;
+    return false;
+  });
 
   return {
     profile,
-    policies: [
-      {
-        recordId: 'DEMO-POLICY-GOLD',
-        name: 'Chính sách đại lý Vàng - Demo',
-        level: 'Vàng',
-        discount: 30,
-        minRevenue: 150000000,
-        bonus: 3,
-        paymentTerm: 30,
-        terms: 'Dữ liệu minh họa lưu trên thiết bị hiện tại.',
-        startDate: '01/01/2026',
-        endDate: '31/12/2026',
-      },
-    ],
-    quotes: getSavedQuotes().filter(
-      (quote) => quote.kind === 'dealer' && quote.dealerEmail === session.email
+    policies: getSofa2AdminRows('dealer', 'price-policy').filter((row) =>
+      isSofa2DealerPolicyVisible(row) && ['Tất cả', level].includes(String(row.level ?? ''))
     ),
-    orders: [
-      {
-        recordId: 'DEMO-ORDER-001',
-        code: 'LX-DH-26001',
-        products: 'Sofa Oslo 3 Chỗ × 4',
-        orderDate: '15/10/2026',
-        deliveryDate: '30/10/2026',
-        total: 58000000,
-        status: 'Đang xử lý',
-      },
-    ],
-    debts: [
-      {
-        recordId: 'DEMO-DEBT-001',
-        invoices: 'INV-DEMO-001',
-        limit: 100000000,
-        balance: 18000000,
-        paid: 42000000,
-        dueDate: '15/11/2026',
-        status: 'Trong hạn',
-      },
-    ],
-    documents: [
-      {
-        recordId: 'DEMO-DOC-001',
-        title: 'Catalogue LUXE Sofa',
-        type: 'Catalogue',
-        description: 'Tài liệu giới thiệu bộ sưu tập sofa.',
-        fileUrl: '',
-      },
-      {
-        recordId: 'DEMO-DOC-002',
-        title: 'Bảng giá đại lý',
-        type: 'Bảng giá',
-        description: 'Bảng giá minh họa dành cho tài khoản demo.',
-        fileUrl: '',
-      },
-    ],
+    quotes: related('quotes'),
+    orders: related('dealer-orders'),
+    debts: related('debts'),
+    documents,
   };
 }

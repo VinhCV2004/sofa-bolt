@@ -49,6 +49,7 @@ export const SOFA2_DEALER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     'dealer',
     ['Vượt chỉ tiêu', 'Đúng tiến độ', 'Chậm tiến độ', 'Tạm ngưng'],
     [
+      f('dealerId', 'Mã đại lý', 'text', 'content', { disabled: true }),
       f('dealer', 'Tên đại lý', 'text', 'content', { required: true }),
       f('taxCode', 'Mã số thuế', 'text', 'content'),
       f('contact', 'Người đại diện', 'text', 'content'),
@@ -98,6 +99,8 @@ export const SOFA2_DEALER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     ['Chờ xử lý', 'Đã gửi', 'Đã chốt', 'Hết hạn', 'Từ chối'],
     [
       f('code', 'Mã báo giá', 'text', 'content', { required: true, placeholder: 'BG-DL-0000' }),
+      f('dealerId', 'Mã đại lý', 'text', 'content', { disabled: true }),
+      f('dealerEmail', 'Email tài khoản đại lý', 'text', 'content'),
       f('dealer', 'Đại lý / khách hàng dự án', 'select', 'content', {
         required: true,
         options: [...DEALERS, 'Yêu cầu dự án'],
@@ -135,6 +138,7 @@ export const SOFA2_DEALER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     ['Chờ xác nhận', 'Đang giao', 'Hoàn tất', 'Đã huỷ'],
     [
       f('code', 'Mã đơn', 'text', 'content', { required: true, placeholder: 'DH-DL-0000' }),
+      f('dealerId', 'Mã đại lý', 'text', 'content', { disabled: true }),
       f('dealer', 'Đại lý', 'select', 'content', { required: true, options: DEALERS }),
       f('quoteRef', 'Từ báo giá', 'text', 'content', { placeholder: 'BG-DL-0000' }),
       f('products', 'Sản phẩm (SKU x SL)', 'textarea', 'content', { multiline: 3 }),
@@ -157,6 +161,7 @@ export const SOFA2_DEALER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     'dealer',
     ['Trong hạn', 'Sắp đến hạn', 'Quá hạn', 'Đã tất toán'],
     [
+      f('dealerId', 'Mã đại lý', 'text', 'content', { disabled: true }),
       f('dealer', 'Đại lý', 'select', 'content', { required: true, options: DEALERS }),
       f('invoices', 'Hoá đơn liên quan', 'text', 'content', { placeholder: 'DH-DL-2210, DH-DL-2205' }),
       f('note', 'Lịch sử nhắc nợ / ghi chú', 'textarea', 'content', { multiline: 3 }),
@@ -184,7 +189,7 @@ export const SOFA2_DEALER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('fileUrl', 'Liên kết tệp', 'url', 'content', { placeholder: 'https://...' }),
       f('access', 'Quyền truy cập', 'select', 'display', {
         required: true,
-        options: ['Tất cả đại lý', 'Vàng trở lên', 'Chỉ Kim cương', 'Nội bộ'],
+        options: ['Tất cả đại lý', 'Đồng trở lên', 'Bạc trở lên', 'Vàng trở lên', 'Chỉ Kim cương', 'Nội bộ'],
       }),
       f('downloads', 'Lượt tải', 'number', 'display'),
       f('updated', 'Cập nhật', 'date', 'display'),
@@ -195,4 +200,22 @@ export const SOFA2_DEALER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
 
 export function getSofa2DealerSchema(moduleSlug?: string) {
   return moduleSlug ? SOFA2_DEALER_SCHEMAS[moduleSlug] : undefined;
+}
+
+const dateKey = (value: unknown) => {
+  const raw = String(value ?? '').trim();
+  const local = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (local) return `${local[3]}-${local[2].padStart(2, '0')}-${local[1].padStart(2, '0')}`;
+  return /^\d{4}-\d{2}-\d{2}/.test(raw) ? raw.slice(0, 10) : '';
+};
+
+export function isSofa2DealerPolicyVisible(row: Record<string, unknown>, today = new Date()) {
+  if (String(row.status ?? '') !== 'Đang áp dụng') return false;
+  const portalValue = row.showOnPortal;
+  const portalEnabled = portalValue === true || ['có', 'true', '1', 'yes'].includes(String(portalValue ?? '').trim().toLowerCase());
+  if (portalValue !== undefined && !portalEnabled) return false;
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const starts = dateKey(row.startDate);
+  const ends = dateKey(row.endDate);
+  return (!starts || starts <= todayKey) && (!ends || ends >= todayKey);
 }

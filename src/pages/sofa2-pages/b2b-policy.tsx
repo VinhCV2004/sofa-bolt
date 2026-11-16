@@ -1,8 +1,8 @@
 import { m } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Paper from '@mui/material/Paper';
@@ -24,20 +24,13 @@ import { Iconify } from 'src/components/iconify';
 import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
-import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 import { getSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { isSofa2DealerPolicyVisible } from 'src/sections/sofa2-admin/sofa2-dealer';
 
 // ----------------------------------------------------------------------
 
 const metadata = { title: 'Chính sách đối tác B2B — LUXE Sofa' };
-
-const TIERS = [
-  { tier: 'Bronze', discount: '10%', minOrder: '50 triệu', color: '#CD7F32' },
-  { tier: 'Silver', discount: '15%', minOrder: '150 triệu', color: '#C0C0C0' },
-  { tier: 'Gold', discount: '25%', minOrder: '400 triệu', color: '#FFD700' },
-  { tier: 'Platinum', discount: '35%', minOrder: '1 tỷ', color: '#E5E4E2' },
-  { tier: 'Diamond', discount: '40%', minOrder: '2 tỷ', color: '#B9F2FF' },
-];
 
 const SECTIONS = [
   { icon: 'solar:card-bold-duotone', title: 'Điều khoản thanh toán', items: ['Đặt cọc 30% khi ký hợp đồng.', 'Thanh toán 60% khi giao hàng.', 'Thanh toán 10% sau 15 ngày nghiệm thu.', 'Hỗ trợ trả chậm 30-60 ngày cho đối tác Gold trở lên.'] },
@@ -47,24 +40,20 @@ const SECTIONS = [
 ];
 
 export default function Page() {
-  const policies = getSofa2AdminRows('dealer', 'price-policy').filter(
-    (row) => !row.status || String(row.status).includes('áp dụng')
-  );
+  const policies = getSofa2AdminRows('dealer', 'price-policy').filter((row) => isSofa2DealerPolicyVisible(row));
 
   const currency = (value: unknown) => {
     const amount = Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount);
   };
-  const tierRows = policies.length
-    ? policies.map((row) => ({
-        tier: String(row.level ?? 'Tất cả'),
-        discount: `${String(row.discount ?? 0)}%`,
-        minOrder: currency(row.minRevenue),
-        color: '#8A6746',
-        name: String(row.name ?? ''),
-        terms: String(row.terms ?? ''),
-      }))
-    : TIERS.map((row) => ({ ...row, name: '', terms: '' }));
+  const tierRows = policies.map((row) => ({
+    tier: String(row.level ?? 'Tất cả'),
+    discount: `${String(row.discount ?? 0)}%`,
+    minOrder: currency(row.minRevenue),
+    color: '#8A6746',
+    name: String(row.name ?? ''),
+    terms: String(row.terms ?? ''),
+  }));
 
   return (
     <>
@@ -96,6 +85,13 @@ export default function Page() {
                 </TableRow>
               </TableHead>
               <TableBody>
+                {!tierRows.length && (
+                  <TableRow>
+                    <TableCell colSpan={3}>
+                      <Alert severity="info">Hiện chưa có chính sách giá nào được công bố.</Alert>
+                    </TableCell>
+                  </TableRow>
+                )}
                 {tierRows.map((row, index) => (
                   <TableRow key={`${row.tier}-${index}`} sx={{ '&:last-of-type td': { borderBottom: 0 } }}>
                     <TableCell>

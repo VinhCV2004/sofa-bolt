@@ -648,7 +648,94 @@ export async function syncSofa2CmsRow(
   return (store[k] ?? []).map((item) => ({ ...item }));
 }
 
+const DEALER_MIGRATION_KEY = 'sofa2-dealer-row-migration-v2';
+let dealerRowsMigrated = false;
+
+function migrateSofa2DealerRows() {
+  if (dealerRowsMigrated || typeof window === 'undefined') return;
+  dealerRowsMigrated = true;
+  try {
+    if (window.localStorage.getItem(DEALER_MIGRATION_KEY)) return;
+  } catch {
+    // Continue with the in-memory demo snapshot if localStorage is unavailable.
+  }
+
+  const dealerGroup = SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'dealer');
+  if (!dealerGroup) return;
+  const defaultsByModule = new Map(dealerGroup.modules.map((module) => [module.slug, module.rows]));
+  const identityKeys: Record<string, string> = {
+    dashboard: 'dealer',
+    'price-policy': 'name',
+    quotes: 'code',
+    'dealer-orders': 'code',
+    debts: 'dealer',
+    'sales-docs': 'title',
+  };
+  const migrated: Record<string, AdminRow[]> = {};
+
+  dealerGroup.modules.forEach((module) => {
+    const moduleKey = key('dealer', module.slug);
+    const currentRows = store[moduleKey] ?? module.rows;
+    const defaultRows = defaultsByModule.get(module.slug) ?? [];
+    const identityKey = identityKeys[module.slug];
+    migrated[module.slug] = currentRows.map((row) => {
+      const identity = String(row[identityKey] ?? '').trim().toLowerCase();
+      const seed = defaultRows.find((item) =>
+        String(item[identityKey] ?? '').trim().toLowerCase() === identity
+      );
+      const result: AdminRow = { ...(seed ?? {}), ...row };
+      if (seed) {
+        Object.entries(seed).forEach(([field, value]) => {
+          if (result[field] === undefined || result[field] === null) result[field] = value;
+        });
+      }
+      return result;
+    });
+  });
+
+  const dealerProfiles = migrated.dashboard ?? [];
+  const profileByName = new Map(dealerProfiles.map((row) => [
+    String(row.dealer ?? '').trim().toLowerCase(), row,
+  ]));
+  Object.entries(migrated).forEach(([moduleSlug, rows]) => {
+    if (moduleSlug === 'dashboard' || moduleSlug === 'price-policy' || moduleSlug === 'sales-docs') return;
+    migrated[moduleSlug] = rows.map((row) => {
+      const profile = profileByName.get(String(row.dealer ?? '').trim().toLowerCase());
+      const next = { ...row };
+      if (profile && !String(next.dealerId ?? '').trim()) next.dealerId = String(profile.dealerId ?? '');
+      if (moduleSlug === 'quotes' && profile && !String(next.dealerEmail ?? '').trim()) {
+        next.dealerEmail = String(profile.email ?? '');
+      }
+      return next;
+    });
+  });
+
+  const dashboard = migrated.dashboard ?? [];
+  const oldDefaultAccount = dashboard.find((row) =>
+    String(row.dealer ?? '') === 'Nội thất Việt' && !String(row.email ?? '').trim()
+  );
+  if (oldDefaultAccount) {
+    const seed = (defaultsByModule.get('dashboard') ?? []).find((row) => String(row.dealerId) === 'DL-1001');
+    if (seed) {
+      oldDefaultAccount.email = seed.email;
+      oldDefaultAccount.portalAccess = seed.portalAccess;
+      oldDefaultAccount.dealerId = seed.dealerId;
+    }
+  }
+
+  Object.entries(migrated).forEach(([moduleSlug, rows]) => {
+    store[key('dealer', moduleSlug)] = rows;
+  });
+  try {
+    window.localStorage.setItem(DEALER_MIGRATION_KEY, 'done');
+  } catch {
+    // The migration still applies in memory for this browser session.
+  }
+  emit();
+}
+
 export async function loadSofa2DealerRows(moduleSlug: string, defaults: AdminRow[]) {
+  migrateSofa2DealerRows();
   if (moduleSlug !== 'dashboard') {
     const dashboard = SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'dealer')
       ?.modules.find((module) => module.slug === 'dashboard');
@@ -699,7 +786,8 @@ export function useSofa2AdminRows(
   const isSeoModule = groupSlug === 'seo';
   const isCmsModule = groupSlug === 'cms';
   const isAccessModule = groupSlug === 'access';
-  const shouldLoad = (isSeoModule || isCmsModule || isAccessModule) && options.load !== false;
+  const isDealerModule = groupSlug === 'dealer';
+  const shouldLoad = (isSeoModule || isCmsModule || isAccessModule || isDealerModule) && options.load !== false;
   const [loading, setLoading] = useState(shouldLoad);
   const [error, setError] = useState('');
   const [pendingWrites, setPendingWrites] = useState(0);
@@ -721,11 +809,15 @@ export function useSofa2AdminRows(
     setLoading(true);
     setError('');
 
+    const dealerDefaults = SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'dealer')
+      ?.modules.find((module) => module.slug === moduleSlug)?.rows ?? [];
     const loader = isCmsModule
       ? loadSofa2CmsRows(moduleSlug, store[k] ?? [])
       : isAccessModule
         ? loadSofa2AccessRows(moduleSlug)
-        : loadSofa2SeoRows(moduleSlug, store[k] ?? []);
+        : isDealerModule
+          ? loadSofa2DealerRows(moduleSlug, dealerDefaults)
+          : loadSofa2SeoRows(moduleSlug, store[k] ?? []);
 
     loader
       .catch((loadError: unknown) => {
@@ -737,7 +829,9 @@ export function useSofa2AdminRows(
                 ? 'Không tải được dữ liệu CMS.'
                 : isAccessModule
                   ? 'Không tải được dữ liệu phân quyền.'
-                  : 'Không tải được dữ liệu SEO.'
+                  : isDealerModule
+                    ? 'Không tải được dữ liệu đại lý.'
+                    : 'Không tải được dữ liệu SEO.'
           );
         }
       })
@@ -748,7 +842,7 @@ export function useSofa2AdminRows(
     return () => {
       active = false;
     };
-  }, [shouldLoad, isCmsModule, isAccessModule, k, moduleSlug, reloadToken]);
+  }, [shouldLoad, isCmsModule, isAccessModule, isDealerModule, k, moduleSlug, reloadToken]);
 
   const persistCmsRow = useCallback(
     (mode: 'create' | 'update' | 'delete', row: AdminRow, index: number, previousRows: AdminRow[]) => {
