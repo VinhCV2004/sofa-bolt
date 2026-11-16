@@ -11,28 +11,30 @@ import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
 
+import { useTranslate } from 'src/locales';
+
 import { Iconify } from 'src/components/iconify';
 import { varFade } from 'src/components/animate';
 
-import { useTranslate } from 'src/locales';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 import { formatSofa2Price, SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
-import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
-import {
-  makeSofa2CartRow,
-  parseSofa2CartItems,
-  type Sofa2CartLine,
-} from 'src/sections/sofa2/sofa2-commerce-store';
 import {
   SOFA2_PORTAL_CUSTOMER_ID,
   SOFA2_PORTAL_CUSTOMER_NAME,
 } from 'src/sections/sofa2/sofa2-customer-portal';
+import {
+  makeSofa2CartRow,
+  type Sofa2CartLine,
+  parseSofa2CartItems,
+} from 'src/sections/sofa2/sofa2-commerce-store';
 
 // ----------------------------------------------------------------------
 
 export default function Page() {
   const { t } = useTranslate('sofa2');
   const cartStore = useSofa2AdminRows('shopping', 'cart');
+  const checkoutSettings = useSofa2AdminRows('shopping', 'checkout');
   const { rows: profiles } = useSofa2AdminRows('customer', 'profiles');
   const profile = profiles.find((row) => String(row.customerId) === SOFA2_PORTAL_CUSTOMER_ID);
   const customer = {
@@ -63,7 +65,10 @@ export default function Page() {
   const removeItem = (id: string) => saveItems(items.filter((item) => item.id !== id));
 
   const subtotal = items.reduce((sum, it) => sum + it.price * it.qty, 0);
-  const shipping = subtotal > 0 ? 300000 : 0;
+  const shippingRule = checkoutSettings.rows.find(
+    (row) => row.status === 'Đang bật' && row.type === 'Phí giao hàng'
+  );
+  const shipping = subtotal > 0 ? Number(shippingRule?.fee ?? 300000) : 0;
   const total = subtotal + shipping;
 
   if (items.length === 0) {

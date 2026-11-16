@@ -19,6 +19,7 @@ import { varFade, MotionViewport } from 'src/components/animate';
 
 import { Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 import { formatSofa2Price } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import {
   useSofa2CatalogProducts,
   useSofa2CatalogCategories,
@@ -37,9 +38,15 @@ const FILTER_GROUPS = [
 
 export default function Page() {
   const { slug = '' } = useParams();
+  const categorySeoRows = useSofa2AdminRows('seo', 'category', { load: false }).rows;
   const { products: allProducts } = useSofa2CatalogProducts();
   const categories = useSofa2CatalogCategories();
   const selectedCategory = Object.values(categories).flat().find((category) => category.slug === slug);
+  const categorySeo = categorySeoRows.find((row) => String(row.url ?? '') === `/sofa2/products/category/${slug}`);
+  const categoryIndexable = selectedCategory?.indexable !== false
+    && !['không', 'false', '0'].includes(String(categorySeo?.indexable ?? 'Có').toLowerCase())
+    && !['không', 'false', '0'].includes(String(categorySeo?.published ?? 'Có').toLowerCase());
+  const categoryCanonical = String(categorySeo?.canonical ?? '') || `https://luxesofa.vn/sofa2/products/category/${slug}`;
 
   // find matching label across all filter groups
   const matchLabel = FILTER_GROUPS.reduce<string | null>((result, group) => {
@@ -54,10 +61,40 @@ export default function Page() {
   return (
     <>
       <Helmet>
-        <title>{selectedCategory?.metaTitle || `${label} - LUXE Sofa`}</title>
-        {selectedCategory?.metaDescription && <meta name="description" content={selectedCategory.metaDescription} />}
-        <meta name="robots" content={selectedCategory?.indexable === false ? 'noindex, nofollow' : 'index, follow'} />
-        <link rel="canonical" href={`/sofa2/products/category/${slug}`} />
+        <title>{String(categorySeo?.title ?? '') || selectedCategory?.metaTitle || `${label} - LUXE Sofa`}</title>
+        {(String(categorySeo?.description ?? '') || selectedCategory?.metaDescription) && <meta name="description" content={String(categorySeo?.description ?? '') || selectedCategory?.metaDescription} />}
+        <meta name="robots" content={categoryIndexable ? 'index, follow' : 'noindex, nofollow'} />
+        <link rel="canonical" href={categoryCanonical} />
+        {categoryIndexable && (
+          <script type="application/ld+json">
+            {JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'CollectionPage',
+              name: selectedCategory?.label ?? label,
+              description: selectedCategory?.metaDescription || `${label} — danh mục sofa tại LUXE Sofa.`,
+              url: categoryCanonical,
+              isPartOf: { '@type': 'WebSite', name: 'LUXE Sofa', url: 'https://luxesofa.vn/sofa2' },
+              breadcrumb: {
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                  { '@type': 'ListItem', position: 1, name: 'Trang chủ', item: 'https://luxesofa.vn/sofa2' },
+                  { '@type': 'ListItem', position: 2, name: 'Sản phẩm', item: 'https://luxesofa.vn/sofa2/products' },
+                  { '@type': 'ListItem', position: 3, name: label, item: `https://luxesofa.vn/sofa2/products/category/${slug}` },
+                ],
+              },
+              mainEntity: {
+                '@type': 'ItemList',
+                numberOfItems: products.length,
+                itemListElement: products.map((product, index) => ({
+                  '@type': 'ListItem',
+                  position: index + 1,
+                  url: `https://luxesofa.vn/sofa2/products/${product.id}`,
+                  name: product.name,
+                })),
+              },
+            }).replace(/</g, '\\u003c')}
+          </script>
+        )}
       </Helmet>
 
       <Sofa2PageHero

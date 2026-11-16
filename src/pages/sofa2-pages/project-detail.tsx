@@ -20,6 +20,7 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import {
   SOFA2_PROJECTS,
   SOFA2_PRODUCTS,
@@ -38,6 +39,12 @@ const GALLERY = [
 export default function Page() {
   const theme = useTheme();
   const { id = '' } = useParams();
+  const projectSeo = useSofa2AdminRows('seo', 'project', { load: false }).rows.find(
+    (row) => String(row.url ?? '') === `/sofa2/projects/${id}`
+  );
+  const projectIndexable = !['không', 'false', '0'].includes(String(projectSeo?.indexable ?? 'Có').toLowerCase())
+    && !['không', 'false', '0'].includes(String(projectSeo?.published ?? 'Có').toLowerCase());
+  const projectCanonical = String(projectSeo?.canonical ?? '') || `https://luxesofa.vn/sofa2/projects/${id}`;
 
   const project = SOFA2_PROJECTS.find((p) => p.id === id);
 
@@ -67,7 +74,28 @@ export default function Page() {
   return (
     <>
       <Helmet>
-        <title>{project.name} - LUXE Sofa</title>
+        <title>{String(projectSeo?.title ?? '') || `${project.name} - LUXE Sofa`}</title>
+        <meta name="description" content={String(projectSeo?.description ?? '') || project.description} />
+        <meta name="robots" content={projectIndexable ? 'index, follow' : 'noindex, nofollow'} />
+        <link rel="canonical" href={projectCanonical} />
+        {projectIndexable && (
+          <script type="application/ld+json">
+            {JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'CreativeWork',
+              '@id': `${projectCanonical}#project`,
+              name: project.name,
+              description: project.description,
+              image: project.image,
+              url: projectCanonical,
+              dateCreated: project.year,
+              locationCreated: { '@type': 'Place', name: project.location },
+              genre: project.typeLabel,
+              creator: { '@type': 'Organization', name: 'LUXE Sofa' },
+              about: { '@type': 'Product', name: 'Sofa nội thất LUXE Sofa' },
+            }).replace(/</g, '\\u003c')}
+          </script>
+        )}
       </Helmet>
 
       <Sofa2PageHero

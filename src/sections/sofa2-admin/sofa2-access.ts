@@ -14,6 +14,7 @@ const f = (
 ): Sofa2CmsField => ({ key, label, type, group, ...extra });
 
 const ROLES = ['Quản lý bán hàng', 'Biên tập nội dung', 'CSKH', 'Kế toán'];
+const ALL_ROLES = ['Quản trị hệ thống', ...ROLES];
 const DEPARTMENTS = ['Ban giám đốc', 'Kinh doanh', 'Marketing', 'Nội dung', 'CSKH', 'Kế toán', 'Kho vận', 'IT'];
 const MODULES = [
   'CMS',
@@ -52,6 +53,7 @@ export const SOFA2_ACCESS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     defaultStatus: 'Chờ kích hoạt',
     hideClientLink: true,
     fields: [
+      f('userId', 'Mã người dùng', 'text', 'content', { disabled: true, helper: 'Mã demo định danh trong danh sách.' }),
       f('name', 'Họ tên', 'text', 'content', { required: true, maxLength: 100 }),
       f('email', 'Email đăng nhập', 'text', 'content', { required: true, maxLength: 255, placeholder: 'ten@luxe.vn' }),
       f('phone', 'Điện thoại', 'text', 'content', { maxLength: 20, placeholder: '09xx xxx xxx' }),
@@ -60,6 +62,10 @@ export const SOFA2_ACCESS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('branch', 'Chi nhánh', 'select', 'content', { options: BRANCHES }),
       f('avatar', 'Ảnh đại diện (URL)', 'url', 'content'),
       f('note', 'Ghi chú', 'textarea', 'content', { multiline: 2, maxLength: 500 }),
+      f('lastLogin', 'Đăng nhập gần nhất', 'text', 'display'),
+      f('createdAt', 'Ngày tạo', 'date', 'display'),
+      f('mfa', 'Xác thực nhiều lớp', 'switch', 'display'),
+      f('failedAttempts', 'Lần đăng nhập sai', 'number', 'display'),
       f('role', 'Vai trò', 'select', 'display', { required: true, options: ROLES, helper: 'Vai trò minh họa, không xác minh danh tính người dùng.' }),
       f('extraRoles', 'Vai trò phụ (cách nhau dấu phẩy)', 'text', 'display'),
       f('expiresAt', 'Hết hạn truy cập', 'date', 'display', { helper: 'Để trống nếu không giới hạn (dùng cho cộng tác viên).' }),
@@ -110,7 +116,7 @@ export const SOFA2_ACCESS_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('roles', 'Vai trò được cấp (cách nhau dấu phẩy)', 'textarea', 'display', {
         required: true,
         multiline: 2,
-        helper: `Vai trò: ${ROLES.join(', ')}.`,
+        helper: `Vai trò: ${ALL_ROLES.join(', ')}.`,
       }),
       f('status', 'Mức độ', 'select', 'display', {
         required: true,

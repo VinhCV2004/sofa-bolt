@@ -7,9 +7,10 @@
 // ----------------------------------------------------------------------
 
 import { SOFA2_PRODUCTS } from 'src/sections/sofa2/sofa2-data';
+import { SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
 
-import type { Sofa2AdminGroup, Sofa2AdminColumn, Sofa2AdminModule } from './sofa2-admin-data';
 import type { Sofa2CmsField, Sofa2CmsSchema, Sofa2CmsFieldType } from './sofa2-cms';
+import type { Sofa2AdminGroup, Sofa2AdminColumn, Sofa2AdminModule } from './sofa2-admin-data';
 
 const f = (
   key: string,
@@ -128,7 +129,7 @@ export const SOFA2_SHOP_GROUP: Sofa2AdminGroup = {
     mod('wishlist', 'Yêu thích', 'Sản phẩm khách lưu yêu thích — biết món được quan tâm, gửi thông báo giảm giá.', 'solar:heart-bold-duotone',
       [{ label: 'Lượt lưu', value: '2.846' }, { label: 'Khách lưu', value: '934' }, { label: 'Chuyển đơn', value: '14%' }, { label: 'Top', value: PRODUCTS[0] ?? 'Oslo' }],
       [{ key: 'customer', label: 'Khách' }, { key: 'product', label: 'Sản phẩm' }, { key: 'added', label: 'Ngày lưu' }, { key: 'notify', label: 'Báo giảm giá' }, S],
-      CUSTOMERS.slice(0, 4).map((customer, i) => ({ customer, product: PRODUCTS[i] ?? `Sản phẩm ${i + 1}`, added: `0${i + 2}/10/2026`, notify: i % 2 ? 'Không' : 'Có', status: i === 2 ? 'Đã mua' : 'Đang lưu' })),
+      CUSTOMERS.slice(0, 4).map((customer, i) => ({ customerId: `KH-${1001 + i}`, customer, productId: SOFA2_CLIENT_PRODUCTS[i]?.id ?? '', product: SOFA2_CLIENT_PRODUCTS[i]?.name ?? PRODUCTS[i] ?? `Sản phẩm ${i + 1}`, added: `2026-10-${String(i + 2).padStart(2, '0')}`, notifyPrice: i % 2 ? 'Không' : 'Có', notifyStock: 'Có', status: i === 2 ? 'Đã mua' : 'Đang lưu' })),
       ['Gửi ưu đãi']),
     mod('transactions', 'Lịch sử giao dịch', 'Thanh toán, hoàn tiền và điểm thưởng của khách — đối soát cổng thanh toán.', 'solar:wallet-money-bold-duotone',
       [{ label: 'Giao dịch tháng', value: '1.032' }, { label: 'Doanh thu', value: '6,2 tỷ' }, { label: 'Hoàn tiền', value: '42 tr' }, { label: 'Lỗi', value: '5' }],
@@ -223,9 +224,11 @@ export const SOFA2_SHOP_SCHEMAS: Record<string, Sofa2CmsSchema> = {
   ]),
   wishlist: schema('/sofa2/account', 'mục yêu thích', 'product', ['Đang lưu', 'Đã mua', 'Đã bỏ'], [
     f('customer', 'Khách hàng', 'text', 'content', { required: true }),
-    f('product', 'Sản phẩm', 'select', 'content', { required: true, options: PRODUCTS }),
+    f('productId', 'Mã sản phẩm', 'text', 'seo'),
+    f('product', 'Sản phẩm', 'select', 'content', { required: true, options: SOFA2_CLIENT_PRODUCTS.map((product) => product.name) }),
     f('added', 'Ngày lưu', 'date', 'display'),
-    f('notify', 'Báo khi giảm giá', 'select', 'display', { options: ['Có', 'Không'] }),
+    f('notifyPrice', 'Báo khi giảm giá', 'switch', 'display'),
+    f('notifyStock', 'Báo khi có hàng', 'switch', 'display'),
   ]),
   transactions: schema('/sofa2/account', 'giao dịch', 'txn', ['Thành công', 'Đang xử lý', 'Thất bại', 'Đã hoàn'], [
     f('txn', 'Mã giao dịch', 'text', 'content', { required: true }),

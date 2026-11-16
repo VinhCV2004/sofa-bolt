@@ -23,11 +23,11 @@ const CART_STATUS = ['Đang mua', 'Bỏ dở', 'Đã đặt hàng'];
 const CHECKOUT_STATUS = ['Đang bật', 'Bản nháp', 'Tạm tắt'];
 const SUCCESS_STATUS = ['Đang áp dụng', 'Bản nháp', 'Tạm tắt'];
 const TRACKING_STATUS = ['Chờ xác nhận', 'Đã xác nhận', 'Đang xử lý', 'Đang sản xuất', 'Đang giao', 'Đã giao', 'Đã huỷ'];
-const PROFILE_STATUS = ['Đầy đủ', 'Thiếu thông tin'];
-const ADDRESS_STATUS = ['Mặc định', 'Phụ', 'Tạm ẩn'];
-const ORDER_STATUS = ['Đang sản xuất', 'Đang giao', 'Đã giao', 'Đã huỷ', 'Chờ xác nhận'];
-const TXN_STATUS = ['Thành công', 'Thất bại', 'Hoàn tiền', 'Đang xử lý'];
-const WARRANTY_STATUS = ['Còn hiệu lực', 'Đang sửa chữa', 'Đang xử lý', 'Sắp hết hạn', 'Hết hạn', 'Đã hết hạn', 'Đã hoàn tất'];
+const PROFILE_STATUS = ['Đã xác minh', 'Chưa xác minh', 'Đã khoá', 'Đầy đủ', 'Thiếu thông tin'];
+const ADDRESS_STATUS = ['Mặc định', 'Phụ', 'Đã xác minh', 'Ngoài vùng giao', 'Tạm ẩn'];
+const ORDER_STATUS = ['Chờ xác nhận', 'Đang xử lý', 'Đang sản xuất', 'Đang giao', 'Đã giao', 'Hoàn thành', 'Yêu cầu huỷ', 'Đổi trả', 'Đã huỷ'];
+const TXN_STATUS = ['Thành công', 'Thất bại', 'Hoàn tiền', 'Đã hoàn', 'Đang xử lý'];
+const WARRANTY_STATUS = ['Còn hiệu lực', 'Tiếp nhận', 'Đang kiểm tra', 'Đang sửa chữa', 'Hoàn tất', 'Đang xử lý', 'Sắp hết hạn', 'Hết hạn', 'Đã hết hạn', 'Từ chối', 'Đã hoàn tất'];
 
 const f = (
   key: string,
@@ -48,10 +48,10 @@ const cartSchema: Sofa2CartSchema = {
   defaultStatus: 'Đang mua',
   statusToggle: false,
   chartType: 'donut',
-  chartTitle: 'Phân bổ trạng thái giỏ hàng',
-  chartSubtitle: 'Tỷ lệ giỏ đang mua / bỏ dở / đã đặt',
+  chartTitle: 'Trạng thái 12 giỏ hàng mẫu',
+  chartSubtitle: 'Phân bổ giỏ đang mua / bỏ dở / đã đặt',
   chartLabels: ['Đang mua', 'Bỏ dở', 'Đã đặt hàng'],
-  chartDonutData: [128, 96, 86],
+  chartDonutData: [4, 5, 3],
   fields: [
     f('code', 'Mã giỏ', 'text', 'content', { required: true, placeholder: 'CART-...' }),
     f('customerId', 'Mã khách hàng', 'text', 'content', { placeholder: 'KH-1001' }),
@@ -97,7 +97,7 @@ const checkoutSchema: Sofa2CartSchema = {
       required: true,
        options: ['Tiền mặt', 'Chuyển khoản', 'Cổng thanh toán', 'Trả góp', 'Ví điện tử', 'Phí giao hàng'],
     }),
-    f('fee', 'Phí giao dịch (%)', 'number', 'content', { helper: '0 = miễn phí.' }),
+    f('fee', 'Phí giao dịch (%) / phí vận chuyển (₫)', 'number', 'content', { helper: 'Phương thức thanh toán dùng phần trăm; dòng “Phí giao hàng” dùng số tiền cố định.' }),
     f('deposit', 'Đặt cọc (%)', 'number', 'content'),
     f('minOrder', 'Đơn tối thiểu (₫)', 'number', 'content'),
     f('maxOrder', 'Đơn tối đa (₫)', 'number', 'content'),
@@ -206,22 +206,17 @@ const accountSchema: Sofa2CartSchema = {
   fields: [
     f('customerId', 'Mã khách hàng', 'text', 'content', { required: true, placeholder: 'KH-1001' }),
     f('name', 'Họ tên', 'text', 'content', { required: true }),
+    f('phone', 'Số điện thoại', 'text', 'content', { required: true }),
     f('email', 'Email', 'text', 'content', { required: true }),
-    f('phone', 'SĐT', 'text', 'content'),
-    f('tier', 'Cấp bậc', 'select', 'content', {
-      required: true,
-      options: ['Đồng', 'Bạc', 'Vàng', 'Bạch Kim', 'Kim Cương'],
-    }),
-    f('points', 'Điểm tích lũy', 'number', 'content'),
-    f('orders', 'Tổng đơn hàng', 'number', 'content'),
-    f('spent', 'Tổng chi tiêu (₫)', 'number', 'content'),
     f('birthday', 'Ngày sinh', 'date', 'content'),
-    f('gender', 'Giới tính', 'select', 'content', { options: ['Nam', 'Nữ', 'Khác'] }),
+    f('gender', 'Giới tính', 'select', 'content', { options: ['Nữ', 'Nam', 'Khác'] }),
+    f('avatar', 'Ảnh đại diện', 'url', 'content'),
     f('address', 'Địa chỉ giao hàng', 'textarea', 'content'),
-    f('city', 'Tỉnh/thành', 'text', 'content'),
+    f('city', 'Tỉnh/thành', 'select', 'content', { options: ['TP.HCM', 'Hà Nội', 'Đà Nẵng', 'Bình Dương', 'Cần Thơ', 'Khác'] }),
     f('style', 'Phong cách yêu thích', 'text', 'display'),
     f('emailOptIn', 'Nhận email khuyến mãi', 'switch', 'display'),
     f('smsOptIn', 'Nhận SMS/Zalo', 'switch', 'display'),
+    f('tier', 'Hạng thành viên', 'select', 'display', { options: ['Đồng', 'Bạc', 'Vàng', 'Bạch Kim', 'Kim Cương'] }),
     f('status', 'Trạng thái hồ sơ', 'select', 'display', { required: true, options: PROFILE_STATUS }),
   ],
 };
@@ -298,7 +293,7 @@ const addressesSchema: Sofa2CartSchema = {
 const myOrdersSchema: Sofa2CartSchema = {
   clientPath: '/sofa2/my-orders',
   entity: 'đơn hàng',
-  titleKey: 'order',
+  titleKey: 'code',
   statusKey: 'status',
   statusOptions: ORDER_STATUS,
   defaultStatus: 'Chờ xác nhận',

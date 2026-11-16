@@ -37,6 +37,9 @@ import TablePagination from '@mui/material/TablePagination';
 
 import { Chart, useChart } from 'src/components/chart';
 import { Iconify } from 'src/components/iconify';
+import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
+import { useSofa2CatalogProducts, useSofa2CatalogCategories } from 'src/sections/sofa2/sofa2-catalog-client';
+import { SOFA2_PROJECTS } from 'src/sections/sofa2/sofa2-pages-data';
 
 import { Sofa2AdminLayout } from './sofa2-admin-layout';
 import {
@@ -60,8 +63,6 @@ import {
   hasSofa2AdminPermission,
   type Sofa2AdminAccessSession,
 } from '../sofa2-access-control';
-import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
-
 import { SOFA2_ADMIN_GROUPS, type Sofa2AdminGroup, type Sofa2AdminModule } from '../sofa2-admin-data';
 
 // ----------------------------------------------------------------------
@@ -218,6 +219,8 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
   const showroomRows = useSofa2AdminRows('seo', 'showroom', { load: false }).rows;
   const blogRows = useSofa2AdminRows('seo', 'blog', { load: false }).rows;
   const brandRows = useSofa2AdminRows('seo', 'brand', { load: false }).rows;
+  const { products: liveProducts } = useSofa2CatalogProducts();
+  const liveCategories = useSofa2CatalogCategories();
 
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('all');
@@ -260,12 +263,104 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
       ) ?? [],
     []
   );
+  const liveProductSeoRows = useMemo(() => liveProducts.map((product) => {
+    const url = `/sofa2/products/${product.id}`;
+    const seoRow = productRows.find((row) => String(row.url) === url);
+    return {
+      url,
+      title: product.metaTitle || `${product.name} - LUXE Sofa`,
+      description: product.metaDescription || product.description,
+      canonical: `${SOFA2_SITE_ORIGIN}${url}`,
+      published: 'Có',
+      inSitemap: 'Có',
+      ...(seoRow ?? {}),
+      indexable: product.indexable && !['không', 'false', '0'].includes(String(seoRow?.indexable ?? 'Có').toLowerCase()) ? 'Có' : 'Không',
+    };
+  }), [liveProducts, productRows]);
+  const liveCategorySeoRows = useMemo(() => Object.values(liveCategories).flat().map((category) => {
+    const url = `/sofa2/products/category/${category.slug}`;
+    const seoRow = categoryRows.find((row) => String(row.url) === url);
+    return {
+      url,
+      title: category.metaTitle || `${category.label} - LUXE Sofa`,
+      description: category.metaDescription || `Khám phá ${category.label} tại LUXE Sofa.`,
+      canonical: `${SOFA2_SITE_ORIGIN}${url}`,
+      published: 'Có',
+      inSitemap: 'Có',
+      ...(seoRow ?? {}),
+      indexable: category.indexable !== false && !['không', 'false', '0'].includes(String(seoRow?.indexable ?? 'Có').toLowerCase()) ? 'Có' : 'Không',
+    };
+  }), [liveCategories, categoryRows]);
+  const liveProjectSeoRows = useMemo(() => SOFA2_PROJECTS.map((project) => {
+    const url = `/sofa2/projects/${project.id}`;
+    return {
+      url,
+      title: `${project.name} - LUXE Sofa`,
+      description: project.description,
+      canonical: `${SOFA2_SITE_ORIGIN}${url}`,
+      indexable: 'Có',
+      published: 'Có',
+      inSitemap: 'Có',
+      ...(projectRows.find((row) => String(row.url) === url) ?? {}),
+    };
+  }), [projectRows]);
+  const generatedSchemas = useMemo(() => [
+    ...liveProducts.filter((product) => product.indexable && !['không', 'false', '0'].includes(String(productRows.find((row) => String(row.url) === `/sofa2/products/${product.id}`)?.indexable ?? 'Có').toLowerCase()) && !['không', 'false', '0'].includes(String(productRows.find((row) => String(row.url) === `/sofa2/products/${product.id}`)?.published ?? 'Có').toLowerCase())).map((product) => ({
+      '@type': 'Product',
+      '@id': `${SOFA2_SITE_ORIGIN}/sofa2/products/${product.id}#product`,
+      name: product.name,
+      description: product.description,
+      image: product.images?.length ? product.images : [product.image],
+      sku: product.sku,
+      material: product.material,
+      color: product.colors,
+      url: `${SOFA2_SITE_ORIGIN}/sofa2/products/${product.id}`,
+      brand: { '@type': 'Brand', name: 'LUXE Sofa' },
+      ...(product.reviews > 0 ? { aggregateRating: {
+        '@type': 'AggregateRating', ratingValue: product.rating, reviewCount: product.reviews,
+      } } : {}),
+      offers: {
+        '@type': 'Offer',
+        price: product.price,
+        priceCurrency: 'VND',
+        availability: product.available && Number(product.stock) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+        url: `${SOFA2_SITE_ORIGIN}/sofa2/products/${product.id}`,
+      },
+    })),
+    ...Object.values(liveCategories).flat().filter((category) => {
+      const row = categoryRows.find((item) => String(item.url) === `/sofa2/products/category/${category.slug}`);
+      return category.indexable !== false
+        && !['không', 'false', '0'].includes(String(row?.indexable ?? 'Có').toLowerCase())
+        && !['không', 'false', '0'].includes(String(row?.published ?? 'Có').toLowerCase());
+    }).map((category) => ({
+      '@type': 'CollectionPage',
+      name: category.label,
+      description: category.metaDescription || `Khám phá ${category.label} tại LUXE Sofa.`,
+      url: `${SOFA2_SITE_ORIGIN}/sofa2/products/category/${category.slug}`,
+      isPartOf: { '@type': 'WebSite', name: 'LUXE Sofa', url: `${SOFA2_SITE_ORIGIN}/sofa2` },
+    })),
+    ...SOFA2_PROJECTS.filter((project) => {
+      const row = projectRows.find((item) => String(item.url) === `/sofa2/projects/${project.id}`);
+      return !['không', 'false', '0'].includes(String(row?.indexable ?? 'Có').toLowerCase())
+        && !['không', 'false', '0'].includes(String(row?.published ?? 'Có').toLowerCase());
+    }).map((project) => ({
+      '@type': 'CreativeWork',
+      '@id': `${SOFA2_SITE_ORIGIN}/sofa2/projects/${project.id}#project`,
+      name: project.name,
+      description: project.description,
+      image: project.image,
+      url: `${SOFA2_SITE_ORIGIN}/sofa2/projects/${project.id}`,
+      dateCreated: project.year,
+      locationCreated: { '@type': 'Place', name: project.location },
+      creator: { '@type': 'Organization', name: 'LUXE Sofa' },
+    })),
+  ], [liveProducts, liveCategories, productRows, categoryRows, projectRows]);
   const sitemapPageModules = [
     { file: 'sitemap-pages.xml', rows: brandRows },
-    { file: 'sitemap-categories.xml', rows: categoryRows },
-    { file: 'sitemap-products.xml', rows: productRows },
+    { file: 'sitemap-categories.xml', rows: liveCategorySeoRows },
+    { file: 'sitemap-products.xml', rows: liveProductSeoRows },
     { file: 'sitemap-collections.xml', rows: collectionRows },
-    { file: 'sitemap-projects.xml', rows: projectRows },
+    { file: 'sitemap-projects.xml', rows: liveProjectSeoRows },
     { file: 'sitemap-showrooms.xml', rows: showroomRows },
     { file: 'sitemap-blog.xml', rows: blogRows },
   ];
@@ -810,7 +905,13 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
 
           {schema.kind && schema.kind !== 'page' && (
             <Grid xs={12}>
-              <SeoGeneratedFile kind={schema.kind} rows={rows} onToast={setToast} />
+              <SeoGeneratedFile
+                kind={schema.kind}
+                rows={rows}
+                sitemapPageGroups={sitemapPageModules.map(({ file, rows: pageRows }) => ({ file, rows: pageRows }))}
+                generatedSchemas={generatedSchemas}
+                onToast={setToast}
+              />
             </Grid>
           )}
 

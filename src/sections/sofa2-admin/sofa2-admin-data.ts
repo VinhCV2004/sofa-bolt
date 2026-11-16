@@ -1,4 +1,4 @@
-import { SOFA2_PRODUCT_CATEGORIES, SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
+import { SOFA2_BLOG_POSTS, SOFA2_PAGE_IMAGES, SOFA2_PRODUCT_CATEGORIES, SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
 
 import { SOFA2_SHOP_GROUP } from './sofa2-shop';
 import { SOFA2_SUPPORT_GROUP } from './sofa2-support';
@@ -73,7 +73,7 @@ const cmsPage = (slug: string, name: string, path: string, rows?: Record<string,
       { key: 'updated', label: 'Cập nhật' },
       { key: 'author', label: 'Người sửa' },
     ],
-    rows ?? [
+    (rows ?? [
       {
         block: 'Hero bold editorial',
         type: 'Banner',
@@ -109,7 +109,20 @@ const cmsPage = (slug: string, name: string, path: string, rows?: Record<string,
         updated: '28/08/2026',
         author: 'Thu Hà',
       },
-    ],
+    ]).map((row, index) => ({
+      id: String(row.id ?? `cms-${slug}-${index + 1}`),
+      heading: String(row.heading ?? row.block ?? name),
+      content: String(row.content ?? `${String(row.block ?? name)} — nội dung mẫu được quản lý từ CMS LUXE Sofa.`),
+      image: String(row.image ?? (slug === 'about' ? SOFA2_PAGE_IMAGES.aboutHero : SOFA2_PAGE_IMAGES.product1)),
+      ctaLabel: String(row.ctaLabel ?? (index === 0 ? 'Tìm hiểu thêm' : '')),
+      ctaLink: String(row.ctaLink ?? (index === 0 ? path : '')),
+      order: Number(row.order ?? index + 1),
+      metaTitle: String(row.metaTitle ?? `${name} | LUXE Sofa`),
+      metaDescription: String(row.metaDescription ?? `Thông tin ${name.toLowerCase()} từ LUXE Sofa.`),
+      ogImage: String(row.ogImage ?? row.image ?? (slug === 'about' ? SOFA2_PAGE_IMAGES.aboutHero : SOFA2_PAGE_IMAGES.product1)),
+      indexable: String(row.indexable ?? 'Có'),
+      ...row,
+    })),
     ['Thêm khối', 'Xem trước', 'Xuất bản']
   );
 
@@ -282,6 +295,32 @@ const cmsFaqRows: Record<string, string | number>[] = [
   },
 ];
 
+const SOFA2_CMS_BLOG_SEEDS: Record<string, string | number>[] = SOFA2_BLOG_POSTS.map((post, index) => {
+  const [day, month, year] = post.date.split('/');
+  const category = post.category.includes('xu-huong') ? 'Xu hướng'
+    : post.category.includes('bao-quan') || post.category.includes('ve-sinh') ? 'Bảo dưỡng'
+      : post.category.includes('du-an') ? 'Dự án' : 'Tư vấn';
+  const status = index === 4 ? 'Chờ duyệt' : index === 5 ? 'Bản nháp' : 'Đã xuất bản';
+  return {
+    id: `cms-blog-${post.id}`,
+    title: post.title,
+    slug: post.slug,
+    category,
+    excerpt: post.excerpt,
+    content: `${post.content}\n\n${post.excerpt}`,
+    cover: post.image,
+    tags: `${post.categoryLabel}, sofa, nội thất`,
+    status,
+    views: status === 'Đã xuất bản' ? Math.max(420, 18620 - index * 2170) : 0,
+    updated: `${year}-${month}-${day}`,
+    author: post.author,
+    metaTitle: `${post.title} | LUXE Sofa`.slice(0, 60),
+    metaDescription: post.excerpt.slice(0, 160),
+    ogImage: post.image,
+    indexable: status === 'Đã xuất bản' ? 'Có' : 'Không',
+  };
+});
+
 const CMS_GROUP: Sofa2AdminGroup = {
   slug: 'cms',
   name: 'CMS',
@@ -299,10 +338,10 @@ const CMS_GROUP: Sofa2AdminGroup = {
       'Quản lý bài viết, chuyên mục, tác giả và lịch đăng bài.',
       'solar:notebook-bold-duotone',
       [
-        { label: 'Bài viết', value: '142' },
-        { label: 'Chờ duyệt', value: '8' },
-        { label: 'Lượt đọc / tháng', value: '118K', trend: '+12%' },
-        { label: 'Chuyên mục', value: '12' },
+        { label: 'Bài viết mẫu', value: String(SOFA2_CMS_BLOG_SEEDS.length) },
+        { label: 'Chờ duyệt', value: String(SOFA2_CMS_BLOG_SEEDS.filter((row) => row.status === 'Chờ duyệt').length) },
+        { label: 'Lượt đọc mẫu', value: String(SOFA2_CMS_BLOG_SEEDS.reduce((sum, row) => sum + Number(row.views), 0)) },
+        { label: 'Chuyên mục', value: String(new Set(SOFA2_CMS_BLOG_SEEDS.map((row) => row.category)).size) },
       ],
       [
         { key: 'title', label: 'Tiêu đề' },
@@ -311,36 +350,7 @@ const CMS_GROUP: Sofa2AdminGroup = {
         { key: 'views', label: 'Lượt đọc', type: 'number' },
         { key: 'updated', label: 'Ngày đăng' },
       ],
-      [
-        {
-          title: 'Scandinavian: tối giản mà ấm áp',
-          category: 'Triết lý',
-          status: 'Đã xuất bản',
-          views: 18620,
-          updated: '13/09/2026',
-        },
-        {
-          title: 'Chọn sofa cho căn hộ nhỏ',
-          category: 'Tư vấn',
-          status: 'Đã xuất bản',
-          views: 9840,
-          updated: '05/09/2026',
-        },
-        {
-          title: 'Xu hướng nội thất 2026',
-          category: 'Xu hướng',
-          status: 'Chờ duyệt',
-          views: 0,
-          updated: '14/09/2026',
-        },
-        {
-          title: 'Bảo quản sofa da tự nhiên',
-          category: 'Bảo dưỡng',
-          status: 'Bản nháp',
-          views: 0,
-          updated: '12/09/2026',
-        },
-      ],
+      SOFA2_CMS_BLOG_SEEDS,
       ['Viết bài', 'Duyệt bài']
     ),
     mod(
@@ -371,7 +381,17 @@ const CMS_GROUP: Sofa2AdminGroup = {
           status: 'Đã xuất bản',
         },
         { menu: 'Menu mobile', position: 'Mobile', items: 14, status: 'Bản nháp' },
-      ],
+      ].map((row, index) => ({
+        id: `cms-menu-${index + 1}`,
+        structure: String(row.structure ?? (index === 1
+          ? 'Sofa góc | /sofa2/products/category/sofa-goc-chu-l\nSofa văng | /sofa2/products/category/sofa-vang-chu\nSofa đơn | /sofa2/products/category/sofa-don\nSofa giường | /sofa2/products/category/sofa-giuong'
+          : 'Trang chủ | /sofa2\nSản phẩm | /sofa2/products\nBộ sưu tập | /sofa2/collections\nDự án | /sofa2/projects\nShowroom | /sofa2/showrooms\nHỗ trợ | /sofa2/support')),
+        depth: index === 1 ? 3 : 2,
+        order: index + 1,
+        updated: '2026-11-10',
+        author: ['Minh Anh', 'Thu Hà', 'Đức Anh', 'Hoàng Long'][index],
+        ...row,
+      })),
       ['Thêm menu']
     ),
     mod(
@@ -416,7 +436,18 @@ const CMS_GROUP: Sofa2AdminGroup = {
           schedule: '01/08 – 31/08',
           status: 'Hết hạn',
         },
-      ],
+      ].map((row, index) => ({
+        id: `cms-banner-${index + 1}`,
+        image: [SOFA2_PAGE_IMAGES.product1, SOFA2_PAGE_IMAGES.product2, SOFA2_PAGE_IMAGES.product3, SOFA2_PAGE_IMAGES.product4][index],
+        imageMobile: [SOFA2_PAGE_IMAGES.product1, SOFA2_PAGE_IMAGES.product2, SOFA2_PAGE_IMAGES.product3, SOFA2_PAGE_IMAGES.product4][index],
+        headline: row.name,
+        ctaLink: index === 2 ? '/sofa2/collections/featured' : '/sofa2/promotions',
+        startAt: index === 3 ? '2026-08-01' : '2026-09-01',
+        endAt: index === 3 ? '2026-08-31' : index === 0 ? '2026-09-30' : '',
+        order: index + 1,
+        updated: '2026-11-10',
+        ...row,
+      })),
       ['Tạo banner']
     ),
     mod(
@@ -440,7 +471,19 @@ const CMS_GROUP: Sofa2AdminGroup = {
         { name: 'Hero trang chủ', slides: 6, page: 'Trang chủ', status: 'Đã xuất bản' },
         { name: 'Bộ sưu tập mùa thu', slides: 5, page: 'Bộ sưu tập', status: 'Đã xuất bản' },
         { name: 'Showroom 360°', slides: 4, page: 'Showroom', status: 'Bản nháp' },
-      ],
+      ].map((row, index) => ({
+        id: `cms-slider-${index + 1}`,
+        slidesData: Array.from({ length: Number(row.slides) }, (_, slideIndex) => {
+          const product = SOFA2_CLIENT_PRODUCTS[(slideIndex + index) % SOFA2_CLIENT_PRODUCTS.length];
+          return `${product.name} | ${product.image} | /sofa2/products/${product.id}`;
+        }).join('\n'),
+        interval: 5,
+        autoplay: 'Có',
+        order: index + 1,
+        updated: '2026-11-10',
+        author: ['Minh Anh', 'Thu Hà', 'Đức Anh'][index],
+        ...row,
+      })),
       ['Tạo slider']
     ),
     mod(
@@ -504,7 +547,19 @@ const CMS_GROUP: Sofa2AdminGroup = {
           status: 'Bản nháp',
           updated: '14/09/2026',
         },
-      ],
+      ].map((row, index) => ({
+        id: `cms-static-${index + 1}`,
+        template: index === 0 ? 'Có mục lục' : index === 1 ? 'Landing page' : 'Một cột',
+        content: `${row.title}. Hướng dẫn chi tiết, điều kiện áp dụng và thông tin liên hệ được cập nhật bởi đội ngũ LUXE Sofa.`,
+        cover: [SOFA2_PAGE_IMAGES.product1, SOFA2_PAGE_IMAGES.aboutHero, SOFA2_PAGE_IMAGES.product2][index],
+        order: index + 1,
+        author: ['Thu Hà', 'Minh Anh', 'Đức Anh'][index],
+        metaTitle: `${row.title} | LUXE Sofa`,
+        metaDescription: `${row.title} — thông tin và hướng dẫn từ LUXE Sofa.`,
+        ogImage: [SOFA2_PAGE_IMAGES.product1, SOFA2_PAGE_IMAGES.aboutHero, SOFA2_PAGE_IMAGES.product2][index],
+        indexable: row.status === 'Đã xuất bản' ? 'Có' : 'Không',
+        ...row,
+      })),
       ['Tạo trang']
     ),
   ],
@@ -636,10 +691,10 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
       'Cây danh mục sản phẩm và thứ tự hiển thị.',
       'solar:folder-with-files-bold-duotone',
       [
-        { label: 'Danh mục', value: '24' },
-        { label: 'Danh mục cha', value: '6' },
-        { label: 'Sản phẩm gán', value: '428' },
-        { label: 'Ẩn', value: '3' },
+        { label: 'Danh mục mẫu', value: String(PRODUCT_CATEGORY_SEEDS.length) },
+        { label: 'Nhóm danh mục', value: String(PRODUCT_CATEGORY_GROUPS.length) },
+        { label: 'Sản phẩm gán', value: String(SOFA2_PRODUCT_SEEDS.length) },
+        { label: 'Ẩn', value: String(PRODUCT_CATEGORY_SEEDS.filter((row) => row.status === 'Ẩn').length) },
       ],
       [
         { key: 'name', label: 'Danh mục' },
@@ -656,10 +711,10 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
       'Danh sách sản phẩm, hình ảnh, mô tả và trạng thái bán.',
       'solar:armchair-bold-duotone',
       [
-        { label: 'Sản phẩm', value: '428' },
-        { label: 'Đang bán', value: '396' },
-        { label: 'Hết hàng', value: '14' },
-        { label: 'Mới tháng này', value: '26', trend: '+26' },
+        { label: 'Sản phẩm mẫu', value: String(SOFA2_PRODUCT_SEEDS.length) },
+        { label: 'Đang bán', value: String(SOFA2_PRODUCT_SEEDS.filter((row) => row.status === 'Đang bán').length) },
+        { label: 'Hết hàng', value: String(SOFA2_PRODUCT_SEEDS.filter((row) => row.status === 'Hết hàng').length) },
+        { label: 'Có nhãn mới', value: String(SOFA2_PRODUCT_SEEDS.filter((row) => row.isNew === 'Có').length) },
       ],
       [
         { key: 'sku', label: 'SKU' },
@@ -3207,8 +3262,75 @@ const SEO_GROUP: Sofa2AdminGroup = {
 };
 
 // ----------------------------------------------------------------------
-// PHÂN QUYỀN
+// PHÂN QUYỀN — dữ liệu demo có thể kiểm thử bảng, lọc trạng thái và liên kết vai trò.
+// Mọi danh tính/email/IP bên dưới đều là dữ liệu giả lập, không dùng tài khoản thật.
 // ----------------------------------------------------------------------
+
+const ACCESS_USER_SEEDS: Record<string, string | number>[] = [
+  { userId: 'AD-1001', name: 'Nguyễn Minh Anh', email: 'minh.anh@example.com', phone: '0901 000 101', title: 'Quản lý kinh doanh', department: 'Kinh doanh', branch: 'Showroom HCM', role: 'Quản lý bán hàng', extraRoles: '', lastLogin: '2026-11-14 17:42', createdAt: '2025-03-12', mfa: 'Có', failedAttempts: 0, status: 'Hoạt động', note: 'Tài khoản demo.' },
+  { userId: 'AD-1002', name: 'Trần Thu Hà', email: 'thu.ha@example.com', phone: '0901 000 102', title: 'Biên tập viên', department: 'Nội dung', branch: 'Tất cả', role: 'Biên tập nội dung', extraRoles: '', lastLogin: '2026-11-14 16:18', createdAt: '2025-06-20', mfa: 'Có', failedAttempts: 0, status: 'Hoạt động', note: 'Phụ trách CMS và SEO.' },
+  { userId: 'AD-1003', name: 'Lê Quốc Bảo', email: 'quoc.bao@example.com', phone: '0901 000 103', title: 'Chuyên viên chăm sóc khách hàng', department: 'CSKH', branch: 'Showroom HN', role: 'CSKH', extraRoles: '', lastLogin: '2026-11-14 15:06', createdAt: '2025-08-04', mfa: 'Không', failedAttempts: 1, status: 'Hoạt động', note: '' },
+  { userId: 'AD-1004', name: 'Phạm Ngọc Linh', email: 'ngoc.linh@example.com', phone: '0901 000 104', title: 'Kế toán thanh toán', department: 'Kế toán', branch: 'Tất cả', role: 'Kế toán', extraRoles: '', lastLogin: '2026-11-13 10:21', createdAt: '2025-09-15', mfa: 'Có', failedAttempts: 0, status: 'Hoạt động', note: '' },
+  { userId: 'AD-1005', name: 'Vũ Hoàng Nam', email: 'hoang.nam@example.com', phone: '0901 000 105', title: 'Tư vấn bán hàng', department: 'Kinh doanh', branch: 'Showroom Đà Nẵng', role: 'Quản lý bán hàng', extraRoles: '', lastLogin: '2026-11-12 09:34', createdAt: '2026-02-11', mfa: 'Không', failedAttempts: 0, status: 'Hoạt động', note: '' },
+  { userId: 'AD-1006', name: 'Đỗ Thanh Tâm', email: 'thanh.tam@example.com', phone: '0901 000 106', title: 'Nhân viên CSKH', department: 'CSKH', branch: 'Showroom HCM', role: 'CSKH', extraRoles: '', lastLogin: '', createdAt: '2026-11-10', mfa: 'Không', failedAttempts: 0, status: 'Chờ kích hoạt', note: 'Chờ xác minh email.' },
+  { userId: 'AD-1007', name: 'Nguyễn Đức Long', email: 'duc.long@example.com', phone: '0901 000 107', title: 'Cộng tác viên nội dung', department: 'Nội dung', branch: 'Tất cả', role: 'Biên tập nội dung', extraRoles: '', lastLogin: '2026-10-30 11:03', createdAt: '2026-04-01', expiresAt: '2026-12-31', mfa: 'Không', failedAttempts: 5, status: 'Bị khoá', note: 'Khoá demo sau nhiều lần đăng nhập sai.' },
+];
+
+const ACCESS_ROLE_SEEDS: Record<string, string | number>[] = [
+  { role: 'Quản trị hệ thống', code: 'system-admin', description: 'Vai trò gốc; không gán qua màn hình demo. Tài khoản quản trị được cấu hình riêng.', users: 1, scope: 'Toàn quyền', canApprove: 'Có', canExport: 'Có', status: 'Hệ thống' },
+  { role: 'Quản lý bán hàng', code: 'sales-manager', description: 'Quản lý sản phẩm, đơn hàng, CRM và hoạt động kinh doanh.', users: 2, scope: 'Sản phẩm, Đơn hàng, CRM, Mua hàng', canApprove: 'Có', canExport: 'Có', status: 'Tuỳ chỉnh' },
+  { role: 'Biên tập nội dung', code: 'content-editor', description: 'Soạn và cập nhật nội dung; xuất bản theo quyền được cấp.', users: 2, scope: 'CMS, SEO, Marketing', canApprove: 'Không', canExport: 'Có', status: 'Tuỳ chỉnh' },
+  { role: 'CSKH', code: 'customer-support', description: 'Tra cứu đơn hàng, hồ sơ và hỗ trợ khách; không duyệt hoàn tiền.', users: 2, scope: 'CRM, Khách hàng, Hỗ trợ', canApprove: 'Không', canExport: 'Không', status: 'Tuỳ chỉnh' },
+  { role: 'Kế toán', code: 'accountant', description: 'Đối soát giao dịch, thanh toán và hoàn tiền theo quy trình duyệt.', users: 1, scope: 'Thanh toán, Hoàn tiền, Đơn hàng', canApprove: 'Có', canExport: 'Có', status: 'Tuỳ chỉnh' },
+];
+
+const ACCESS_MODULE_ROLE: [string, string, string][] = [
+  ['cms', 'CMS', 'Biên tập nội dung'], ['catalog', 'Sản phẩm', 'Quản lý bán hàng'],
+  ['warehouse', 'Kho hàng', 'Quản lý bán hàng'], ['orders', 'Đơn hàng', 'Quản lý bán hàng'],
+  ['shopping', 'Mua hàng', 'Quản lý bán hàng'], ['shop', 'Giỏ hàng & Khách hàng', 'CSKH'],
+  ['customer', 'Khách hàng', 'CSKH'], ['payment', 'Thanh toán', 'Kế toán'],
+  ['refund', 'Hoàn tiền', 'Kế toán'], ['crm', 'CRM', 'CSKH'],
+  ['marketing', 'Marketing', 'Biên tập nội dung'], ['analytics', 'Analytics', 'Quản lý bán hàng'],
+  ['seo', 'SEO', 'Biên tập nội dung'], ['dealer', 'Đại lý', 'Quản lý bán hàng'],
+  ['b2b', 'Đại lý B2B', 'Quản lý bán hàng'], ['support', 'Hỗ trợ', 'CSKH'],
+  ['hr', 'Tuyển dụng', 'Quản lý bán hàng'], ['access', 'Phân quyền', 'Quản trị hệ thống'],
+  ['settings', 'Cài đặt hệ thống', 'Quản trị hệ thống'],
+];
+const ACCESS_ACTION_SEEDS = [
+  { action: 'Xem', code: 'view', status: 'Bình thường' },
+  { action: 'Tạo mới', code: 'create', status: 'Bình thường' },
+  { action: 'Sửa', code: 'edit', status: 'Bình thường' },
+  { action: 'Xoá', code: 'delete', status: 'Nhạy cảm' },
+  { action: 'Xuất dữ liệu', code: 'export', status: 'Nhạy cảm' },
+];
+const ACCESS_PERMISSION_SEEDS: Record<string, string | number>[] = ACCESS_MODULE_ROLE.flatMap(([slug, module, roles]) => [
+  ...ACCESS_ACTION_SEEDS.map(({ action, code, status }) => ({
+    module, action, code: `${slug}.${code}`,
+    description: `${action} dữ liệu trong module ${module}.`, roles,
+    status: status === 'Nhạy cảm' && ['access', 'settings'].includes(slug) ? 'Cần phê duyệt' : status,
+  })),
+  ...(['orders', 'refund', 'cms', 'seo'].includes(slug) ? [{
+    module,
+    action: slug === 'orders' ? 'Huỷ đơn' : slug === 'refund' ? 'Duyệt hoàn tiền' : 'Xuất bản',
+    code: `${slug}.${slug === 'orders' ? 'cancel' : slug === 'refund' ? 'approve' : 'publish'}`,
+    description: `Thao tác nhạy cảm với dữ liệu ${module}; cần bước phê duyệt độc lập.`,
+    roles: slug === 'refund' ? 'Kế toán' : roles,
+    status: 'Cần phê duyệt',
+  }] : []),
+]);
+
+const ACCESS_MODULE_LABELS = Object.fromEntries(ACCESS_MODULE_ROLE.map(([slug, label]) => [slug, label]));
+const ACCESS_AUDIT_SEEDS: Record<string, string | number>[] = [
+  { time: '2026-11-14T10:42:00+07:00', user: 'Nguyễn Minh Anh', module: 'catalog', type: 'Cập nhật dữ liệu', action: 'Sửa giá bán', target: 'Sofa Oslo 3 Chỗ', detail: 'Giá niêm yết và giá bán được cập nhật trong bản demo.', ip: '192.0.2.21', device: 'Chrome / Windows', location: 'TP.HCM (giả lập)', handled: 'false', status: 'Thành công' },
+  { time: '2026-11-14T10:12:00+07:00', user: 'Trần Thu Hà', module: 'cms', type: 'Xuất bản nội dung', action: 'Xuất bản bài viết', target: 'Chọn sofa cho căn hộ nhỏ', detail: 'Bản nội dung demo được chuyển sang trạng thái đã xuất bản.', ip: '198.51.100.12', device: 'Safari / macOS', location: 'Hà Nội (giả lập)', handled: 'false', status: 'Thành công' },
+  { time: '2026-11-14T09:40:00+07:00', user: 'Lê Quốc Bảo', module: 'support', type: 'Xử lý ticket', action: 'Gán người phụ trách', target: 'TK-1024', detail: 'Ticket bảo hành được chuyển cho bộ phận kỹ thuật.', ip: '203.0.113.18', device: 'Chrome / Android', location: 'TP.HCM (giả lập)', handled: 'true', status: 'Thành công' },
+  { time: '2026-11-14T09:12:00+07:00', user: 'Phạm Ngọc Linh', module: 'payment', type: 'Đối soát', action: 'Xem báo cáo thanh toán', target: 'Báo cáo ngày 14/11', detail: 'Truy cập báo cáo demo, không thực hiện giao dịch thật.', ip: '192.0.2.34', device: 'Edge / Windows', location: 'Hà Nội (giả lập)', handled: 'false', status: 'Thành công' },
+  { time: '2026-11-13T16:22:00+07:00', user: 'Vũ Hoàng Nam', module: 'orders', type: 'Thao tác bị từ chối', action: 'Duyệt hoàn tiền', target: 'DH1007', detail: 'Vai trò Quản lý bán hàng không có quyền duyệt hoàn tiền.', ip: '198.51.100.28', device: 'Chrome / Windows', location: 'Đà Nẵng (giả lập)', handled: 'true', status: 'Từ chối' },
+  { time: '2026-11-13T15:07:00+07:00', user: 'Trần Thu Hà', module: 'seo', type: 'Cập nhật metadata', action: 'Sửa mô tả SEO', target: '/sofa2/products/1', detail: 'Cập nhật metadata SEO trong dữ liệu demo.', ip: '192.0.2.41', device: 'Firefox / Windows', location: 'Hà Nội (giả lập)', handled: 'false', status: 'Thành công' },
+  { time: '2026-11-13T11:44:00+07:00', user: 'Lê Quốc Bảo', module: 'customer', type: 'Tra cứu hồ sơ', action: 'Mở hồ sơ khách hàng', target: 'KH-1001', detail: 'Tra cứu hồ sơ khách hàng demo theo quy trình hỗ trợ.', ip: '203.0.113.29', device: 'Chrome / Android', location: 'TP.HCM (giả lập)', handled: 'false', status: 'Thành công' },
+  { time: '2026-11-12T08:31:00+07:00', user: 'Nguyễn Đức Long', module: 'access', type: 'Đăng nhập thất bại', action: 'Khoá tài khoản sau 5 lần thử', target: 'AD-1007', detail: 'Sự kiện minh hoạ; không ghi nhận đăng nhập thực.', ip: '192.0.2.55', device: 'Unknown / demo', location: 'Không xác định', handled: 'true', status: 'Cảnh báo' },
+  { time: '2026-11-11T14:25:00+07:00', user: 'Quản trị hệ thống (demo)', module: 'access', type: 'Cập nhật phân quyền', action: 'Rà soát vai trò CMS', target: 'Biên tập nội dung', detail: 'Rà soát quyền xuất bản trong ma trận phân quyền minh hoạ.', ip: '203.0.113.44', device: 'Chrome / Windows', location: 'TP.HCM (giả lập)', handled: 'true', status: 'Thành công' },
+].map((row) => ({ ...row, module: String(ACCESS_MODULE_LABELS[String(row.module)] ?? row.module) }));
 
 const ACCESS_GROUP: Sofa2AdminGroup = {
   slug: 'access',
@@ -3221,19 +3343,21 @@ const ACCESS_GROUP: Sofa2AdminGroup = {
       'Tài khoản quản trị viên và trạng thái truy cập.',
       'solar:user-bold-duotone',
       [
-        { label: 'Tài khoản', value: '0' },
-        { label: 'Đang hoạt động', value: '0' },
-        { label: 'Chờ kích hoạt', value: '0' },
-        { label: 'Bị khoá', value: '0' },
+        { label: 'Tài khoản', value: String(ACCESS_USER_SEEDS.length) },
+        { label: 'Đang hoạt động', value: String(ACCESS_USER_SEEDS.filter((row) => row.status === 'Hoạt động').length) },
+        { label: 'Chờ kích hoạt', value: String(ACCESS_USER_SEEDS.filter((row) => row.status === 'Chờ kích hoạt').length) },
+        { label: 'Bị khoá', value: String(ACCESS_USER_SEEDS.filter((row) => row.status === 'Bị khoá').length) },
       ],
       [
+        { key: 'userId', label: 'Mã người dùng' },
         { key: 'name', label: 'Người dùng' },
         { key: 'email', label: 'Email' },
+        { key: 'department', label: 'Phòng ban' },
         { key: 'role', label: 'Vai trò' },
-        { key: 'last', label: 'Đăng nhập cuối' },
+        { key: 'lastLogin', label: 'Đăng nhập cuối' },
         STATUS_COL,
       ],
-      [],
+      ACCESS_USER_SEEDS,
       ['Thêm quyền truy cập']
     ),
     mod(
@@ -3244,7 +3368,7 @@ const ACCESS_GROUP: Sofa2AdminGroup = {
       [
         { label: 'Vai trò', value: '5' },
         { label: 'Vai trò tuỳ chỉnh', value: '4' },
-        { label: 'Người dùng gán', value: '0' },
+        { label: 'Người dùng gán', value: String(ACCESS_USER_SEEDS.filter((row) => row.status === 'Hoạt động').length) },
         { label: 'Vai trò mặc định', value: 'Biên tập nội dung' },
       ],
       [
@@ -3253,13 +3377,7 @@ const ACCESS_GROUP: Sofa2AdminGroup = {
         { key: 'scope', label: 'Phạm vi' },
         STATUS_COL,
       ],
-      [
-        { role: 'Quản trị hệ thống', code: 'system-admin', description: 'Tài khoản gốc được cấu hình bằng SOFA2_ADMIN_EMAIL.', users: 0, scope: 'Toàn quyền', canApprove: 'Có', canExport: 'Có', status: 'Hệ thống' },
-        { role: 'Quản lý bán hàng', code: 'sales-manager', description: 'Vai trò mẫu cho nghiệp vụ kinh doanh.', users: 0, scope: 'Đơn hàng, CRM, Kho hàng', canApprove: 'Có', canExport: 'Có', status: 'Tuỳ chỉnh' },
-        { role: 'Biên tập nội dung', code: 'content-editor', description: 'Quản lý nội dung SEO theo các quyền được cấp.', users: 0, scope: 'CMS, SEO', canApprove: 'Không', canExport: 'Có', status: 'Tuỳ chỉnh' },
-        { role: 'CSKH', code: 'customer-support', description: 'Vai trò mẫu cho chăm sóc khách hàng.', users: 0, scope: 'CRM, Khách hàng, Hỗ trợ', canApprove: 'Không', canExport: 'Không', status: 'Tuỳ chỉnh' },
-        { role: 'Kế toán', code: 'accountant', description: 'Vai trò mẫu cho nghiệp vụ kế toán.', users: 0, scope: 'Thanh toán, Hoàn tiền', canApprove: 'Có', canExport: 'Có', status: 'Tuỳ chỉnh' },
-      ],
+      ACCESS_ROLE_SEEDS,
       ['Tạo vai trò']
     ),
     mod(
@@ -3268,10 +3386,10 @@ const ACCESS_GROUP: Sofa2AdminGroup = {
       'Ma trận quyền chi tiết theo module và hành động.',
       'solar:key-bold-duotone',
       [
-        { label: 'Module áp dụng', value: '1' },
-        { label: 'Quyền', value: '5' },
-        { label: 'Quyền nhạy cảm', value: '0' },
-        { label: 'Cần phê duyệt', value: '1' },
+        { label: 'Module áp dụng', value: String(ACCESS_MODULE_ROLE.length) },
+        { label: 'Quyền', value: String(ACCESS_PERMISSION_SEEDS.length) },
+        { label: 'Quyền nhạy cảm', value: String(ACCESS_PERMISSION_SEEDS.filter((row) => row.status === 'Nhạy cảm').length) },
+        { label: 'Cần phê duyệt', value: String(ACCESS_PERMISSION_SEEDS.filter((row) => row.status === 'Cần phê duyệt').length) },
       ],
       [
         { key: 'module', label: 'Module' },
@@ -3279,13 +3397,7 @@ const ACCESS_GROUP: Sofa2AdminGroup = {
         { key: 'roles', label: 'Vai trò được cấp' },
         STATUS_COL,
       ],
-      [
-        { module: 'SEO', action: 'Xem', code: 'seo.view', description: 'Mở các trang quản trị SEO.', roles: 'Biên tập nội dung', status: 'Bình thường' },
-        { module: 'SEO', action: 'Tạo mới', code: 'seo.create', description: 'Thêm bản ghi SEO.', roles: 'Biên tập nội dung', status: 'Bình thường' },
-        { module: 'SEO', action: 'Sửa', code: 'seo.edit', description: 'Sửa bản ghi SEO.', roles: 'Biên tập nội dung', status: 'Bình thường' },
-        { module: 'SEO', action: 'Xoá', code: 'seo.delete', description: 'Xoá bản ghi SEO.', roles: 'Biên tập nội dung', status: 'Bình thường' },
-        { module: 'SEO', action: 'Xuất bản', code: 'seo.publish', description: 'Xuất bản trang SEO; cần quyền duyệt riêng.', roles: '', status: 'Cần phê duyệt' },
-      ],
+      ACCESS_PERMISSION_SEEDS,
       ['Sửa ma trận quyền']
     ),
     mod(
@@ -3294,9 +3406,9 @@ const ACCESS_GROUP: Sofa2AdminGroup = {
       'Lịch sử thao tác, đăng nhập và thay đổi cấu hình.',
       'solar:clipboard-list-bold-duotone',
       [
-        { label: 'Sự kiện lưu trữ', value: '0' },
-        { label: 'Thay đổi quyền', value: '0' },
-        { label: 'Truy cập từ chối', value: '0' },
+        { label: 'Sự kiện mẫu', value: String(ACCESS_AUDIT_SEEDS.length) },
+        { label: 'Thay đổi quyền', value: String(ACCESS_AUDIT_SEEDS.filter((row) => row.module === 'Phân quyền').length) },
+        { label: 'Truy cập từ chối', value: String(ACCESS_AUDIT_SEEDS.filter((row) => row.status === 'Từ chối').length) },
         { label: 'Giới hạn hiển thị', value: '500' },
       ],
       [
@@ -3309,7 +3421,7 @@ const ACCESS_GROUP: Sofa2AdminGroup = {
         { key: 'ip', label: 'IP' },
         STATUS_COL,
       ],
-      [],
+      ACCESS_AUDIT_SEEDS,
       ['Xuất nhật ký']
     ),
   ],
@@ -4084,6 +4196,57 @@ const DEALER_GROUP: Sofa2AdminGroup = {
   ],
 };
 
+const CUSTOMER_PROFILE_DEMO_ROWS =
+  SOFA2_CUSTOMER_GROUP.modules.find((module) => module.slug === 'profiles')?.rows ?? [];
+const SOFA2_CART_PLANS: { profileIndex: number | null; products: [number, number][]; status: string; channel: string; coupon: string; customer?: string }[] = [
+  { profileIndex: 0, products: [[0, 1], [1, 1]], status: 'Đang mua', channel: 'Website', coupon: '' },
+  { profileIndex: 1, products: [[3, 1], [4, 1]], status: 'Bỏ dở', channel: 'Mobile', coupon: 'LUXE10' },
+  { profileIndex: 2, products: [[1, 2]], status: 'Bỏ dở', channel: 'Website', coupon: '' },
+  { profileIndex: 3, products: [[2, 1]], status: 'Đã đặt hàng', channel: 'Website', coupon: 'WELCOME500' },
+  { profileIndex: 4, products: [[5, 1], [6, 1]], status: 'Đang mua', channel: 'Showroom', coupon: '' },
+  { profileIndex: 5, products: [[7, 1]], status: 'Bỏ dở', channel: 'Mobile', coupon: 'SOFA10' },
+  { profileIndex: 6, products: [[0, 1], [2, 2], [4, 1]], status: 'Đang mua', channel: 'Website', coupon: '' },
+  { profileIndex: 7, products: [[3, 1], [5, 1]], status: 'Bỏ dở', channel: 'Website', coupon: '' },
+  { profileIndex: 8, products: [[1, 1], [6, 1]], status: 'Đã đặt hàng', channel: 'Mobile', coupon: 'AUTUMN10' },
+  { profileIndex: 9, products: [[2, 1]], status: 'Đang mua', channel: 'Website', coupon: '' },
+  { profileIndex: null, customer: 'Khách vãng lai', products: [[0, 1]], status: 'Bỏ dở', channel: 'Mobile', coupon: '' },
+  { profileIndex: null, customer: 'Khách vãng lai', products: [[4, 1], [7, 1]], status: 'Đã đặt hàng', channel: 'Website', coupon: 'LUXE10' },
+];
+const SOFA2_CART_SEEDS: Record<string, string | number>[] = SOFA2_CART_PLANS.map((plan, index) => {
+  const profile = plan.profileIndex === null ? undefined : CUSTOMER_PROFILE_DEMO_ROWS[plan.profileIndex];
+  const items = plan.products.map(([productIndex, qty]) => {
+    const product = SOFA2_CLIENT_PRODUCTS[productIndex % SOFA2_CLIENT_PRODUCTS.length];
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      material: product.material,
+      qty,
+    };
+  });
+  const updated = `2026-11-${String(14 - (index % 10)).padStart(2, '0')}T${String(9 + (index % 9)).padStart(2, '0')}:12:00+07:00`;
+  const isAbandoned = plan.status === 'Bỏ dở';
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  return {
+    code: profile ? `CART-${String(profile.customerId)}` : `CART-GUEST-${String(index - 9).padStart(3, '0')}`,
+    customerId: String(profile?.customerId ?? ''),
+    customer: String(profile?.name ?? plan.customer ?? 'Khách vãng lai'),
+    phone: String(profile?.phone ?? ''),
+    email: String(profile?.email ?? ''),
+    items: JSON.stringify(items),
+    qty: items.reduce((sum, item) => sum + item.qty, 0),
+    value: subtotal,
+    coupon: plan.coupon,
+    channel: plan.channel,
+    updated,
+    abandonedAt: isAbandoned ? updated : '',
+    recoverySent: isAbandoned && index % 2 === 1 ? 'Có' : 'Không',
+    author: ['Minh Anh', 'Thu Hà', 'Quốc Bảo', 'Đức Anh'][index % 4],
+    status: plan.status,
+  };
+});
+
 const SHOPPING_GROUP: Sofa2AdminGroup = {
   slug: 'shopping',
   name: 'Mua hàng',
@@ -4271,48 +4434,21 @@ const SHOPPING_GROUP: Sofa2AdminGroup = {
       'Giỏ đang mua, giỏ bỏ dở và khôi phục giỏ hàng.',
       'solar:cart-large-2-bold-duotone',
       [
-        { label: 'Giỏ đang mở', value: '128' },
-        { label: 'Bỏ dở', value: '42%' },
-        { label: 'Khôi phục', value: '86' },
+        { label: 'Giỏ đang mua (mẫu)', value: String(SOFA2_CART_SEEDS.filter((row) => row.status === 'Đang mua').length) },
+        { label: 'Giỏ bỏ dở (mẫu)', value: String(SOFA2_CART_SEEDS.filter((row) => row.status === 'Bỏ dở').length) },
+        { label: 'Đã gửi email nhắc', value: String(SOFA2_CART_SEEDS.filter((row) => row.recoverySent === 'Có').length) },
+        { label: 'Giá trị giỏ mẫu', value: `${SOFA2_CART_SEEDS.reduce((sum, row) => sum + Number(row.value), 0).toLocaleString('vi-VN')} ₫` },
       ],
       [
         { key: 'code', label: 'Mã giỏ' },
         { key: 'customer', label: 'Khách' },
         { key: 'qty', label: 'SL', type: 'number' },
         { key: 'value', label: 'Giá trị', type: 'money' },
+        { key: 'channel', label: 'Kênh' },
+        { key: 'updated', label: 'Cập nhật' },
         { key: 'status', label: 'Trạng thái', type: 'status' },
       ],
-      [
-        {
-          code: 'CART-26091501',
-          customer: 'Hoàng Nam',
-          phone: '0903 112 233',
-          items: 'LX-OSL-3S x 1',
-          qty: 1,
-          value: 25900000,
-          channel: 'Website',
-          updated: '15/09 09:12',
-          status: 'Đang mua',
-        },
-        {
-          code: 'CART-26091407',
-          customer: 'Khách vãng lai',
-          qty: 2,
-          value: 31800000,
-          channel: 'Mobile',
-          updated: '14/09 21:40',
-          status: 'Bỏ dở',
-        },
-        {
-          code: 'CART-26091322',
-          customer: 'Thu Trang',
-          qty: 1,
-          value: 38500000,
-          coupon: 'AUTUMN10',
-          channel: 'Website',
-          status: 'Đã đặt hàng',
-        },
-      ],
+      SOFA2_CART_SEEDS,
       ['Gửi email khôi phục']
     ),
     mod(
@@ -4336,6 +4472,7 @@ const SHOPPING_GROUP: Sofa2AdminGroup = {
         {
           method: 'COD',
           label: 'Thanh toán khi nhận hàng',
+          type: 'Tiền mặt',
           fee: 0,
           deposit: 0,
           order: 1,
@@ -4345,21 +4482,24 @@ const SHOPPING_GROUP: Sofa2AdminGroup = {
         {
           method: 'Chuyển khoản',
           label: 'Chuyển khoản ngân hàng',
+          type: 'Chuyển khoản',
           fee: 0,
           deposit: 30,
           order: 2,
           requireInvoice: 'Có',
           status: 'Đang bật',
         },
-        { method: 'VNPay', label: 'VNPay QR', fee: 1, order: 3, status: 'Đang bật' },
+        { method: 'VNPay', label: 'VNPay QR', type: 'Cổng thanh toán', fee: 1, order: 3, status: 'Đang bật' },
         {
           method: 'Trả góp 0%',
           label: 'Trả góp qua thẻ',
+          type: 'Trả góp',
           fee: 2,
           minOrder: 10000000,
           order: 4,
           status: 'Bản nháp',
         },
+        { method: 'SHIP-INNER', label: 'Giao hàng nội thành', type: 'Phí giao hàng', fee: 300000, order: 5, status: 'Đang bật', configNote: 'Phí cố định minh hoạ cho giao nội thành; có thể cập nhật tại quản trị.' },
       ],
       ['Thêm phương thức']
     ),
@@ -4384,9 +4524,12 @@ const SHOPPING_GROUP: Sofa2AdminGroup = {
           name: 'Mặc định',
           appliesTo: 'Tất cả',
           heading: 'Cảm ơn bạn đã đặt hàng tại LUXE!',
+          body: 'Đơn hàng {{code}} của {{name}} đã được ghi nhận. Đội ngũ LUXE Sofa sẽ sớm liên hệ xác nhận.',
+          nextSteps: 'Theo dõi trạng thái giao hàng bằng mã đơn và số điện thoại đã đăng ký.',
           ctaLabel: 'Theo dõi đơn',
           ctaLink: '/sofa2/orders/tracking',
           upsell: 'Có',
+          upsellTitle: 'Hoàn thiện không gian sống của bạn',
           sendEmail: 'Có',
           status: 'Đang áp dụng',
         },
@@ -4420,31 +4563,34 @@ const SHOPPING_GROUP: Sofa2AdminGroup = {
       ],
       [
         {
-          order: 'LX-26091502',
+          code: 'LX-26091502',
           customer: 'Hoàng Nam',
           phone: '0903112233',
           carrier: 'Đội xe LUXE',
           trackingNo: 'LX-TRK-8812',
           eta: '2026-09-20',
           timeline: '15/09 09:20 – Đã xác nhận\n16/09 08:00 – Đang sản xuất',
+          step: 'Sản xuất',
           status: 'Đang sản xuất',
         },
         {
-          order: 'LX-26091011',
+          code: 'LX-26091011',
           customer: 'Thu Trang',
           phone: '0912445566',
           carrier: 'GHN',
           trackingNo: 'GHN5519203',
           eta: '2026-09-16',
+          step: 'Giao hàng',
           status: 'Đang giao',
         },
         {
-          order: 'LX-26090403',
+          code: 'LX-26090403',
           customer: 'Mai Chi',
           phone: '0988776655',
           carrier: 'Đội xe LUXE',
           eta: '2026-09-08',
           installer: 'Anh Tuấn',
+          step: 'Hoàn tất',
           status: 'Đã giao',
         },
       ],
@@ -4703,6 +4849,14 @@ const HR_RECRUITMENT_SEEDS: Record<string, string | number>[] = [
   daysOpen: [15, 18, 14, 12, 10, 12, 31, 15, 28, 15][index],
   cost: [12000000, 8000000, 10000000, 14000000, 4000000, 6000000, 9000000, 5000000, 3000000, 11000000][index],
   source: ['TopCV', 'LinkedIn', 'Website', 'Facebook', 'Giới thiệu', 'Website', 'VietnamWorks', 'Facebook', 'Giới thiệu', 'TopCV'][index],
+  contactPerson: row.owner,
+  contactEmail: 'tuyendung@example.com',
+  contactPhone: '028 7300 2026',
+  ageRange: '22–40',
+  gender: 'Không yêu cầu',
+  languages: index % 3 === 0 ? 'Tiếng Anh giao tiếp' : 'Không yêu cầu',
+  closedDate: row.status === 'Đã đóng' || row.status === 'Đã đủ người' ? '2026-10-31' : '',
+  note: `Vị trí demo ${row.jobId}; số liệu tuyển dụng minh hoạ, không đồng bộ với hệ thống tuyển dụng thật.`,
 }));
 
 const HR_GROUP: Sofa2AdminGroup = {
@@ -4716,10 +4870,10 @@ const HR_GROUP: Sofa2AdminGroup = {
       'Danh sách vị trí tuyển dụng đang mở, chỉ tiêu và tiến độ tuyển.',
       'solar:case-minimalistic-bold-duotone',
       [
-        { label: 'Vị trí đang tuyển', value: '14' },
-        { label: 'Chỉ tiêu tháng', value: '38' },
-        { label: 'Hồ sơ nhận', value: '842' },
-        { label: 'Đã nhận việc', value: '12' },
+        { label: 'Vị trí đang tuyển', value: String(HR_RECRUITMENT_SEEDS.filter((row) => row.status === 'Đang tuyển').length) },
+        { label: 'Chỉ tiêu tuyển', value: String(HR_RECRUITMENT_SEEDS.reduce((sum, row) => sum + Number(row.quantity), 0)) },
+        { label: 'Hồ sơ mẫu', value: String(HR_RECRUITMENT_SEEDS.reduce((sum, row) => sum + Number(row.applicants), 0)) },
+        { label: 'Đã nhận việc', value: String(HR_RECRUITMENT_SEEDS.reduce((sum, row) => sum + Number(row.hired), 0)) },
       ],
       [
         { key: 'jobId', label: 'Mã vị trí' },
@@ -4741,10 +4895,10 @@ const HR_GROUP: Sofa2AdminGroup = {
       'Chi tiết yêu cầu, mô tả công việc, quyền lợi và thông tin liên hệ cho từng vị trí.',
       'solar:document-text-bold-duotone',
       [
-        { label: 'Vị trí', value: '14' },
-        { label: 'Lượt xem TB', value: '486' },
-        { label: 'Hồ sơ/vị trí', value: '60' },
-        { label: 'TG tuyển TB', value: '22 ngày' },
+        { label: 'Vị trí mẫu', value: String(HR_RECRUITMENT_SEEDS.length) },
+        { label: 'Lượt xem TB', value: String(Math.round(HR_RECRUITMENT_SEEDS.reduce((sum, row) => sum + Number(row.views), 0) / HR_RECRUITMENT_SEEDS.length)) },
+        { label: 'Hồ sơ/vị trí', value: String(Math.round(HR_RECRUITMENT_SEEDS.reduce((sum, row) => sum + Number(row.applicants), 0) / HR_RECRUITMENT_SEEDS.length)) },
+        { label: 'TG tuyển TB', value: `${Math.round(HR_RECRUITMENT_SEEDS.reduce((sum, row) => sum + Number(row.daysOpen), 0) / HR_RECRUITMENT_SEEDS.length)} ngày` },
       ],
       [
         { key: 'jobId', label: 'Mã vị trí' },
@@ -4795,7 +4949,16 @@ const HR_GROUP: Sofa2AdminGroup = {
         { applicationId: 'APP-2026-0008', jobId: 'JOB-1006', applicant: 'Nguyễn Văn Khôi', email: 'khoi@example.com', phone: '0901000008', job: 'Biên tập nội dung', source: 'TopCV', submittedDate: '2026-10-02', screeningResult: 'Chưa quyết', status: 'Mới' },
         { applicationId: 'APP-2026-0009', jobId: 'JOB-1004', applicant: 'Hoàng Thị Kim', email: 'kim@example.com', phone: '0901000009', job: 'Nhân viên CSKH', source: 'Website', submittedDate: '2026-10-02', screeningResult: 'Qua', status: 'Đang sàng lọc' },
         { applicationId: 'APP-2026-0010', jobId: 'JOB-1010', applicant: 'Trần Đức', email: 'duc@example.com', phone: '0901000010', job: 'Nhân viên sản xuất sofa', source: 'Giới thiệu', submittedDate: '2026-10-01', screeningResult: 'Qua', status: 'Phỏng vấn' },
-      ],
+      ].map((row, index) => ({
+        cvFileName: `${row.applicationId}-CV-demo.pdf`,
+        cvUrl: `https://example.com/demo-cv/${row.applicationId}.pdf`,
+        coverLetter: `Tôi quan tâm vị trí ${row.job}, có kinh nghiệm phù hợp và mong muốn được trao đổi thêm với LUXE Sofa.`,
+        expectedSalary: 12000000 + index * 1500000,
+        availableDate: '2026-11-01',
+        screenedBy: ['Minh Anh', 'Đức Anh', 'Thu Hà', 'Hoàng Long'][index % 4],
+        note: index % 4 === 0 ? 'Đã kiểm tra hồ sơ mẫu.' : 'Chờ cập nhật sau vòng tuyển dụng tiếp theo.',
+        ...row,
+      })),
       ['Sàng lọc', 'Tải CV']
     ),
     mod(
@@ -4833,7 +4996,29 @@ const HR_GROUP: Sofa2AdminGroup = {
         { applicationId: 'APP-2026-0003', jobId: 'JOB-1004', name: 'Lê Thị Mỹ Dung', email: 'dung@example.com', phone: '0901000003', appliedJob: 'Nhân viên CSKH', experience: 2, education: 'Đại học', interviewRound: 'Sàng lọc CV', interviewScore: 0, status: 'Mới' },
         { applicationId: 'APP-2026-0008', jobId: 'JOB-1006', name: 'Nguyễn Văn Khôi', email: 'khoi@example.com', phone: '0901000008', appliedJob: 'Biên tập nội dung', experience: 3, education: 'Đại học', interviewRound: 'Sàng lọc CV', interviewScore: 0, status: 'Mới' },
         { applicationId: 'APP-2026-0006', jobId: 'JOB-1005', name: 'Đặng Minh Tuấn', email: 'tuan@example.com', phone: '0901000006', appliedJob: 'Thủ kho', experience: 6, education: 'Cao đẳng', interviewRound: 'Phỏng vấn HR', interviewScore: 5, status: 'Không đạt' },
-      ],
+      ].map((row, index) => ({
+        cvUrl: `https://example.com/demo-cv/${row.applicationId}.pdf`,
+        gender: index % 2 ? 'Nam' : 'Nữ',
+        birthday: `199${index % 8}-0${(index % 8) + 1}-15`,
+        city: ['TP.HCM', 'Hà Nội', 'Đà Nẵng', 'Bình Dương'][index % 4],
+        address: `${12 + index} Nguyễn Huệ, ${['TP.HCM', 'Hà Nội', 'Đà Nẵng', 'Bình Dương'][index % 4]}`,
+        school: ['Đại học Kinh tế TP.HCM', 'Đại học Kiến trúc Hà Nội', 'Đại học Đà Nẵng'][index % 3],
+        major: ['Quản trị kinh doanh', 'Thiết kế nội thất', 'Marketing', 'Kế toán'][index % 4],
+        currentJob: index % 3 ? 'Chuyên viên' : 'Tìm việc mới',
+        currentSalary: 10000000 + index * 1800000,
+        expectedSalary: 14000000 + index * 1600000,
+        skills: ['Giao tiếp, CRM, tư vấn', 'SketchUp, 3ds Max, AutoCAD', 'Excel, chăm sóc khách hàng'][index % 3],
+        portfolioUrl: index % 3 === 1 ? `https://example.com/portfolio/${row.applicationId}` : '',
+        workHistory: `${Math.max(1, Number(row.experience))} năm kinh nghiệm liên quan đến vị trí ứng tuyển (dữ liệu minh hoạ).`,
+        interviewDate: index % 3 ? '2026-10-18' : '',
+        interviewer: index % 3 ? ['Minh Anh', 'Đức Anh', 'Thu Hà'][index % 3] : '',
+        interviewNote: index % 3 ? 'Giao tiếp tốt; cần xác minh thêm kinh nghiệm qua vòng chuyên môn.' : 'Chưa lên lịch phỏng vấn.',
+        offerSent: ['Trúng tuyển', 'Thử việc'].includes(String(row.status)) ? 'Có' : 'Không',
+        offerSalary: ['Trúng tuyển', 'Thử việc'].includes(String(row.status)) ? 18000000 + index * 1000000 : 0,
+        availableDate: '2026-11-01',
+        note: `Hồ sơ demo ${row.applicationId}; thông tin liên hệ và CV là dữ liệu giả lập.`,
+        ...row,
+      })),
       ['Mở hồ sơ', 'Gửi offer']
     ),
     mod(

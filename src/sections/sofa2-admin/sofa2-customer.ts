@@ -132,6 +132,8 @@ const CUSTOMER_ORDER_ROWS = gen(30, (i) => {
     code: code('DH', i),
     customerId: CUSTOMER_IDS[customerIndex],
     customer: NAMES[customerIndex],
+    phone: `09${String(12345678 + customerIndex * 1111).slice(0, 8)}`,
+    email: `khach${customerIndex + 1}@gmail.com`,
     product: pick(PRODUCTS, i),
     address: `${20 + i} Lê Lợi, ${pick(CITIES, customerIndex)}`,
     total,
