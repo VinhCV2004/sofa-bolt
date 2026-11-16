@@ -21,6 +21,7 @@ const key = (group: string, module: string) => {
     if (module === 'my-orders') return 'customer/customer-orders';
     if (module === 'warranty') return 'customer/warranties';
     if (module === 'tracking') return 'shop/tracking';
+    if (module === 'wishlist') return 'shop/wishlist';
   }
   return `${group}/${module}`;
 };
@@ -223,6 +224,41 @@ try {
 } catch {
   /* bỏ qua */
 }
+
+// Keep every seeded/client order searchable from the public order-tracking page.
+const customerOrders = store[key('customer', 'customer-orders')] ?? [];
+const customerProfiles = store[key('customer', 'profiles')] ?? [];
+const trackingKey = key('shop', 'tracking');
+const trackedCodes = new Set((store[trackingKey] ?? []).map((row) => String(row.code ?? '')));
+const missingTrackingRows = customerOrders
+  .filter((order) => !trackedCodes.has(String(order.code ?? '')))
+  .map((order) => {
+    const profile = customerProfiles.find(
+      (row) => String(row.customerId ?? '') === String(order.customerId ?? '')
+    );
+    const orderStatus = String(order.status ?? 'Chờ xác nhận');
+    const step = orderStatus === 'Đang giao' ? 'Giao hàng'
+      : ['Đã giao', 'Hoàn thành'].includes(orderStatus) ? 'Hoàn tất'
+        : orderStatus === 'Đang sản xuất' ? 'Sản xuất'
+          : orderStatus === 'Đang xử lý' ? 'Xác nhận' : 'Đặt hàng';
+    const status = orderStatus === 'Hoàn thành' ? 'Đã giao'
+      : ['Yêu cầu huỷ', 'Đổi trả'].includes(orderStatus) ? 'Đang xử lý' : orderStatus;
+    return {
+      code: String(order.code ?? ''),
+      customer: String(order.customer ?? profile?.name ?? ''),
+      phone: String(order.phone ?? profile?.phone ?? ''),
+      address: String(order.address ?? profile?.address ?? ''),
+      items: String(order.product ?? ''),
+      total: Number(order.total ?? 0),
+      step,
+      carrier: 'Đội xe LUXE',
+      trackingNo: '',
+      eta: '',
+      status,
+      updated: String(order.orderDate ?? ''),
+    };
+  });
+store[trackingKey] = [...(store[trackingKey] ?? []), ...missingTrackingRows];
 
 const defaultRecruitmentRows =
   SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'hr')?.modules.find((module) => module.slug === 'recruitment')?.rows ?? [];
@@ -932,7 +968,39 @@ export function useSofa2AdminRows(
         nextRow.applicationId = `APP-${Date.now().toString(36).toUpperCase()}`;
       }
       const previousRows = store[k] ?? [];
-      store[k] = [nextRow, ...previousRows];
+      if (k === key('shop', 'tracking') && String(nextRow.code ?? '')) {
+        const trackingIndex = previousRows.findIndex(
+          (tracking) => String(tracking.code ?? '') === String(nextRow.code)
+        );
+        store[k] = trackingIndex >= 0
+          ? previousRows.map((tracking, index) => index === trackingIndex ? { ...tracking, ...nextRow } : tracking)
+          : [nextRow, ...previousRows];
+      } else {
+        store[k] = [nextRow, ...previousRows];
+      }
+      if (k === key('customer', 'customer-orders')) {
+        const orderTrackingKey = key('shop', 'tracking');
+        const code = String(nextRow.code ?? '');
+        const trackingRows = store[orderTrackingKey] ?? [];
+        if (code && !trackingRows.some((tracking) => String(tracking.code ?? '') === code)) {
+          store[orderTrackingKey] = [{
+            code,
+            customer: String(nextRow.customer ?? ''),
+            phone: String(nextRow.phone ?? ''),
+            address: String(nextRow.address ?? ''),
+            items: String(nextRow.product ?? ''),
+            total: Number(nextRow.total ?? 0),
+            step: 'Đặt hàng',
+            carrier: 'Chưa phân công',
+            trackingNo: '',
+            eta: '',
+            status: ['Hoàn thành'].includes(String(nextRow.status)) ? 'Đã giao'
+              : ['Yêu cầu huỷ', 'Đổi trả'].includes(String(nextRow.status)) ? 'Đang xử lý'
+                : String(nextRow.status ?? 'Chờ xác nhận'),
+            updated: String(nextRow.orderDate ?? ''),
+          }, ...trackingRows];
+        }
+      }
       if (k === key('hr', 'submit-cv')) {
         const jobId = String(nextRow.jobId ?? '');
         const jobTitle = String(nextRow.job ?? '');
@@ -1030,6 +1098,37 @@ export function useSofa2AdminRows(
       const previous = next[index];
       next[index] = { ...row };
       store[k] = next;
+      if (k === key('shop', 'tracking') && previous) {
+        const orderKey = key('customer', 'customer-orders');
+        const code = String(row.code ?? '');
+        const status = String(row.status ?? '');
+        const step = String(row.step ?? '');
+        const orderStatus = ['Đã giao', 'Hoàn tất'].includes(status) || step === 'Hoàn tất' ? 'Đã giao'
+          : status === 'Đã huỷ' ? 'Đã huỷ'
+            : status === 'Đang giao' || step === 'Giao hàng' ? 'Đang giao'
+              : status === 'Đang sản xuất' || step === 'Sản xuất' ? 'Đang sản xuất'
+                : status === 'Chờ xác nhận' || step === 'Đặt hàng' ? 'Chờ xác nhận' : 'Đang xử lý';
+        store[orderKey] = (store[orderKey] ?? []).map((order) =>
+          String(order.code ?? '') === code ? { ...order, status: orderStatus } : order
+        );
+      }
+      if (k === key('customer', 'customer-orders') && previous) {
+        const orderTrackingKey = key('shop', 'tracking');
+        const code = String(row.code ?? '');
+        const status = String(row.status ?? '');
+        const step = status === 'Đang giao' ? 'Giao hàng'
+          : ['Đã giao', 'Hoàn thành'].includes(status) ? 'Hoàn tất'
+            : status === 'Đang sản xuất' ? 'Sản xuất'
+              : status === 'Đang xử lý' ? 'Xác nhận' : 'Đặt hàng';
+        const trackingRows = store[orderTrackingKey] ?? [];
+        const hasTracking = trackingRows.some((tracking) => String(tracking.code ?? '') === code);
+        store[orderTrackingKey] = hasTracking
+          ? trackingRows.map((tracking) => String(tracking.code ?? '') === code
+              ? { ...tracking, customer: row.customer, phone: row.phone, address: row.address, items: row.product, total: row.total, step, status: status === 'Hoàn thành' ? 'Đã giao'
+                : ['Yêu cầu huỷ', 'Đổi trả'].includes(status) ? 'Đang xử lý' : status }
+              : tracking)
+          : [{ code, customer: row.customer, phone: row.phone, address: row.address, items: row.product, total: row.total, step, status: status === 'Hoàn thành' ? 'Đã giao' : ['Yêu cầu huỷ', 'Đổi trả'].includes(status) ? 'Đang xử lý' : status, carrier: 'Chưa phân công', trackingNo: '', eta: '' }, ...trackingRows];
+      }
       if (k === key('hr', 'recruitment') && previous) {
         const jobId = String(row.jobId ?? '');
         const title = String(row.title ?? '');

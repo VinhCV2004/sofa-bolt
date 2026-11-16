@@ -17,8 +17,8 @@ import { Iconify } from 'src/components/iconify';
 
 import { SOFA2_SITE_ORIGIN } from '../sofa2-seo-generator';
 
-import type { AdminRow } from '../sofa2-admin-store';
 import type { Sofa2SeoKind } from '../sofa2-seo';
+import type { AdminRow } from '../sofa2-admin-store';
 
 const SITE = SOFA2_SITE_ORIGIN;
 const SITEMAP_FILES = new Set([
@@ -279,14 +279,37 @@ export function buildRobotsTxt(rows: AdminRow[]) {
   return [...(blocks.length ? blocks : [fallback]), `Sitemap: ${SITE}/sitemap.xml`].join('\n\n');
 }
 
-export function buildSitemapIndex(rows: AdminRow[]) {
-  const items = rows
-    .filter((r) => !['Lỗi URL', 'Tạm tắt'].includes(str(r.status)) && SITEMAP_FILES.has(str(r.file)))
-    .map((r) => `  <sitemap>\n    <loc>${escapeXml(`${SITE}/${str(r.file)}`)}</loc>\n  </sitemap>`);
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items.join('\n')}\n</sitemapindex>`;
+export function buildSitemapIndex(
+  configRows: AdminRow[],
+  pageGroups: { file: string; rows: AdminRow[] }[] = []
+) {
+  const enabledFiles = new Set(
+    configRows
+      .filter((row) => !['Lỗi URL', 'Tạm tắt'].includes(str(row.status)) && SITEMAP_FILES.has(str(row.file)))
+      .map((row) => str(row.file))
+  );
+  const urls = pageGroups
+    .filter(({ file }) => enabledFiles.has(file))
+    .flatMap(({ rows }) => rows)
+    .filter((row) =>
+      yes(row.published) && yes(row.indexable) && yes(row.inSitemap) &&
+      !str(row.redirect) && /^\/sofa2(?:\/|$)/.test(str(row.url))
+    )
+    .map((row) => {
+      const canonical = str(row.canonical) || `${SITE}${str(row.url)}`;
+      try {
+        const parsed = new URL(canonical);
+        if (parsed.origin !== SITE || !parsed.pathname.startsWith('/sofa2/')) return '';
+        return `  <url>\n    <loc>${escapeXml(parsed.toString())}</loc>\n  </url>`;
+      } catch {
+        return '';
+      }
+    })
+    .filter(Boolean);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
 }
 
-export function buildSchemaBundle(rows: AdminRow[]) {
+export function buildSchemaBundle(rows: AdminRow[], generatedSchemas: object[] = []) {
   const valid = rows
     .filter(
       (r) =>
@@ -302,25 +325,33 @@ export function buildSchemaBundle(rows: AdminRow[]) {
       }
     })
     .filter(Boolean);
-  return JSON.stringify({ '@context': 'https://schema.org', '@graph': valid }, null, 2);
+  const generatedTypes = new Set(['Product', 'CollectionPage', 'CreativeWork']);
+  const curated = generatedSchemas.length
+    ? valid.filter((schema) => !generatedTypes.has(String((schema as Record<string, unknown>)['@type'] ?? '')))
+    : valid;
+  return JSON.stringify({ '@context': 'https://schema.org', '@graph': [...curated, ...generatedSchemas] }, null, 2);
 }
 
 /** Card xem trước tệp được sinh từ dữ liệu (robots.txt, sitemap.xml, JSON-LD) */
 export function SeoGeneratedFile({
   kind,
   rows,
+  sitemapPageGroups = [],
+  generatedSchemas = [],
   onToast,
 }: {
   kind: Sofa2SeoKind;
   rows: AdminRow[];
+  sitemapPageGroups?: { file: string; rows: AdminRow[] }[];
+  generatedSchemas?: object[];
   onToast: (msg: string) => void;
 }) {
   const file = useMemo(() => {
     if (kind === 'robots') return { name: 'robots.txt', mime: 'text/plain', text: buildRobotsTxt(rows) };
-    if (kind === 'sitemap') return { name: 'sitemap.xml', mime: 'application/xml', text: buildSitemapIndex(rows) };
-    if (kind === 'schema') return { name: 'schema.jsonld', mime: 'application/ld+json', text: buildSchemaBundle(rows) };
+    if (kind === 'sitemap') return { name: 'sitemap.xml', mime: 'application/xml', text: buildSitemapIndex(rows, sitemapPageGroups) };
+    if (kind === 'schema') return { name: 'schema.jsonld', mime: 'application/ld+json', text: buildSchemaBundle(rows, generatedSchemas) };
     return null;
-  }, [kind, rows]);
+  }, [kind, rows, sitemapPageGroups, generatedSchemas]);
 
   if (!file) return null;
 
@@ -349,19 +380,6 @@ export function SeoGeneratedFile({
         subheader="Tạo từ các bản ghi đang hoạt động/hợp lệ bên dưới — cập nhật ngay khi bạn sửa."
         action={
           <Stack direction="row" spacing={1}>
-            {(kind === 'sitemap' || kind === 'robots') && (
-              <Button
-                component="a"
-                href={kind === 'sitemap' ? '/sitemap.xml' : '/robots.txt'}
-                target="_blank"
-                rel="noreferrer"
-                size="small"
-                variant="outlined"
-                startIcon={<Iconify icon="solar:square-top-down-bold-duotone" />}
-              >
-                Mở công khai
-              </Button>
-            )}
             <Button size="small" variant="outlined" onClick={copy} startIcon={<Iconify icon="solar:copy-bold-duotone" />}>
               Sao chép
             </Button>
@@ -371,6 +389,11 @@ export function SeoGeneratedFile({
           </Stack>
         }
       />
+      {(kind === 'sitemap' || kind === 'robots') && (
+        <Typography variant="caption" sx={{ display: 'block', px: 2.5, color: 'warning.main' }}>
+          Tệp đang được xem trước/tải xuống; cần triển khai tại thư mục gốc website để Google có thể truy cập công khai.
+        </Typography>
+      )}
       <Box
         component="pre"
         sx={{

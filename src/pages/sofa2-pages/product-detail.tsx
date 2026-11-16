@@ -60,6 +60,7 @@ export default function Page() {
   const theme = useTheme();
   const { id = '' } = useParams();
   const { products } = useSofa2CatalogProducts();
+  const productSeoRows = useSofa2AdminRows('seo', 'product', { load: false }).rows;
   const [tab, setTab] = useState('info');
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariantSku, setSelectedVariantSku] = useState('');
@@ -71,6 +72,11 @@ export default function Page() {
   );
 
   const product = findSofa2CatalogProduct(products, id);
+  const productSeo = productSeoRows.find((row) => String(row.url ?? '') === `/sofa2/products/${product?.id ?? id}`);
+  const productIndexable = Boolean(product?.indexable)
+    && !['không', 'false', '0'].includes(String(productSeo?.indexable ?? 'Có').toLowerCase())
+    && !['không', 'false', '0'].includes(String(productSeo?.published ?? 'Có').toLowerCase());
+  const productCanonical = String(productSeo?.canonical ?? '') || `https://luxesofa.vn/sofa2/products/${product?.id ?? id}`;
   const selectedVariant = product?.variants.find((variant) => String(variant.sku ?? '') === selectedVariantSku);
   const variantUnavailable = selectedVariant ? Number(selectedVariant.stock ?? 0) <= 0 : false;
 
@@ -121,10 +127,43 @@ export default function Page() {
   return (
     <>
       <Helmet>
-        <title>{product.metaTitle || `${product.name} - LUXE Sofa`}</title>
-        <meta name="description" content={product.metaDescription || product.description} />
-        <meta name="robots" content={product.indexable ? 'index, follow' : 'noindex, nofollow'} />
-        <link rel="canonical" href={`/sofa2/products/${product.id}`} />
+        <title>{String(productSeo?.title ?? '') || product.metaTitle || `${product.name} - LUXE Sofa`}</title>
+        <meta name="description" content={String(productSeo?.description ?? '') || product.metaDescription || product.description} />
+        <meta name="robots" content={productIndexable ? 'index, follow' : 'noindex, nofollow'} />
+        <link rel="canonical" href={productCanonical} />
+        {productIndexable && (
+          <script type="application/ld+json">
+            {JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Product',
+              '@id': `${productCanonical}#product`,
+              name: product.name,
+              description: product.description,
+              image: images,
+              sku: product.sku,
+              material: product.material,
+              color: product.colors,
+              url: productCanonical,
+              brand: { '@type': 'Brand', name: 'LUXE Sofa' },
+              aggregateRating: product.reviews > 0 ? {
+                '@type': 'AggregateRating',
+                ratingValue: product.rating,
+                reviewCount: product.reviews,
+              } : undefined,
+              offers: {
+                '@type': 'Offer',
+                url: productCanonical,
+                priceCurrency: 'VND',
+                price: Number(selectedVariant?.price ?? product.price),
+                availability: product.available && !variantUnavailable
+                  ? 'https://schema.org/InStock'
+                  : 'https://schema.org/OutOfStock',
+                itemCondition: 'https://schema.org/NewCondition',
+                seller: { '@type': 'Organization', name: 'LUXE Sofa' },
+              },
+            }).replace(/</g, '\\u003c')}
+          </script>
+        )}
       </Helmet>
 
       <Sofa2PageHero overline="Chi tiết sản phẩm" title={product.name} subtitle={product.description} image={product.image} />
