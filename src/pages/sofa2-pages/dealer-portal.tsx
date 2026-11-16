@@ -1,34 +1,35 @@
 import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link as RouterLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Container from '@mui/material/Container';
-import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Unstable_Grid2';
+import Alert from '@mui/material/Alert';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
+import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+import TableRow from '@mui/material/TableRow';
+import Container from '@mui/material/Container';
+import Grid from '@mui/material/Unstable_Grid2';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import CardContent from '@mui/material/CardContent';
+import TableContainer from '@mui/material/TableContainer';
+
+import {
+  getSofa2DemoSession,
+  clearSofa2DemoSession,
+} from 'src/_mock/_sofa2-demo';
 
 import { Iconify } from 'src/components/iconify';
-import {
-  clearSofa2DemoSession,
-  createSofa2MockQuote,
-  getSofa2DealerPortalData,
-  getSofa2DemoSession,
-  type Sofa2DealerPortalData,
-} from 'src/_mock/_sofa2-demo';
+
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { isSofa2DealerPolicyVisible } from 'src/sections/sofa2-admin/sofa2-dealer';
 
 type DataRow = Record<string, unknown>;
 
@@ -60,9 +61,32 @@ const SECTIONS: Record<string, { title: string; description: string }> = {
 };
 
 const text = (value: unknown) => String(value ?? '').trim();
+const isPortalEnabled = (value: unknown) => value === true || ['có', 'true', '1', 'yes'].includes(text(value).toLowerCase());
 const amount = (value: unknown) => Number(text(value).replace(/[^\d.-]/g, '')) || 0;
+const isDealerRecord = (row: DataRow, profile: DataRow) => {
+  const rowId = text(row.dealerId);
+  const profileId = text(profile.dealerId);
+  if (rowId && profileId) return rowId === profileId;
+  return text(row.dealer).toLocaleLowerCase() === text(profile.dealer).toLocaleLowerCase();
+};
+const hasDocumentAccess = (accessValue: unknown, levelValue: unknown) => {
+  const access = text(accessValue);
+  const rank = ['Đồng', 'Bạc', 'Vàng', 'Kim cương'].indexOf(text(levelValue));
+  if (!access || access === 'Tất cả đại lý') return true;
+  if (access === 'Đồng trở lên') return rank >= 0;
+  if (access === 'Bạc trở lên') return rank >= 1;
+  if (access === 'Vàng trở lên') return rank >= 2;
+  if (access === 'Chỉ Kim cương') return rank === 3;
+  return false;
+};
 const currency = (value: unknown) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount(value));
+const formatDate = (value: unknown) => {
+  const raw = text(value);
+  const iso = raw.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);
+  return iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : raw;
+};
+const DATE_COLUMNS = new Set(['orderDate', 'deliveryDate', 'dueDate', 'validUntil', 'created', 'startDate', 'endDate', 'updated']);
 
 function PortalTable({ rows, columns, emptyText }: { rows: DataRow[]; columns: [string, string][]; emptyText: string }) {
   if (rows.length === 0) {
@@ -83,7 +107,9 @@ function PortalTable({ rows, columns, emptyText }: { rows: DataRow[]; columns: [
                 <TableCell key={key}>
                   {key === 'total' || key === 'balance' || key === 'limit' || key === 'value'
                     ? currency(row[key])
-                    : text(row[key]) || '—'}
+                    : DATE_COLUMNS.has(key)
+                      ? formatDate(row[key]) || '—'
+                      : text(row[key]) || '—'}
                 </TableCell>
               ))}
             </TableRow>
@@ -98,9 +124,35 @@ export default function Sofa2DealerPortalPage() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [demoSession] = useState(() => getSofa2DemoSession());
-  const [portal, setPortal] = useState<Sofa2DealerPortalData | null>(() =>
-    demoSession?.role === 'dealer' ? getSofa2DealerPortalData(demoSession) : null
-  );
+  const { rows: dealerProfiles } = useSofa2AdminRows('dealer', 'dashboard');
+  const { rows: policyRows } = useSofa2AdminRows('dealer', 'price-policy');
+  const { rows: quoteRows, createRow: createQuoteRow } = useSofa2AdminRows('dealer', 'quotes');
+  const { rows: orderRows } = useSofa2AdminRows('dealer', 'dealer-orders');
+  const { rows: debtRows } = useSofa2AdminRows('dealer', 'debts');
+  const { rows: documentRows, updateRow: updateDocumentRow } = useSofa2AdminRows('dealer', 'sales-docs');
+  const portal = useMemo(() => {
+    if (demoSession?.role !== 'dealer') return null;
+    const email = demoSession.email.trim().toLowerCase();
+    const profile = dealerProfiles.find((row) =>
+      String(row.email ?? '').trim().toLowerCase() === email &&
+      isPortalEnabled(row.portalAccess) && String(row.status ?? '') !== 'Tạm ngưng'
+    );
+    if (!profile) return null;
+    const level = text(profile.level);
+    const profileData = profile as DataRow;
+    return {
+      profile: profileData,
+      policies: policyRows.filter((row) =>
+        isSofa2DealerPolicyVisible(row) && ['Tất cả', level].includes(text(row.level))
+      ) as DataRow[],
+      quotes: quoteRows.filter((row) => isDealerRecord(row, profileData)) as DataRow[],
+      orders: orderRows.filter((row) => isDealerRecord(row, profileData)) as DataRow[],
+      debts: debtRows.filter((row) => isDealerRecord(row, profileData)) as DataRow[],
+      documents: documentRows
+        .map((row, index): DataRow => ({ ...row, __storeIndex: index }))
+        .filter((row) => row.status === 'Đã xuất bản' && hasDocumentAccess(row.access, level)),
+    };
+  }, [demoSession, dealerProfiles, policyRows, quoteRows, orderRows, debtRows, documentRows]);
   const [products, setProducts] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
@@ -126,15 +178,26 @@ export default function Sofa2DealerPortalPage() {
     setSending(true);
     setSentMessage('');
     try {
-      const quote = createSofa2MockQuote(
-        { products, note, dealer: demoSession.name },
-        'dealer',
-        demoSession.email
-      );
-      setPortal((current) => (current ? { ...current, quotes: [quote, ...current.quotes] } : current));
+      const quoteCode = `BG-DL-${Date.now().toString().slice(-8)}`;
+      const quote = {
+        id: `quote-${quoteCode}`,
+        code: quoteCode,
+        dealerId: text(portal?.profile.dealerId),
+        dealerEmail: demoSession.email.trim().toLowerCase(),
+        dealer: text(portal?.profile.dealer),
+        products: products.trim(),
+        items: products.split(/[;\n]/).map((item) => item.trim()).filter(Boolean).length,
+        note: note.trim(),
+        value: 0,
+        shipping: 0,
+        created: new Date().toISOString().slice(0, 10),
+        validUntil: '',
+        status: 'Chờ xử lý',
+      };
+      createQuoteRow(quote);
       setProducts('');
       setNote('');
-      setSentMessage(`Đã lưu yêu cầu ${text(quote.code)} trên thiết bị demo.`);
+      setSentMessage(`Đã lưu yêu cầu ${quoteCode} trên cổng demo.`);
     } catch (submitError) {
       setSentMessage(submitError instanceof Error ? submitError.message : 'Không gửi được yêu cầu.');
     } finally {
@@ -188,7 +251,21 @@ export default function Sofa2DealerPortalPage() {
     );
   }
 
-  if (!portal) return null;
+  if (!portal) {
+    return (
+      <Box sx={{ minHeight: '100vh', bgcolor: '#f6f3ef', display: 'grid', placeItems: 'center', p: 2 }}>
+        <Container maxWidth="sm">
+          <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: 3 }}>
+            <Stack spacing={2} alignItems="flex-start">
+              <Alert severity="warning">Email này chưa được cấp quyền truy cập cổng đại lý. Vui lòng liên hệ nhân viên phụ trách hoặc dùng email demo đã được quản trị viên bật quyền.</Alert>
+              <Button component={RouterLink} to="/sofa2/dealer/sign-in" variant="contained">Đổi tài khoản demo</Button>
+              <Button component={RouterLink} to="/sofa2/b2b" color="inherit">Quay lại trang hợp tác</Button>
+            </Stack>
+          </Paper>
+        </Container>
+      </Box>
+    );
+  }
 
   const content = () => {
     if (section === '/sofa2/dealer') {
@@ -333,10 +410,21 @@ export default function Sofa2DealerPortalPage() {
                   <Typography variant="caption" color="text.secondary">{text(row.type)}</Typography>
                   <Typography variant="body2" color="text.secondary">{text(row.description)}</Typography>
                   {text(row.fileUrl) ? (
-                    <Button href={text(row.fileUrl)} target="_blank" rel="noreferrer" variant="outlined" sx={{ alignSelf: 'flex-start' }}>
+                    <Button
+                      href={text(row.fileUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      variant="outlined"
+                      sx={{ alignSelf: 'flex-start' }}
+                      onClick={() => {
+                        const storeIndex = Number(row.__storeIndex);
+                        const current = documentRows[storeIndex];
+                        if (current) updateDocumentRow(storeIndex, { ...current, downloads: amount(current.downloads) + 1 });
+                      }}
+                    >
                       Mở tài liệu
                     </Button>
-                  ) : <Typography variant="caption" color="text.disabled">Chưa có liên kết tệp</Typography>}
+                  ) : <Typography variant="caption" color="text.disabled">Quản trị viên chưa gắn liên kết tệp.</Typography>}
                 </Stack>
               </CardContent>
             </Card>

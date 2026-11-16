@@ -153,7 +153,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     saving: rowsSaving,
     error: rowsError,
     retry: retryRows,
-  } = useSofa2AdminRows(group.slug, module.slug);
+  } = useSofa2AdminRows(group.slug, module.slug, { load: group.slug !== 'dealer' });
   const { rows: accessUsers } = useSofa2AdminRows('access', 'users', {
     load: group.slug === 'access' && module.slug === 'roles',
   });
@@ -234,10 +234,39 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     };
   }, [group.slug, module.slug, module.rows]);
 
+  const refreshDealerAchievements = async () => {
+    const profiles = getSofa2AdminRows('dealer', 'dashboard');
+    const orders = getSofa2AdminRows('dealer', 'dealer-orders');
+    const month = sofa2Today().slice(0, 7);
+    const updatedProfiles = profiles.map((profile) => {
+      const dealerId = String(profile.dealerId ?? '');
+      const revenue = orders
+        .filter((order) =>
+          (dealerId
+            ? String(order.dealerId ?? '') === dealerId
+            : String(order.dealer ?? '') === String(profile.dealer ?? '')) &&
+          String(order.orderDate ?? '').slice(0, 7) === month &&
+          String(order.status) !== 'Đã huỷ'
+        )
+        .reduce((sum, order) => sum + asNumber(order.total), 0);
+      const target = asNumber(profile.target);
+      const status = String(profile.status) === 'Tạm ngưng'
+        ? 'Tạm ngưng'
+        : revenue >= target && target > 0
+          ? 'Vượt chỉ tiêu'
+          : revenue >= target * 0.6
+            ? 'Đúng tiến độ'
+            : 'Chậm tiến độ';
+      return { ...profile, achieved: revenue, status };
+    });
+    await syncSofa2DealerRows('dashboard', updatedProfiles);
+  };
+
   const syncDealerModule = async () => {
     if (group.slug !== 'dealer') return true;
     try {
       await syncSofa2DealerRows(module.slug, getSofa2AdminRows(group.slug, module.slug));
+      if (module.slug === 'dealer-orders') await refreshDealerAchievements();
       return true;
     } catch {
       return false;
@@ -811,6 +840,92 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         if (start && end && end < start) next.endDate = 'Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.';
       }
     }
+    if (group.slug === 'dealer') {
+      const unique = (key: string, message: string) => {
+        const candidate = String(form.values[key] ?? '').trim().toLowerCase();
+        if (candidate && rows.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index) &&
+          String(row[key] ?? '').trim().toLowerCase() === candidate
+        )) next[key] = message;
+      };
+      const profiles = getSofa2AdminRows('dealer', 'dashboard');
+      const selectedDealer = profiles.find((item) =>
+        String(item.dealer ?? '').trim().toLowerCase() === String(form.values.dealer ?? '').trim().toLowerCase()
+      );
+      const nonNegative = (key: string, message = 'Giá trị không thể âm.') => {
+        if (Number(form.values[key] ?? 0) < 0) next[key] = message;
+      };
+
+      if (module.slug === 'dashboard') {
+        unique('dealer', 'Tên đại lý đã tồn tại.');
+        unique('email', 'Email đăng nhập này đã được gán cho đại lý khác.');
+        unique('dealerId', 'Mã đại lý đã tồn tại.');
+        const email = String(form.values.email ?? '').trim().toLowerCase();
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Email đại lý không hợp lệ.';
+        if (isPortalEnabled(form.values.portalAccess) && !email) next.email = 'Cần có email để bật cổng đại lý.';
+        nonNegative('target', 'Chỉ tiêu không thể âm.');
+        nonNegative('achieved', 'Doanh số không thể âm.');
+      }
+      if (module.slug === 'price-policy') {
+        const discount = Number(form.values.discount);
+        const bonus = Number(form.values.bonus ?? 0);
+        if (discount < 0 || discount > 100) next.discount = 'Chiết khấu phải từ 0 đến 100%.';
+        if (bonus < 0 || bonus > 100) next.bonus = 'Thưởng doanh số phải từ 0 đến 100%.';
+        nonNegative('minRevenue');
+        nonNegative('paymentTerm');
+        const start = toDateInput(form.values.startDate);
+        const end = toDateInput(form.values.endDate);
+        if (start && end && end < start) next.endDate = 'Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.';
+      }
+      if (module.slug === 'quotes') {
+        unique('code', 'Mã báo giá đã tồn tại.');
+        const oldQuoteCode = String(rows[form.index]?.code ?? '');
+        if (form.mode === 'edit' && String(form.values.code ?? '') !== oldQuoteCode &&
+          getSofa2AdminRows('dealer', 'dealer-orders').some((order) => String(order.quoteRef ?? '') === oldQuoteCode)) {
+          next.code = 'Không thể đổi mã báo giá đã được chuyển thành đơn hàng.';
+        }
+        if (form.values.dealer && !selectedDealer && form.values.dealer !== 'Yêu cầu dự án') {
+          next.dealer = 'Đại lý chưa có hồ sơ trong Dashboard đại lý.';
+        }
+        nonNegative('items');
+        nonNegative('value');
+        nonNegative('shipping');
+        if (String(form.values.status) === 'Đã chốt' && Number(form.values.value) <= 0) {
+          next.value = 'Nhập giá trị báo giá trước khi chốt và chuyển thành đơn.';
+        }
+        const validUntil = toDateInput(form.values.validUntil);
+        const created = toDateInput(form.values.created);
+        if (created && validUntil && validUntil < created) next.validUntil = 'Ngày hết hiệu lực phải bằng hoặc sau ngày tạo.';
+      }
+      if (module.slug === 'dealer-orders') {
+        unique('code', 'Mã đơn hàng đã tồn tại.');
+        const oldOrderCode = String(rows[form.index]?.code ?? '');
+        if (form.mode === 'edit' && String(form.values.code ?? '') !== oldOrderCode &&
+          getSofa2AdminRows('dealer', 'debts').some((debt) => String(debt.invoices ?? '').split(/[;,\\s]+/).includes(oldOrderCode))) {
+          next.code = 'Không thể đổi mã đơn đã được dùng để đối soát công nợ.';
+        }
+        if (!selectedDealer) next.dealer = 'Hãy chọn đại lý đã có hồ sơ.';
+        nonNegative('total');
+        if (Number(form.values.total) <= 0) next.total = 'Tổng tiền phải lớn hơn 0.';
+        const quoteRef = String(form.values.quoteRef ?? '').trim();
+        const linkedQuote = getSofa2AdminRows('dealer', 'quotes').find((quote) => String(quote.code ?? '') === quoteRef);
+        if (quoteRef && !linkedQuote) {
+          next.quoteRef = 'Không tìm thấy báo giá liên kết.';
+        } else if (linkedQuote && selectedDealer && linkedQuote.dealerId &&
+          String(linkedQuote.dealerId) !== String(selectedDealer.dealerId ?? '')) {
+          next.quoteRef = 'Báo giá và đơn hàng phải thuộc cùng một đại lý.';
+        }
+      }
+      if (module.slug === 'debts') {
+        if (!selectedDealer) next.dealer = 'Hãy chọn đại lý đã có hồ sơ.';
+        ['limit', 'balance', 'paid'].forEach((key) => nonNegative(key));
+        if (Number(form.values.balance) > Number(form.values.limit)) next.balance = 'Dư nợ không thể vượt hạn mức được cấp.';
+      }
+      if (module.slug === 'sales-docs') {
+        nonNegative('downloads');
+        if (!isSafeCmsUrl(form.values.fileUrl)) next.fileUrl = 'Liên kết tệp phải là URL http(s) hoặc đường dẫn nội bộ an toàn.';
+      }
+    }
     if (group.slug === 'cms') {
       const isBlog = module.slug === 'blog';
       const isStatic = module.slug === 'static-pages';
@@ -1015,22 +1130,91 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         clean.appliedJob = job ? String(job.title ?? '') : 'Ứng tuyển vị trí phù hợp';
       }
     }
-    if (fields.some((x) => x.key === 'updated')) clean.updated = sofa2Today();
-    if (group.slug === 'dealer' && module.slug === 'dashboard' && form.mode === 'edit') {
-      clean.dealerId = rows[form.index]?.dealerId ?? '';
+    if (group.slug === 'dealer') {
+      if (module.slug === 'dashboard') {
+        clean.email = String(clean.email ?? '').trim().toLowerCase();
+        clean.portalAccess = isPortalEnabled(clean.portalAccess) ? 'Có' : 'Không';
+        clean.dealerId = form.mode === 'edit'
+          ? String(rows[form.index]?.dealerId ?? '')
+          : String(clean.dealerId || `DL-${String(Date.now()).slice(-6)}`);
+      }
+      if (['quotes', 'dealer-orders', 'debts'].includes(module.slug)) {
+        const linkedDealer = getSofa2AdminRows('dealer', 'dashboard').find((row) =>
+          String(row.dealer ?? '').trim().toLowerCase() === String(clean.dealer ?? '').trim().toLowerCase()
+        );
+        clean.dealerId = String(linkedDealer?.dealerId ?? clean.dealerId ?? '');
+        if (module.slug === 'quotes') {
+          clean.dealerEmail = String(linkedDealer?.email ?? clean.dealerEmail ?? '').trim().toLowerCase();
+          clean.created = String(clean.created ?? '').slice(0, 10) || sofa2Today();
+        }
+        if (module.slug === 'dealer-orders') clean.orderDate = toDateInput(clean.orderDate) || sofa2Today();
+      }
+      if (module.slug === 'price-policy') {
+        clean.showOnPortal = isPortalEnabled(clean.showOnPortal) ? 'Có' : 'Không';
+        const endDate = toDateInput(clean.endDate);
+        if (String(clean.status) === 'Đang áp dụng' && endDate && endDate < sofa2Today()) clean.status = 'Hết hiệu lực';
+      }
     }
+    if (fields.some((x) => x.key === 'updated')) clean.updated = sofa2Today();
 
+    const previousRow = form.mode === 'edit' ? rows[form.index] : undefined;
     if (form.mode === 'create') {
       createRow(clean);
     } else {
       updateRow(form.index, clean);
     }
+
+    let generatedOrderCode = '';
+    if (group.slug === 'dealer' && module.slug === 'dashboard' && previousRow) {
+      const dealerId = String(clean.dealerId ?? '');
+      const relatedModules = ['quotes', 'dealer-orders', 'debts'];
+      await Promise.all(relatedModules.map((moduleName) => {
+        const relatedRows = getSofa2AdminRows('dealer', moduleName);
+        const nextRows = relatedRows.map((row) => String(row.dealerId ?? '') === dealerId
+          ? {
+              ...row,
+              dealer: String(clean.dealer ?? ''),
+              ...(moduleName === 'quotes' ? { dealerEmail: String(clean.email ?? '') } : {}),
+            }
+          : row);
+        return syncSofa2DealerRows(moduleName, nextRows);
+      }));
+    }
+    if (
+      group.slug === 'dealer' && module.slug === 'quotes' &&
+      String(clean.status) === 'Đã chốt' && String(previousRow?.status ?? '') !== 'Đã chốt'
+    ) {
+      const quoteCode = String(clean.code ?? '');
+      const existingOrders = getSofa2AdminRows('dealer', 'dealer-orders');
+      if (!existingOrders.some((order) => String(order.quoteRef ?? '') === quoteCode)) {
+        generatedOrderCode = `DH-DL-${Date.now().toString().slice(-8)}`;
+        const order: AdminRow = {
+          id: `order-${generatedOrderCode}`,
+          code: generatedOrderCode,
+          dealerId: String(clean.dealerId ?? ''),
+          dealer: String(clean.dealer ?? ''),
+          quoteRef: quoteCode,
+          products: String(clean.products ?? ''),
+          shippingAddress: String(clean.address ?? ''),
+          total: Number(clean.value ?? 0) + Number(clean.shipping ?? 0),
+          payment: 'Chuyển khoản',
+          orderDate: sofa2Today(),
+          deliveryDate: '',
+          carrier: '',
+          status: 'Chờ xác nhận',
+        };
+        await syncSofa2DealerRows('dealer-orders', [order, ...existingOrders]);
+        await refreshDealerAchievements();
+      }
+    }
     const synced = await syncDealerModule();
     setToast(
       synced
-        ? form.mode === 'create'
-          ? `Đã thêm ${entity} mới.`
-          : `Đã cập nhật ${entity}.`
+        ? generatedOrderCode
+          ? `Đã chốt báo giá và tạo đơn ${generatedOrderCode}.`
+          : form.mode === 'create'
+            ? `Đã thêm ${entity} mới.`
+            : `Đã cập nhật ${entity}.`
         : 'Đã lưu thay đổi trên trình duyệt demo.'
     );
     setForm((prev) => ({ ...prev, open: false }));
@@ -1041,6 +1225,15 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     const row = rows[index];
     const isPublished = String(row[statusKey]) === published;
     const next = isPublished ? statusOptions[1] ?? 'Bản nháp' : published;
+    if (group.slug === 'dealer' && module.slug === 'price-policy' && next === 'Đang áp dụng') {
+      const today = sofa2Today();
+      const starts = toDateInput(row.startDate);
+      const ends = toDateInput(row.endDate);
+      if ((starts && starts > today) || (ends && ends < today)) {
+        setToast('Không thể áp dụng chính sách ngoài khoảng thời gian hiệu lực đã cài đặt.');
+        return;
+      }
+    }
     if (group.slug === 'hr' && ['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug) && next === 'Đang tuyển') {
       const deadline = toDateInput(row.deadline);
       if (!deadline || deadline < sofa2Today()) {
@@ -1148,6 +1341,26 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       )) return 'Đơn hàng có giao dịch thanh toán hoặc phiếu bảo hành liên kết; hãy cập nhật trạng thái thay vì xoá.';
       if (module.slug === 'points' && String(row.status) === 'Đã ghi nhận') return 'Giao dịch điểm đã ghi nhận; hãy tạo giao dịch điều chỉnh thay vì xoá lịch sử.';
       return '';
+    }
+    if (group.slug === 'dealer') {
+      const dealerId = String(row.dealerId ?? '');
+      const code = String(row.code ?? '');
+      if (module.slug === 'dashboard') {
+        const hasTransactions = ['quotes', 'dealer-orders', 'debts'].some((moduleName) =>
+          getSofa2AdminRows('dealer', moduleName).some((item) =>
+            dealerId
+              ? String(item.dealerId ?? '') === dealerId
+              : String(item.dealer ?? '').trim().toLowerCase() === String(row.dealer ?? '').trim().toLowerCase()
+          )
+        );
+        if (hasTransactions) return 'Đại lý còn báo giá, đơn hàng hoặc công nợ liên kết; hãy tạm ngưng quyền truy cập thay vì xoá hồ sơ.';
+      }
+      if (module.slug === 'quotes' && getSofa2AdminRows('dealer', 'dealer-orders').some((order) => String(order.quoteRef ?? '') === code)) {
+        return 'Báo giá đã được chuyển thành đơn hàng; hãy giữ lại để bảo toàn lịch sử liên kết.';
+      }
+      if (module.slug === 'dealer-orders' && getSofa2AdminRows('dealer', 'debts').some((debt) =>
+        String(debt.invoices ?? '').split(/[;,\\s]+/).includes(code)
+      )) return 'Đơn hàng đang được dùng để đối soát công nợ; hãy giữ lại lịch sử và cập nhật trạng thái.';
     }
     if (group.slug !== 'catalog') return '';
     const linked = (moduleName: string, predicate: (item: AdminRow) => boolean) =>
@@ -1897,9 +2110,24 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
             Ma trận quyền lưu cấu hình theo module, hành động và vai trò; hiện chưa được nối vào danh tính đăng nhập thật. Không dùng các dòng này để cấp quyền vận hành; hành động phê duyệt vẫn cần quy trình độc lập phía máy chủ.
           </Alert>
         )}
+        {group.slug === 'dealer' && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Dữ liệu đại lý được lưu trong localStorage trên trình duyệt này và đồng bộ với cổng Sofa2 cùng thiết bị. Đây là dữ liệu minh họa, chưa có xác thực/phân quyền an toàn hoặc lưu trữ phía máy chủ; không nhập thông tin doanh nghiệp, công nợ hay khách hàng thật.
+          </Alert>
+        )}
         {group.slug === 'dealer' && dealerLoading && (
           <Alert severity="info" sx={{ mb: 2 }}>
             Đang tải dữ liệu đại lý demo…
+          </Alert>
+        )}
+        {group.slug === 'dealer' && module.slug === 'quotes' && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Khi quản trị viên cập nhật báo giá sang “Đã chốt” và nhập giá trị lớn hơn 0, hệ thống demo tự tạo đơn hàng liên kết. Đơn đã tạo sẽ không bị nhân đôi nếu báo giá được lưu lại.
+          </Alert>
+        )}
+        {group.slug === 'dealer' && module.slug === 'sales-docs' && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Tài liệu được đưa lên portal khi đã xuất bản, có liên kết tệp hợp lệ và quyền truy cập phù hợp. Bản demo nhận URL tệp, chưa tải tệp lên máy chủ.
           </Alert>
         )}
         <Grid container spacing={3}>

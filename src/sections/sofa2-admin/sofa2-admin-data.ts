@@ -3684,6 +3684,144 @@ const B2B_GROUP: Sofa2AdminGroup = {
 // ĐẠI LÝ (cổng đại lý — tương thích trang client /sofa2/b2b)
 // ----------------------------------------------------------------------
 
+const DEALER_EXTRA_NAMES = [
+  'An Gia Nội thất', 'Mộc Nhiên Living', 'Nhà Xinh Đà Lạt', 'Phúc Thịnh Furniture',
+  'Sài Gòn Decor', 'Hải Âu Home', 'Nội thất Phố Huế', 'Bình Minh Sofa',
+  'Vạn Phúc Living', 'Đông Dương Interior', 'Thành Đạt Home', 'Green House Nha Trang',
+  'Mekong Living', 'Sofa House Vinh', 'Modern Home Quy Nhơn',
+];
+const DEALER_EXTRA_REGIONS = ['Miền Bắc', 'Miền Trung', 'Miền Nam', 'Tây Nam Bộ', 'Tây Nguyên'];
+const DEALER_EXTRA_LEVELS = ['Đồng', 'Bạc', 'Vàng', 'Kim cương'];
+const DEALER_EXTRA_STAFF = ['Thu Hà', 'Minh Anh', 'Quốc Bảo', 'Hoàng Long', 'Chưa gán'];
+const dealerDate = (month: number, day: number) =>
+  `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+const DEALER_EXTRA_PROFILES = DEALER_EXTRA_NAMES.map((dealer, index) => {
+  const dealerNumber = 1006 + index;
+  const target = 60_000_000 + (index % 5) * 45_000_000;
+  const ratio = [0.42, 0.68, 0.86, 1.04, 0.93][index % 5];
+  const achieved = Math.round(target * ratio);
+  return {
+    id: `dealer-DL-${dealerNumber}`,
+    dealerId: `DL-${dealerNumber}`,
+    dealer,
+    email: `dealer${dealerNumber}@luxe-sofa.demo`,
+    portalAccess: index % 4 === 3 ? 'Không' : 'Có',
+    taxCode: `031${String(9000000 + dealerNumber).slice(-7)}`,
+    contact: ['Nguyễn Minh Tâm', 'Trần Hoài An', 'Lê Quốc Khánh', 'Phạm Ngọc Mai', 'Võ Thanh Bình'][index % 5],
+    phone: `090${String(6000000 + dealerNumber).slice(-7)}`,
+    address: `${18 + index} Nguyễn Huệ, ${DEALER_EXTRA_REGIONS[index % DEALER_EXTRA_REGIONS.length]}`,
+    manager: DEALER_EXTRA_STAFF[index % DEALER_EXTRA_STAFF.length],
+    level: DEALER_EXTRA_LEVELS[index % DEALER_EXTRA_LEVELS.length],
+    region: DEALER_EXTRA_REGIONS[index % DEALER_EXTRA_REGIONS.length],
+    target,
+    achieved,
+    status: ratio >= 1 ? 'Vượt chỉ tiêu' : ratio >= 0.6 ? 'Đúng tiến độ' : 'Chậm tiến độ',
+  };
+});
+const DEALER_EXTRA_QUOTE_STATUSES = ['Chờ xử lý', 'Đã gửi', 'Đã chốt', 'Từ chối', 'Hết hạn', 'Đã gửi'];
+const DEALER_EXTRA_QUOTES = Array.from({ length: 30 }, (_, index) => {
+  const profile = DEALER_EXTRA_PROFILES[index % DEALER_EXTRA_PROFILES.length];
+  const status = DEALER_EXTRA_QUOTE_STATUSES[index % DEALER_EXTRA_QUOTE_STATUSES.length];
+  const code = `BG-DL-${1009 + index}`;
+  const created = dealerDate(status === 'Hết hạn' ? 9 : index % 3 === 0 ? 10 : 11, (index % 14) + 1);
+  return {
+    id: `quote-${code}`,
+    code,
+    dealerId: profile.dealerId,
+    dealerEmail: profile.email,
+    dealer: profile.dealer,
+    project: index % 4 === 0 ? `Dự án căn hộ ${profile.region}` : '',
+    products: `${['Sofa Milano', 'Sofa Oslo', 'Sofa Verona', 'Ghế Luna'][index % 4]} × ${2 + (index % 8)}; Bàn trà Marble × ${1 + (index % 4)}`,
+    items: 3 + (index % 12),
+    value: money(28_000_000 + (index % 9) * 17_500_000),
+    shipping: index % 3 === 0 ? money(1_500_000) : 0,
+    note: index % 5 === 0 ? 'Cần xác nhận màu vải và lịch giao trước khi chốt.' : '',
+    created,
+    validUntil: status === 'Hết hạn' ? dealerDate(10, 20 + (index % 8)) : dealerDate(12, 5 + (index % 20)),
+    status,
+  };
+});
+const DEALER_EXTRA_QUOTE_ORDERS = DEALER_EXTRA_QUOTES
+  .filter((quote) => quote.status === 'Đã chốt')
+  .map((quote, index) => {
+    const profile = DEALER_EXTRA_PROFILES.find((item) => item.dealerId === quote.dealerId)!;
+    const code = `DH-DL-${2300 + index}`;
+    return {
+      id: `order-${code}`,
+      code,
+      dealerId: profile.dealerId,
+      dealer: profile.dealer,
+      quoteRef: quote.code,
+      products: quote.products,
+      shippingAddress: profile.address,
+      total: Number(quote.value) + Number(quote.shipping),
+      payment: ['Công nợ 30 ngày', 'Chuyển khoản', 'Đặt cọc 30%'][index % 3],
+      orderDate: String(quote.created),
+      deliveryDate: dealerDate(12, 10 + (index % 18)),
+      carrier: ['LUXE Logistics', 'Viettel Post', 'GHTK'][index % 3],
+      status: ['Chờ xác nhận', 'Đang sản xuất', 'Đang giao', 'Hoàn tất'][index % 4],
+    };
+  });
+const DEALER_EXTRA_STANDALONE_ORDERS = DEALER_EXTRA_PROFILES.map((profile, index) => {
+  const code = `DH-DL-${2400 + index}`;
+  return {
+    id: `order-${code}`,
+    code,
+    dealerId: profile.dealerId,
+    dealer: profile.dealer,
+    quoteRef: '',
+    products: `${['Sofa góc Milano', 'Sofa da Verona', 'Sofa băng Oslo'][index % 3]} × ${1 + (index % 6)}`,
+    shippingAddress: profile.address,
+    total: money(32_000_000 + (index % 7) * 22_000_000),
+    payment: ['Chuyển khoản', 'Đặt cọc 30%', 'Công nợ 30 ngày'][index % 3],
+    orderDate: dealerDate(11, 1 + (index % 14)),
+    deliveryDate: dealerDate(12, 10 + (index % 18)),
+    carrier: ['LUXE Logistics', 'Viettel Post', 'GHTK'][index % 3],
+    status: ['Chờ xác nhận', 'Đang sản xuất', 'Đang giao', 'Hoàn tất'][index % 4],
+  };
+});
+const DEALER_EXTRA_DEBTS = DEALER_EXTRA_PROFILES.map((profile, index) => {
+  const order = DEALER_EXTRA_STANDALONE_ORDERS[index];
+  const limit = 120_000_000 + (index % 5) * 80_000_000;
+  const balance = 18_000_000 + (index % 6) * 19_000_000;
+  const status = ['Trong hạn', 'Sắp đến hạn', 'Quá hạn', 'Đã tất toán'][index % 4];
+  const dueDate = status === 'Quá hạn' || status === 'Đã tất toán'
+    ? dealerDate(10, 10 + (index % 15))
+    : dealerDate(11, 18 + (index % 10));
+  return {
+    id: `debt-${profile.dealerId}-01`,
+    dealerId: profile.dealerId,
+    dealer: profile.dealer,
+    invoices: order.code,
+    note: ['Đối soát theo kỳ tháng.', 'Đã gửi nhắc thanh toán.', 'Chờ kế toán xác nhận chứng từ.'][index % 3],
+    limit: money(limit),
+    balance: status === 'Đã tất toán' ? 0 : money(balance),
+    paid: money(index * 2_500_000),
+    dueDate,
+    autoRemind: index % 3 === 0 ? 'Không' : 'Có',
+    status,
+  };
+});
+const DEALER_EXTRA_POLICIES = [
+  { id: 'policy-bronze-q4', name: 'Ưu đãi Đồng — khởi động Q4', level: 'Đồng', scope: 'Toàn bộ sản phẩm', terms: 'Áp dụng cho đại lý mới, thanh toán trước khi giao hàng.', discount: 18, minRevenue: 0, bonus: 1, paymentTerm: 0, startDate: '2026-10-01', endDate: '2026-12-31', showOnPortal: 'Có', status: 'Đang áp dụng' },
+  { id: 'policy-all-showroom', name: 'Hỗ trợ trưng bày showroom', level: 'Tất cả', scope: 'Theo bộ sưu tập', terms: 'Ưu đãi riêng cho sản phẩm trưng bày tại showroom đối tác.', discount: 5, minRevenue: money(100_000_000), bonus: 0, paymentTerm: 15, startDate: '2026-11-01', endDate: '2026-12-31', showOnPortal: 'Có', status: 'Đang áp dụng' },
+  { id: 'policy-project-vip', name: 'Giá dự án VIP 2026', level: 'Kim cương', scope: 'Sản phẩm chỉ định', terms: 'Báo giá theo danh mục dự án và khối lượng được duyệt.', discount: 38, minRevenue: money(700_000_000), bonus: 2, paymentTerm: 60, startDate: '2026-01-01', endDate: '2026-12-31', showOnPortal: 'Có', status: 'Đang áp dụng' },
+  { id: 'policy-spring-2027', name: 'Ưu đãi khai xuân 2027', level: 'Tất cả', scope: 'Toàn bộ sản phẩm', terms: 'Chính sách dự kiến, chưa công bố.', discount: 8, minRevenue: money(80_000_000), bonus: 0, paymentTerm: 0, startDate: '2027-01-01', endDate: '2027-03-31', showOnPortal: 'Không', status: 'Bản nháp' },
+  { id: 'policy-old-2025', name: 'Chính sách đại lý 2025', level: 'Bạc', scope: 'Toàn bộ sản phẩm', terms: 'Lưu trữ để tra cứu lịch sử.', discount: 22, minRevenue: money(50_000_000), bonus: 0, paymentTerm: 15, startDate: '2025-01-01', endDate: '2025-12-31', showOnPortal: 'Không', status: 'Hết hiệu lực' },
+];
+const DEALER_EXTRA_DOCS = [
+  { id: 'doc-material-guide', title: 'Hướng dẫn chất liệu và bảo quản', type: 'Hướng dẫn bán hàng', description: 'Thông tin chất liệu, vệ sinh và tư vấn bảo quản sản phẩm.', fileUrl: '', access: 'Tất cả đại lý', downloads: 74, updated: '2026-11-04', status: 'Đã xuất bản' },
+  { id: 'doc-policy-template', title: 'Mẫu hợp đồng đại lý 2026', type: 'Hợp đồng mẫu', description: 'Mẫu tham khảo, vui lòng xác nhận với bộ phận pháp chế trước khi sử dụng.', fileUrl: '', access: 'Vàng trở lên', downloads: 38, updated: '2026-10-28', status: 'Đã xuất bản' },
+  { id: 'doc-brand-kit', title: 'Logo và nhận diện thương hiệu LUXE', type: 'Hình ảnh', description: 'Logo chính thức dành cho nội dung truyền thông của đối tác.', fileUrl: '/logo/logo-full.svg', access: 'Tất cả đại lý', downloads: 126, updated: '2026-10-20', status: 'Đã xuất bản' },
+  { id: 'doc-photo-verona', title: 'Bộ ảnh sofa Verona', type: 'Hình ảnh', description: 'Ảnh sản phẩm dùng cho showroom và kênh bán hàng.', fileUrl: '', access: 'Vàng trở lên', downloads: 93, updated: '2026-10-18', status: 'Đã xuất bản' },
+  { id: 'doc-price-2027', title: 'Bảng giá dự kiến 2027', type: 'Bảng giá', description: 'Bản xem trước nội bộ, chưa áp dụng cho báo giá.', fileUrl: '', access: 'Nội bộ', downloads: 0, updated: '2026-11-10', status: 'Bản nháp' },
+  { id: 'doc-training-video', title: 'Video đào tạo tư vấn sofa', type: 'Video', description: 'Kịch bản đào tạo đội ngũ bán hàng tại showroom.', fileUrl: '', access: 'Đồng trở lên', downloads: 12, updated: '2026-10-12', status: 'Đã xuất bản' },
+  { id: 'doc-returns', title: 'Quy trình đổi trả hàng B2B', type: 'Hướng dẫn bán hàng', description: 'Các bước ghi nhận, kiểm tra và xử lý yêu cầu đổi trả.', fileUrl: '', access: 'Tất cả đại lý', downloads: 41, updated: '2026-09-28', status: 'Đã xuất bản' },
+  { id: 'doc-campaign-q4', title: 'Tài nguyên chiến dịch Q4', type: 'Hình ảnh', description: 'Banner và nội dung quảng bá chương trình quý IV.', fileUrl: '', access: 'Bạc trở lên', downloads: 57, updated: '2026-10-05', status: 'Đã xuất bản' },
+  { id: 'doc-sales-playbook', title: 'Sổ tay bán hàng dự án', type: 'Hướng dẫn bán hàng', description: 'Quy trình tiếp nhận brief và theo dõi báo giá dự án.', fileUrl: '', access: 'Chỉ Kim cương', downloads: 18, updated: '2026-11-02', status: 'Đã xuất bản' },
+  { id: 'doc-old-price', title: 'Bảng giá đại lý Q2/2026', type: 'Bảng giá', description: 'Tài liệu lưu trữ đã hết hiệu lực.', fileUrl: '', access: 'Nội bộ', downloads: 205, updated: '2026-06-30', status: 'Tạm ẩn' },
+];
+
 const DEALER_GROUP: Sofa2AdminGroup = {
   slug: 'dealer',
   name: 'Đại lý',
@@ -3692,353 +3830,115 @@ const DEALER_GROUP: Sofa2AdminGroup = {
     mod(
       'dashboard',
       'Dashboard đại lý',
-      'Hiệu suất từng đại lý: chỉ tiêu, doanh số đạt, xếp hạng và cảnh báo công nợ.',
+      'Hồ sơ đại lý, quyền truy cập cổng, chỉ tiêu và doanh số. Dữ liệu liên kết với báo giá, đơn hàng và công nợ.',
       'solar:chart-square-bold-duotone',
+      [],
       [
-        { label: 'Đại lý hoạt động', value: '48', trend: '+4' },
-        { label: 'Doanh số tháng', value: '2,46 tỷ', trend: '+12%' },
-        { label: 'Đạt chỉ tiêu', value: '31/48' },
-        { label: 'Công nợ quá hạn', value: '186 tr' },
+        { key: 'dealer', label: 'Đại lý' }, { key: 'email', label: 'Email đăng nhập' },
+        { key: 'level', label: 'Cấp' }, { key: 'region', label: 'Vùng' },
+        { key: 'portalAccess', label: 'Cổng đại lý' }, { key: 'target', label: 'Chỉ tiêu tháng', type: 'money' },
+        { key: 'achieved', label: 'Đã đạt', type: 'money' }, STATUS_COL,
       ],
       [
-        { key: 'dealer', label: 'Đại lý' },
-        { key: 'email', label: 'Email đăng nhập' },
-        { key: 'level', label: 'Cấp' },
-        { key: 'region', label: 'Vùng' },
-        { key: 'portalAccess', label: 'Cổng đại lý' },
-        { key: 'target', label: 'Chỉ tiêu tháng', type: 'money' },
-        { key: 'achieved', label: 'Đã đạt', type: 'money' },
-        STATUS_COL,
-      ],
-      [
-        {
-          dealer: 'Nội thất Việt',
-          email: '',
-          portalAccess: 'Không',
-          level: 'Kim cương',
-          region: 'Miền Bắc',
-          target: money(400000000),
-          achieved: money(420000000),
-          status: 'Vượt chỉ tiêu',
-        },
-        {
-          dealer: 'Decor Home HCM',
-          email: '',
-          portalAccess: 'Không',
-          level: 'Kim cương',
-          region: 'Miền Nam',
-          target: money(400000000),
-          achieved: money(380000000),
-          status: 'Đúng tiến độ',
-        },
-        {
-          dealer: 'Living Space ĐN',
-          email: '',
-          portalAccess: 'Không',
-          level: 'Vàng',
-          region: 'Miền Trung',
-          target: money(150000000),
-          achieved: money(124000000),
-          status: 'Đúng tiến độ',
-        },
-        {
-          dealer: 'Home Mart Hà Nội',
-          email: '',
-          portalAccess: 'Không',
-          level: 'Bạc',
-          region: 'Miền Bắc',
-          target: money(120000000),
-          achieved: money(52000000),
-          status: 'Chậm tiến độ',
-        },
-        {
-          dealer: 'Sofa Plus Cần Thơ',
-          email: '',
-          portalAccess: 'Không',
-          level: 'Bạc',
-          region: 'Tây Nam Bộ',
-          target: money(80000000),
-          achieved: money(72000000),
-          status: 'Đúng tiến độ',
-        },
+        { id: 'dealer-DL-1001', dealerId: 'DL-1001', dealer: 'Nội thất Việt', email: 'dealer@luxe-sofa.demo', portalAccess: 'Có', taxCode: '0109123456', contact: 'Nguyễn Hoàng Minh', phone: '0901234567', address: '120 Nguyễn Trãi, Hà Nội', manager: 'Thu Hà', level: 'Kim cương', region: 'Miền Bắc', target: money(400000000), achieved: money(420000000), status: 'Vượt chỉ tiêu' },
+        { id: 'dealer-DL-1002', dealerId: 'DL-1002', dealer: 'Decor Home HCM', email: 'decor@luxe-sofa.demo', portalAccess: 'Có', taxCode: '0318234567', contact: 'Trần Ngọc Lan', phone: '0902345678', address: '28 Nguyễn Văn Trỗi, TP.HCM', manager: 'Minh Anh', level: 'Kim cương', region: 'Miền Nam', target: money(400000000), achieved: money(380000000), status: 'Đúng tiến độ' },
+        { id: 'dealer-DL-1003', dealerId: 'DL-1003', dealer: 'Living Space ĐN', email: 'living@luxe-sofa.demo', portalAccess: 'Có', taxCode: '0400345678', contact: 'Lê Quang Huy', phone: '0903456789', address: '46 Bạch Đằng, Đà Nẵng', manager: 'Quốc Bảo', level: 'Vàng', region: 'Miền Trung', target: money(150000000), achieved: money(124000000), status: 'Đúng tiến độ' },
+        { id: 'dealer-DL-1004', dealerId: 'DL-1004', dealer: 'Home Mart Hà Nội', email: 'homemart@luxe-sofa.demo', portalAccess: 'Không', taxCode: '0109456789', contact: 'Phạm Thu Trang', phone: '0904567890', address: '88 Cầu Giấy, Hà Nội', manager: 'Thu Hà', level: 'Bạc', region: 'Miền Bắc', target: money(120000000), achieved: money(52000000), status: 'Chậm tiến độ' },
+        { id: 'dealer-DL-1005', dealerId: 'DL-1005', dealer: 'Sofa Plus Cần Thơ', email: 'sofa.plus@luxe-sofa.demo', portalAccess: 'Có', taxCode: '1800567890', contact: 'Võ Minh Tâm', phone: '0905678901', address: '15 Hoà Bình, Cần Thơ', manager: 'Minh Anh', level: 'Bạc', region: 'Tây Nam Bộ', target: money(80000000), achieved: money(72000000), status: 'Đúng tiến độ' },
+        ...DEALER_EXTRA_PROFILES,
       ],
       ['Thêm đại lý', 'Giao chỉ tiêu']
     ),
     mod(
-      'price-policy',
-      'Chính sách giá',
-      'Chiết khấu theo cấp đại lý, ngưỡng doanh số, thưởng và thời gian áp dụng — hiển thị tại /sofa2/b2b/policy.',
-      'solar:tag-price-bold-duotone',
+      'price-policy', 'Chính sách giá',
+      'Chiết khấu, điều kiện, thời hạn và công nợ theo cấp. Chính sách đang hiệu lực và được bật hiển thị sẽ lên trang /sofa2/b2b/policy và cổng đại lý.',
+      'solar:tag-price-bold-duotone', [],
       [
-        { label: 'Chính sách hiệu lực', value: '6' },
-        { label: 'Chiết khấu TB', value: '27%' },
-        { label: 'Cấp đại lý', value: '4' },
-        { label: 'Sắp hết hạn', value: '1' },
+        { key: 'name', label: 'Chính sách' }, { key: 'level', label: 'Cấp áp dụng' },
+        { key: 'discount', label: 'Chiết khấu (%)', type: 'number' }, { key: 'minRevenue', label: 'Doanh số tối thiểu', type: 'money' },
+        { key: 'endDate', label: 'Hết hạn' }, STATUS_COL,
       ],
       [
-        { key: 'name', label: 'Chính sách' },
-        { key: 'level', label: 'Cấp áp dụng' },
-        { key: 'discount', label: 'Chiết khấu (%)', type: 'number' },
-        { key: 'minRevenue', label: 'Doanh số tối thiểu', type: 'money' },
-        { key: 'endDate', label: 'Hết hạn' },
-        STATUS_COL,
-      ],
-      [
-        {
-          name: 'Chiết khấu Kim cương 2026',
-          level: 'Kim cương',
-          discount: 35,
-          minRevenue: money(300000000),
-          endDate: '31/12/2026',
-          status: 'Đang áp dụng',
-        },
-        {
-          name: 'Chiết khấu Vàng 2026',
-          level: 'Vàng',
-          discount: 30,
-          minRevenue: money(150000000),
-          endDate: '31/12/2026',
-          status: 'Đang áp dụng',
-        },
-        {
-          name: 'Chiết khấu Bạc 2026',
-          level: 'Bạc',
-          discount: 25,
-          minRevenue: money(60000000),
-          endDate: '31/12/2026',
-          status: 'Đang áp dụng',
-        },
-        {
-          name: 'Đại lý mới — 3 tháng đầu',
-          level: 'Đồng',
-          discount: 20,
-          minRevenue: money(0),
-          endDate: '31/10/2026',
-          status: 'Đang áp dụng',
-        },
-        {
-          name: 'Thưởng quý IV',
-          level: 'Tất cả',
-          discount: 3,
-          minRevenue: money(500000000),
-          endDate: '31/12/2026',
-          status: 'Bản nháp',
-        },
+        { id: 'policy-diamond-2026', name: 'Chiết khấu Kim cương 2026', level: 'Kim cương', scope: 'Toàn bộ sản phẩm', terms: 'Doanh số năm từ 2 tỷ; duy trì thanh toán đúng hạn.', discount: 35, minRevenue: money(300000000), bonus: 3, paymentTerm: 60, startDate: '2026-01-01', endDate: '2026-12-31', showOnPortal: 'Có', status: 'Đang áp dụng' },
+        { id: 'policy-gold-2026', name: 'Chiết khấu Vàng 2026', level: 'Vàng', scope: 'Toàn bộ sản phẩm', terms: 'Áp dụng cho doanh số tối thiểu 150 triệu/tháng.', discount: 30, minRevenue: money(150000000), bonus: 2, paymentTerm: 30, startDate: '2026-01-01', endDate: '2026-12-31', showOnPortal: 'Có', status: 'Đang áp dụng' },
+        { id: 'policy-silver-2026', name: 'Chiết khấu Bạc 2026', level: 'Bạc', scope: 'Toàn bộ sản phẩm', terms: 'Thanh toán theo hạn mức được phê duyệt.', discount: 25, minRevenue: money(60000000), bonus: 0, paymentTerm: 15, startDate: '2026-01-01', endDate: '2026-12-31', showOnPortal: 'Có', status: 'Đang áp dụng' },
+        { id: 'policy-new-dealer', name: 'Đại lý mới — 3 tháng đầu', level: 'Đồng', scope: 'Toàn bộ sản phẩm', terms: 'Ưu đãi onboarding áp dụng đến hết tháng 10/2026.', discount: 20, minRevenue: 0, bonus: 0, paymentTerm: 0, startDate: '2026-08-01', endDate: '2026-10-31', showOnPortal: 'Có', status: 'Hết hiệu lực' },
+        { id: 'policy-q4-bonus', name: 'Thưởng quý IV', level: 'Tất cả', scope: 'Toàn bộ sản phẩm', terms: 'Thưởng thêm khi đạt doanh số quý 500 triệu.', discount: 3, minRevenue: money(500000000), bonus: 3, paymentTerm: 0, startDate: '2026-10-01', endDate: '2026-12-31', showOnPortal: 'Không', status: 'Bản nháp' },
+        ...DEALER_EXTRA_POLICIES,
       ],
       ['Thêm chính sách']
     ),
     mod(
-      'quotes',
-      'Báo giá',
-      'Yêu cầu báo giá từ đại lý (form /sofa2/b2b/quote) — lập, gửi, theo dõi phản hồi và chuyển thành đơn.',
-      'solar:document-add-bold-duotone',
+      'quotes', 'Báo giá',
+      'Tiếp nhận yêu cầu từ portal, cập nhật giá và hiệu lực; chuyển báo giá đã chốt thành đơn hàng đại lý.',
+      'solar:document-add-bold-duotone', [],
       [
-        { label: 'Yêu cầu mới', value: '9', trend: '+3' },
-        { label: 'Đã gửi', value: '24' },
-        { label: 'Tỷ lệ chốt', value: '42%' },
-        { label: 'Giá trị chờ', value: '1,2 tỷ' },
+        { key: 'code', label: 'Mã báo giá' }, { key: 'dealer', label: 'Đại lý' },
+        { key: 'products', label: 'Sản phẩm' }, { key: 'items', label: 'Số SP', type: 'number' },
+        { key: 'value', label: 'Giá trị', type: 'money' }, { key: 'validUntil', label: 'Hiệu lực đến' }, STATUS_COL,
       ],
       [
-        { key: 'code', label: 'Mã báo giá' },
-        { key: 'dealer', label: 'Đại lý' },
-        { key: 'items', label: 'Số SP', type: 'number' },
-        { key: 'value', label: 'Giá trị', type: 'money' },
-        { key: 'validUntil', label: 'Hiệu lực đến' },
-        STATUS_COL,
-      ],
-      [
-        {
-          code: 'BG-DL-1008',
-          dealer: 'Nội thất Việt',
-          items: 14,
-          value: money(186000000),
-          validUntil: '22/10/2026',
-          status: 'Chờ xử lý',
-        },
-        {
-          code: 'BG-DL-1007',
-          dealer: 'Decor Home HCM',
-          items: 8,
-          value: money(98000000),
-          validUntil: '20/10/2026',
-          status: 'Đã gửi',
-        },
-        {
-          code: 'BG-DL-1006',
-          dealer: 'Living Space ĐN',
-          items: 5,
-          value: money(54000000),
-          validUntil: '15/10/2026',
-          status: 'Đã chốt',
-        },
-        {
-          code: 'BG-DL-1005',
-          dealer: 'Sofa Plus Cần Thơ',
-          items: 3,
-          value: money(31000000),
-          validUntil: '10/10/2026',
-          status: 'Hết hạn',
-        },
+        { id: 'quote-BG-DL-1008', code: 'BG-DL-1008', dealerId: 'DL-1001', dealerEmail: 'dealer@luxe-sofa.demo', dealer: 'Nội thất Việt', products: 'Sofa góc Milano × 4; Sofa đơn Luna × 2', items: 6, value: money(186000000), shipping: 0, note: 'Gửi theo yêu cầu qua cổng đại lý.', created: '2026-10-07', validUntil: '2026-11-30', status: 'Chờ xử lý' },
+        { id: 'quote-BG-DL-1007', code: 'BG-DL-1007', dealerId: 'DL-1002', dealerEmail: 'decor@luxe-sofa.demo', dealer: 'Decor Home HCM', products: 'Sofa băng Oslo × 4; Bàn trà Marble × 4', items: 8, value: money(98000000), shipping: 0, created: '2026-10-05', validUntil: '2026-11-20', status: 'Đã gửi' },
+        { id: 'quote-BG-DL-1006', code: 'BG-DL-1006', dealerId: 'DL-1003', dealerEmail: 'living@luxe-sofa.demo', dealer: 'Living Space ĐN', products: 'Sofa da Verona × 3; Ghế thư giãn Luna × 2', items: 5, value: money(124000000), shipping: 0, created: '2026-11-02', validUntil: '2026-11-30', status: 'Đã chốt' },
+        { id: 'quote-BG-DL-1005', code: 'BG-DL-1005', dealerId: 'DL-1005', dealerEmail: 'sofa.plus@luxe-sofa.demo', dealer: 'Sofa Plus Cần Thơ', products: 'Sofa nỉ Kyoto × 3', items: 3, value: money(31000000), shipping: money(1200000), created: '2026-09-25', validUntil: '2026-10-10', status: 'Hết hạn' },
+        ...DEALER_EXTRA_QUOTES,
       ],
       ['Tạo báo giá', 'Xuất PDF']
     ),
     mod(
-      'dealer-orders',
-      'Đơn hàng đại lý',
-      'Đơn nhập hàng của đại lý: giá sau chiết khấu, thanh toán, giao hàng.',
-      'solar:cart-large-4-bold-duotone',
+      'dealer-orders', 'Đơn hàng đại lý',
+      'Đơn sỉ, liên kết báo giá, giao nhận và phương thức thanh toán; cập nhật trạng thái đơn trên cổng đại lý.',
+      'solar:cart-large-4-bold-duotone', [],
       [
-        { label: 'Đơn tháng này', value: '86', trend: '+9%' },
-        { label: 'Đang giao', value: '12' },
-        { label: 'Chờ xác nhận', value: '5' },
-        { label: 'Giá trị TB', value: '28,6 tr' },
+        { key: 'code', label: 'Mã đơn' }, { key: 'dealer', label: 'Đại lý' },
+        { key: 'quoteRef', label: 'Báo giá' }, { key: 'products', label: 'Sản phẩm' },
+        { key: 'total', label: 'Tổng tiền', type: 'money' }, { key: 'payment', label: 'Thanh toán' }, STATUS_COL,
       ],
       [
-        { key: 'code', label: 'Mã đơn' },
-        { key: 'dealer', label: 'Đại lý' },
-        { key: 'total', label: 'Tổng tiền', type: 'money' },
-        { key: 'payment', label: 'Thanh toán' },
-        { key: 'orderDate', label: 'Ngày đặt' },
-        STATUS_COL,
-      ],
-      [
-        {
-          code: 'DH-DL-2210',
-          dealer: 'Nội thất Việt',
-          total: money(124000000),
-          payment: 'Công nợ 30 ngày',
-          orderDate: '07/10/2026',
-          status: 'Chờ xác nhận',
-        },
-        {
-          code: 'DH-DL-2209',
-          dealer: 'Decor Home HCM',
-          total: money(86000000),
-          payment: 'Chuyển khoản',
-          orderDate: '05/10/2026',
-          status: 'Đang giao',
-        },
-        {
-          code: 'DH-DL-2208',
-          dealer: 'Living Space ĐN',
-          total: money(42000000),
-          payment: 'Đặt cọc 30%',
-          orderDate: '02/10/2026',
-          status: 'Hoàn tất',
-        },
-        {
-          code: 'DH-DL-2207',
-          dealer: 'Home Mart Hà Nội',
-          total: money(18500000),
-          payment: 'Chuyển khoản',
-          orderDate: '30/09/2026',
-          status: 'Đã huỷ',
-        },
+        { id: 'order-DH-DL-2210', code: 'DH-DL-2210', dealerId: 'DL-1001', dealer: 'Nội thất Việt', quoteRef: '', products: 'Sofa Oslo 3 Chỗ × 12; Bàn trà Marble × 4', shippingAddress: '120 Nguyễn Trãi, Hà Nội', total: money(420000000), payment: 'Công nợ 30 ngày', orderDate: '2026-11-07', deliveryDate: '2026-11-22', carrier: 'LUXE Logistics', status: 'Đang xử lý' },
+        { id: 'order-DH-DL-2209', code: 'DH-DL-2209', dealerId: 'DL-1002', dealer: 'Decor Home HCM', quoteRef: '', products: 'Sofa băng Oslo × 10; Bàn trà Marble × 6', shippingAddress: '28 Nguyễn Văn Trỗi, TP.HCM', total: money(380000000), payment: 'Chuyển khoản', orderDate: '2026-11-05', deliveryDate: '2026-11-20', carrier: 'LUXE Logistics', status: 'Đang giao' },
+        { id: 'order-DH-DL-2208', code: 'DH-DL-2208', dealerId: 'DL-1003', dealer: 'Living Space ĐN', quoteRef: 'BG-DL-1006', products: 'Sofa da Verona × 6; Ghế thư giãn Luna × 4', shippingAddress: '46 Bạch Đằng, Đà Nẵng', total: money(124000000), payment: 'Đặt cọc 30%', orderDate: '2026-11-02', deliveryDate: '2026-11-18', carrier: 'Viettel Post', status: 'Hoàn tất' },
+        { id: 'order-DH-DL-2207', code: 'DH-DL-2207', dealerId: 'DL-1004', dealer: 'Home Mart Hà Nội', quoteRef: '', products: 'Sofa góc Milano × 2', shippingAddress: '88 Cầu Giấy, Hà Nội', total: money(52000000), payment: 'Chuyển khoản', orderDate: '2026-11-01', deliveryDate: '2026-11-25', carrier: 'LUXE Logistics', status: 'Chờ xác nhận' },
+        { id: 'order-DH-DL-2206', code: 'DH-DL-2206', dealerId: 'DL-1005', dealer: 'Sofa Plus Cần Thơ', quoteRef: '', products: 'Sofa nỉ Kyoto × 2; Ghế thư giãn Luna × 1', shippingAddress: '15 Hoà Bình, Cần Thơ', total: money(72000000), payment: 'Công nợ 30 ngày', orderDate: '2026-11-03', deliveryDate: '2026-11-26', carrier: 'LUXE Logistics', status: 'Đang sản xuất' },
+        ...DEALER_EXTRA_QUOTE_ORDERS,
+        ...DEALER_EXTRA_STANDALONE_ORDERS,
       ],
       ['Tạo đơn']
     ),
     mod(
-      'debts',
-      'Công nợ',
-      'Theo dõi công nợ từng đại lý: hạn mức, dư nợ, hạn thanh toán, nhắc nợ.',
-      'solar:wallet-money-bold-duotone',
+      'debts', 'Công nợ',
+      'Hạn mức, dư nợ theo hóa đơn, thanh toán, hạn đến hạn và nhắc nợ. Dữ liệu hiển thị riêng theo đại lý trên portal.',
+      'solar:wallet-money-bold-duotone', [],
       [
-        { label: 'Tổng dư nợ', value: '742 tr' },
-        { label: 'Quá hạn', value: '186 tr' },
-        { label: 'Đến hạn 7 ngày', value: '214 tr' },
-        { label: 'Thu tháng này', value: '1,08 tỷ', trend: '+6%' },
+        { key: 'dealer', label: 'Đại lý' }, { key: 'invoices', label: 'Hóa đơn' },
+        { key: 'limit', label: 'Hạn mức', type: 'money' }, { key: 'balance', label: 'Dư nợ', type: 'money' },
+        { key: 'dueDate', label: 'Hạn thanh toán' }, STATUS_COL,
       ],
       [
-        { key: 'dealer', label: 'Đại lý' },
-        { key: 'limit', label: 'Hạn mức', type: 'money' },
-        { key: 'balance', label: 'Dư nợ', type: 'money' },
-        { key: 'dueDate', label: 'Hạn thanh toán' },
-        STATUS_COL,
-      ],
-      [
-        {
-          dealer: 'Nội thất Việt',
-          limit: money(500000000),
-          balance: money(286000000),
-          dueDate: '20/10/2026',
-          status: 'Trong hạn',
-        },
-        {
-          dealer: 'Decor Home HCM',
-          limit: money(400000000),
-          balance: money(214000000),
-          dueDate: '12/10/2026',
-          status: 'Sắp đến hạn',
-        },
-        {
-          dealer: 'Home Mart Hà Nội',
-          limit: money(150000000),
-          balance: money(126000000),
-          dueDate: '25/09/2026',
-          status: 'Quá hạn',
-        },
-        {
-          dealer: 'Sofa Plus Cần Thơ',
-          limit: money(100000000),
-          balance: money(60000000),
-          dueDate: '28/09/2026',
-          status: 'Quá hạn',
-        },
+        { id: 'debt-DL-1001-01', dealerId: 'DL-1001', dealer: 'Nội thất Việt', invoices: 'DH-DL-2210', note: 'Nhắc trước hạn 5 ngày.', limit: money(500000000), balance: money(286000000), paid: money(42000000), dueDate: '2026-11-20', autoRemind: 'Có', status: 'Trong hạn' },
+        { id: 'debt-DL-1002-01', dealerId: 'DL-1002', dealer: 'Decor Home HCM', invoices: 'DH-DL-2209', note: 'Đã gửi thông báo thanh toán.', limit: money(400000000), balance: money(214000000), paid: money(80000000), dueDate: '2026-11-12', autoRemind: 'Có', status: 'Sắp đến hạn' },
+        { id: 'debt-DL-1004-01', dealerId: 'DL-1004', dealer: 'Home Mart Hà Nội', invoices: 'DH-DL-2207', note: 'Quá hạn, cần đối soát.', limit: money(150000000), balance: money(126000000), paid: money(0), dueDate: '2026-10-25', autoRemind: 'Có', status: 'Quá hạn' },
+        { id: 'debt-DL-1005-01', dealerId: 'DL-1005', dealer: 'Sofa Plus Cần Thơ', invoices: 'DH-DL-2206', note: 'Đã nhận một phần thanh toán.', limit: money(100000000), balance: money(60000000), paid: money(25000000), dueDate: '2026-10-28', autoRemind: 'Không', status: 'Quá hạn' },
+        ...DEALER_EXTRA_DEBTS,
       ],
       ['Ghi nhận thanh toán', 'Gửi nhắc nợ']
     ),
     mod(
-      'sales-docs',
-      'Tài liệu bán hàng',
-      'Catalogue, bảng giá, hình ảnh, video và hướng dẫn bán hàng cho đại lý tải về.',
-      'solar:folder-open-bold-duotone',
+      'sales-docs', 'Tài liệu bán hàng',
+      'Catalogue, bảng giá, hình ảnh và hướng dẫn; chỉ tài liệu đã xuất bản, có file và đúng quyền cấp mới hiển thị trên portal.',
+      'solar:folder-open-bold-duotone', [],
       [
-        { label: 'Tài liệu', value: '42' },
-        { label: 'Lượt tải 30 ngày', value: '1.284', trend: '+18%' },
-        { label: 'Mới tháng này', value: '6' },
-        { label: 'Hạn chế cấp', value: '9' },
+        { key: 'title', label: 'Tài liệu' }, { key: 'type', label: 'Loại' },
+        { key: 'access', label: 'Quyền truy cập' }, { key: 'downloads', label: 'Lượt tải', type: 'number' },
+        { key: 'updated', label: 'Cập nhật' }, STATUS_COL,
       ],
       [
-        { key: 'title', label: 'Tài liệu' },
-        { key: 'type', label: 'Loại' },
-        { key: 'access', label: 'Quyền truy cập' },
-        { key: 'downloads', label: 'Lượt tải', type: 'number' },
-        { key: 'updated', label: 'Cập nhật' },
-        STATUS_COL,
-      ],
-      [
-        {
-          title: 'Catalogue LUXE 2026',
-          type: 'Catalogue PDF',
-          access: 'Tất cả đại lý',
-          downloads: 512,
-          updated: '01/10/2026',
-          status: 'Đã xuất bản',
-        },
-        {
-          title: 'Bảng giá đại lý Q4/2026',
-          type: 'Bảng giá',
-          access: 'Vàng trở lên',
-          downloads: 286,
-          updated: '01/10/2026',
-          status: 'Đã xuất bản',
-        },
-        {
-          title: 'Bộ ảnh sản phẩm Oslo',
-          type: 'Hình ảnh',
-          access: 'Tất cả đại lý',
-          downloads: 194,
-          updated: '20/09/2026',
-          status: 'Đã xuất bản',
-        },
-        {
-          title: 'Kịch bản tư vấn sofa da',
-          type: 'Hướng dẫn bán hàng',
-          access: 'Tất cả đại lý',
-          downloads: 88,
-          updated: '12/09/2026',
-          status: 'Bản nháp',
-        },
+        { id: 'doc-catalogue-2026', title: 'Catalogue LUXE 2026', type: 'Catalogue PDF', description: 'Bộ sưu tập sản phẩm và thông số cơ bản.', fileUrl: '', access: 'Tất cả đại lý', downloads: 512, updated: '2026-10-01', status: 'Đã xuất bản' },
+        { id: 'doc-pricelist-q4', title: 'Bảng giá đại lý Q4/2026', type: 'Bảng giá', description: 'Bảng giá theo chính sách và cấp đại lý.', fileUrl: '', access: 'Vàng trở lên', downloads: 286, updated: '2026-10-01', status: 'Đã xuất bản' },
+        { id: 'doc-oslo-images', title: 'Bộ ảnh sản phẩm Oslo', type: 'Hình ảnh', description: 'Hình ảnh trưng bày và truyền thông cho bộ sưu tập Oslo.', fileUrl: '', access: 'Tất cả đại lý', downloads: 194, updated: '2026-09-20', status: 'Đã xuất bản' },
+        { id: 'doc-script', title: 'Kịch bản tư vấn sofa da', type: 'Hướng dẫn bán hàng', description: 'Tài liệu đào tạo tư vấn sản phẩm.', fileUrl: '', access: 'Nội bộ', downloads: 88, updated: '2026-09-12', status: 'Bản nháp' },
+        ...DEALER_EXTRA_DOCS,
       ],
       ['Tải lên tài liệu']
     ),

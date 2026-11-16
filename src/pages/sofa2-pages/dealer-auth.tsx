@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
+import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
-import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
-import { setSofa2DemoSession, type Sofa2DemoRole } from 'src/_mock/_sofa2-demo';
+import { type Sofa2DemoRole, setSofa2DemoSession } from 'src/_mock/_sofa2-demo';
 
 function AuthPageFrame({ children, title }: { children: React.ReactNode; title: string }) {
   return (
@@ -70,7 +70,7 @@ function DemoAuthPage({ signUp = false }: { signUp?: boolean }) {
     <AuthPageFrame title={signUp ? 'Tạo tài khoản đại lý demo' : 'Đăng nhập cổng đại lý'}>
       <Stack spacing={2} sx={{ width: 1, maxWidth: 440 }}>
         <Alert severity="warning">
-          Phiên demo và dữ liệu được lưu cục bộ trên trình duyệt; đây không phải cơ chế bảo mật.
+          Phiên và dữ liệu chỉ lưu cục bộ, không phải cơ chế bảo mật. Email đại lý phải khớp hồ sơ được bật cổng trong quản trị; tài khoản mẫu là dealer@luxe-sofa.demo.
         </Alert>
         <TextField
           fullWidth
