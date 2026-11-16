@@ -5,27 +5,33 @@ import { Helmet } from 'react-helmet-async';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import Card from '@mui/material/Card';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
-import Card from '@mui/material/Card';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
+import Snackbar from '@mui/material/Snackbar';
 import TextField from '@mui/material/TextField';
 import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
-import Snackbar from '@mui/material/Snackbar';
+
+import { RouterLink } from 'src/routes/components';
 
 import { varAlpha } from 'src/theme/styles';
 
 import { Iconify } from 'src/components/iconify';
 import { varFade } from 'src/components/animate';
 
-import { RouterLink } from 'src/routes/components';
-
-import { type AdminRow, useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 import { SOFA2_PRODUCTS, SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
-import { belongsToSofa2Customer, formatSofa2Date, Sofa2CustomerPortalNav, SOFA2_PORTAL_CUSTOMER_ID, SOFA2_PORTAL_CUSTOMER_NAME } from 'src/sections/sofa2/sofa2-customer-portal';
+import { type AdminRow, useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import {
+  sofa2LocalDateKey,
+  validateSofa2CustomerProfile,
+  isSofa2CustomerPointAvailable,
+} from 'src/sections/sofa2-admin/sofa2-customer';
+import { formatSofa2Date, belongsToSofa2Customer, Sofa2CustomerPortalNav, SOFA2_PORTAL_CUSTOMER_ID, SOFA2_PORTAL_CUSTOMER_NAME } from 'src/sections/sofa2/sofa2-customer-portal';
 
 // ----------------------------------------------------------------------
 
@@ -57,6 +63,7 @@ export default function Page() {
   const profile = profileStore.rows[profileIndex] ?? { customerId: SOFA2_PORTAL_CUSTOMER_ID, name: SOFA2_PORTAL_CUSTOMER_NAME, tier: 'Vàng' };
   const [profileDraft, setProfileDraft] = useState<AdminRow | null>(null);
   const [toast, setToast] = useState('');
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
   const profileValues = { ...profile, ...(profileDraft ?? {}) };
   const ORDERS = orderStore.rows.filter((row) => belongsToSofa2Customer(row)).map((row) => ({
     id: String(row.code),
@@ -67,17 +74,36 @@ export default function Page() {
   }));
   const WARRANTIES = warrantyStore.rows.filter((row) => belongsToSofa2Customer(row));
   const POINTS = pointsStore.rows.filter((row) => belongsToSofa2Customer(row));
-  const VOUCHERS = voucherStore.rows.filter((row) =>
-    ['Tất cả thành viên', SOFA2_PORTAL_CUSTOMER_ID].includes(String(row.customerId)) &&
-    ['Đang phát hành', 'Đã nhận'].includes(String(row.status))
-  );
+  const today = sofa2LocalDateKey();
+  const walletVoucherCodes = new Set(voucherStore.rows
+    .filter((row) => String(row.customerId) === SOFA2_PORTAL_CUSTOMER_ID && ['Đã nhận', 'Đã sử dụng', 'Hết hạn'].includes(String(row.status)))
+    .map((row) => String(row.code ?? '')));
+  const VOUCHERS = voucherStore.rows.filter((row) => {
+    const recipient = String(row.customerId ?? '');
+    const status = String(row.status ?? '');
+    if (recipient === SOFA2_PORTAL_CUSTOMER_ID) {
+      return ['Đang phát hành', 'Đã nhận', 'Đã sử dụng', 'Hết hạn'].includes(status);
+    }
+    return recipient === 'Tất cả thành viên' && status === 'Đang phát hành' &&
+      !walletVoucherCodes.has(String(row.code ?? '')) &&
+      (!row.startDate || String(row.startDate).slice(0, 10) <= today) &&
+      (!row.endDate || String(row.endDate).slice(0, 10) >= today);
+  });
   const COMPLAINTS = complaintStore.rows.filter((row) => belongsToSofa2Customer(row));
-  const pointBalance = POINTS.filter((row) => String(row.status) !== 'Đã huỷ').reduce((sum, row) => sum + Number(row.points || 0), 0);
+  const pointBalance = POINTS.filter((row) => isSofa2CustomerPointAvailable(row, today)).reduce((sum, row) => sum + Number(row.points || 0), 0);
   const [authTab, setAuthTab] = useState('login');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const setProfileField = (key: string, value: string) => {
+    setProfileDraft((prev) => ({ ...profile, ...(prev ?? {}), [key]: value }));
+    setProfileErrors((prev) => ({ ...prev, [key]: '' }));
+  };
   const saveProfile = () => {
-    if (profileIndex < 0) profileStore.createRow(profileValues);
-    else profileStore.updateRow(profileIndex, profileValues);
+    const nextErrors = validateSofa2CustomerProfile(profileValues, profileStore.rows, SOFA2_PORTAL_CUSTOMER_ID);
+    setProfileErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+    const clean = { ...profileValues, name: String(profileValues.name).trim(), email: String(profileValues.email).trim().toLowerCase(), phone: String(profileValues.phone).trim() };
+    if (profileIndex < 0) profileStore.createRow(clean);
+    else profileStore.updateRow(profileIndex, clean);
     setProfileDraft(null);
     setToast('Đã lưu thông tin hồ sơ.');
   };
@@ -97,6 +123,7 @@ export default function Page() {
 
       <Sofa2Section>
         <Sofa2CustomerPortalNav active="/sofa2/account" />
+        <Alert severity="warning" sx={{ mb: 3 }}>Cổng khách hàng hiện là bản demo dùng chung localStorage trên trình duyệt này. Đăng nhập/đăng ký chỉ đổi trạng thái giao diện, chưa xác thực danh tính hay giới hạn dữ liệu theo khách; không dùng thông tin thật.</Alert>
         {!isLoggedIn ? (
           <Stack
             component={m.div}
@@ -104,6 +131,7 @@ export default function Page() {
             spacing={3}
             sx={{ maxWidth: 480, mx: 'auto', p: { xs: 3, md: 5 }, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}
           >
+            <Alert severity="info">Biểu mẫu này không kiểm tra tài khoản hoặc mật khẩu. Dùng để xem trước giao diện demo.</Alert>
             <Tabs value={authTab} onChange={(_, v) => setAuthTab(v)} variant="fullWidth">
               <Tab value="login" label="Đăng nhập" />
               <Tab value="register" label="Đăng ký" />
@@ -172,11 +200,12 @@ export default function Page() {
                 {tab === 'profile' && (
                   <>
                     <Typography variant="h5">Hồ sơ cá nhân</Typography>
+                    {!!Object.keys(profileErrors).filter((key) => profileErrors[key]).length && <Alert severity="error">Vui lòng sửa các trường được đánh dấu trước khi lưu.</Alert>}
                     <Grid container spacing={2}>
-                      <Grid xs={12} sm={6}><TextField fullWidth label="Họ và tên" value={String(profileValues.name ?? '')} onChange={(e) => setProfileDraft((prev) => ({ ...profile, ...(prev ?? {}), name: e.target.value }))} /></Grid>
-                      <Grid xs={12} sm={6}><TextField fullWidth label="Số điện thoại" value={String(profileValues.phone ?? '')} onChange={(e) => setProfileDraft((prev) => ({ ...profile, ...(prev ?? {}), phone: e.target.value }))} /></Grid>
-                      <Grid xs={12} sm={6}><TextField fullWidth label="Email" type="email" value={String(profileValues.email ?? '')} onChange={(e) => setProfileDraft((prev) => ({ ...profile, ...(prev ?? {}), email: e.target.value }))} /></Grid>
-                      <Grid xs={12} sm={6}><TextField fullWidth label="Ngày sinh" type="date" value={String(profileValues.birthday ?? '')} onChange={(e) => setProfileDraft((prev) => ({ ...profile, ...(prev ?? {}), birthday: e.target.value }))} InputLabelProps={{ shrink: true }} /></Grid>
+                      <Grid xs={12} sm={6}><TextField fullWidth required label="Họ và tên" value={String(profileValues.name ?? '')} error={!!profileErrors.name} helperText={profileErrors.name} onChange={(e) => setProfileField('name', e.target.value)} /></Grid>
+                      <Grid xs={12} sm={6}><TextField fullWidth required label="Số điện thoại" value={String(profileValues.phone ?? '')} error={!!profileErrors.phone} helperText={profileErrors.phone} onChange={(e) => setProfileField('phone', e.target.value)} /></Grid>
+                      <Grid xs={12} sm={6}><TextField fullWidth required label="Email" type="email" value={String(profileValues.email ?? '')} error={!!profileErrors.email} helperText={profileErrors.email} onChange={(e) => setProfileField('email', e.target.value)} /></Grid>
+                      <Grid xs={12} sm={6}><TextField fullWidth label="Ngày sinh" type="date" value={String(profileValues.birthday ?? '')} error={!!profileErrors.birthday} helperText={profileErrors.birthday} onChange={(e) => setProfileField('birthday', e.target.value)} InputLabelProps={{ shrink: true }} /></Grid>
                       <Grid xs={12}><TextField fullWidth label="Địa chỉ giao hàng" value={String(profileValues.address ?? '')} onChange={(e) => setProfileDraft((prev) => ({ ...profile, ...(prev ?? {}), address: e.target.value }))} /></Grid>
                     </Grid>
                     <Button variant="contained" sx={{ width: 'fit-content' }} onClick={saveProfile}>Lưu thay đổi</Button>

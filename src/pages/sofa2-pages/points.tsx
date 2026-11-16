@@ -12,17 +12,18 @@ import { RouterLink } from 'src/routes/components';
 
 import { Iconify } from 'src/components/iconify';
 
-import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
-import { Sofa2CustomerPortalNav, belongsToSofa2Customer, formatSofa2Date } from 'src/sections/sofa2/sofa2-customer-portal';
-import { Sofa2PageHero, Sofa2Section } from 'src/sections/sofa2/sofa2-page-hero';
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { sofa2LocalDateKey, isSofa2CustomerPointAvailable } from 'src/sections/sofa2-admin/sofa2-customer';
+import { formatSofa2Date, Sofa2CustomerPortalNav, belongsToSofa2Customer } from 'src/sections/sofa2/sofa2-customer-portal';
 
 const formatPoints = (value: number) => value.toLocaleString('vi-VN');
 
 export default function Page() {
   const { rows } = useSofa2AdminRows('customer', 'points');
   const transactions = rows.filter((row) => belongsToSofa2Customer(row));
-  const effectiveTransactions = transactions.filter((row) => String(row.status) !== 'Đã huỷ');
+  const effectiveTransactions = transactions.filter((row) => isSofa2CustomerPointAvailable(row, sofa2LocalDateKey()));
   const balance = effectiveTransactions.reduce((sum, row) => sum + Number(row.points || 0), 0);
   const earned = effectiveTransactions.reduce((sum, row) => sum + Math.max(Number(row.points || 0), 0), 0);
   const redeemed = effectiveTransactions.reduce((sum, row) => sum + Math.abs(Math.min(Number(row.points || 0), 0)), 0);

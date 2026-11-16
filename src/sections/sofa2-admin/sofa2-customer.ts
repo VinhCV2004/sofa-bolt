@@ -2,8 +2,8 @@
 // 7 trang: Dashboard, Hồ sơ, Đơn hàng, Phiếu bảo hành, Điểm tích lũy, Voucher, Khiếu nại.
 // ----------------------------------------------------------------------
 
-import type { Sofa2AdminGroup, Sofa2AdminColumn, Sofa2AdminModule } from './sofa2-admin-data';
 import type { Sofa2CmsField, Sofa2CmsSchema, Sofa2CmsFieldType } from './sofa2-cms';
+import type { Sofa2AdminGroup, Sofa2AdminColumn, Sofa2AdminModule } from './sofa2-admin-data';
 
 type Row = Record<string, string | number>;
 
@@ -51,6 +51,55 @@ const S: Sofa2AdminColumn = { key: 'status', label: 'Trạng thái', type: 'stat
 export const SOFA2_DEMO_CUSTOMER_ID = 'KH-1001';
 export const SOFA2_DEMO_CUSTOMER_NAME = 'Nguyễn Minh Anh';
 
+export const sofa2LocalDateKey = (date = new Date()) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+export function isSofa2CustomerPointAvailable(
+  row: Record<string, unknown>,
+  today = sofa2LocalDateKey()
+) {
+  const expiry = String(row.expiry ?? '').slice(0, 10);
+  return String(row.status ?? '') === 'Đã ghi nhận' && (!expiry || expiry >= today);
+}
+
+/** Shared browser-side validation for the account profile forms and admin CRUD. */
+export function validateSofa2CustomerProfile(
+  candidate: Record<string, unknown>,
+  profiles: Record<string, unknown>[],
+  currentCustomerId?: string
+) {
+  const errors: Record<string, string> = {};
+  const name = String(candidate.name ?? '').trim();
+  const email = String(candidate.email ?? '').trim().toLowerCase();
+  const phone = String(candidate.phone ?? '').replace(/\D/g, '');
+  const birthday = String(candidate.birthday ?? '').slice(0, 10);
+
+  if (!name) errors.name = 'Vui lòng nhập họ tên.';
+  else if (name.length > 80) errors.name = 'Họ tên tối đa 80 ký tự.';
+  if (!email) errors.email = 'Vui lòng nhập email.';
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Email không hợp lệ.';
+  else if (profiles.some((profile) =>
+    String(profile.customerId ?? '') !== String(currentCustomerId ?? '') &&
+    String(profile.email ?? '').trim().toLowerCase() === email
+  )) errors.email = 'Email này đã được dùng cho hồ sơ khác.';
+
+  if (!phone) errors.phone = 'Vui lòng nhập số điện thoại.';
+  else if (phone.length < 9 || phone.length > 15) errors.phone = 'Số điện thoại cần có từ 9 đến 15 chữ số.';
+  else if (profiles.some((profile) =>
+    String(profile.customerId ?? '') !== String(currentCustomerId ?? '') &&
+    String(profile.phone ?? '').replace(/\D/g, '') === phone
+  )) errors.phone = 'Số điện thoại này đã được dùng cho hồ sơ khác.';
+
+  if (birthday) {
+    const birthDate = new Date(`${birthday}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (Number.isNaN(birthDate.getTime())) errors.birthday = 'Ngày sinh không hợp lệ.';
+    else if (birthDate > today) errors.birthday = 'Ngày sinh không thể nằm trong tương lai.';
+  }
+  return errors;
+}
+
 const TIERS = ['Thành viên', 'Bạc', 'Vàng', 'Kim cương'];
 const CITIES = ['TP.HCM', 'Hà Nội', 'Đà Nẵng', 'Bình Dương', 'Hải Phòng', 'Cần Thơ'];
 const STAFF = ['Minh Anh', 'Thu Hà', 'Hoàng Long', 'Quốc Bảo', 'Chưa gán'];
@@ -58,7 +107,7 @@ const STYLES = ['Hiện đại', 'Tối giản', 'Bắc Âu', 'Cổ điển', 'I
 const PAYMENTS = ['COD', 'Chuyển khoản', 'Thẻ tín dụng', 'Trả góp 0%', 'Ví điện tử'];
 const PRODUCTS = ['Sofa góc Milano', 'Sofa da Verona', 'Sofa băng Oslo', 'Ghế thư giãn Luna', 'Sofa nỉ Kyoto', 'Bàn trà Marble'];
 export const SOFA2_CUSTOMER_COMPLAINT_TYPES = ['Sản phẩm', 'Giao hàng', 'Lắp đặt', 'Dịch vụ', 'Thanh toán', 'Khác', 'Sản phẩm lỗi', 'Giao hàng trễ', 'Sai màu/kích thước', 'Thái độ nhân viên'];
-const NAMES = [SOFA2_DEMO_CUSTOMER_NAME, 'Trần Minh Khoa', 'Lê Hoàng Yến', 'Phạm Quốc Huy', 'Võ Ngọc Hân', 'Đặng Gia Bảo', 'Bùi Thanh Tâm', 'Hồ Mỹ Linh', 'Ngô Đức Thắng', 'Đỗ Phương Anh'];
+const NAMES = [SOFA2_DEMO_CUSTOMER_NAME, 'Trần Minh Khoa', 'Lê Hoàng Yến', 'Phạm Quốc Huy', 'Võ Ngọc Hân', 'Đặng Gia Bảo', 'Bùi Thanh Tâm', 'Hồ Mỹ Linh', 'Ngô Đức Thắng', 'Đỗ Phương Anh', 'Nguyễn Thùy Dương', 'Đỗ Anh Tuấn', 'Phan Ngọc Hà', 'Vũ Hoàng Nam', 'Trương Bảo Ngọc', 'Lý Gia Phúc', 'Mai Thanh Vy', 'Đặng Quốc Việt', 'Cao Minh Châu', 'Tạ Minh Trang'];
 const CUSTOMER_IDS = NAMES.map((_, i) => `KH-${1001 + i}`);
 const pick = <T,>(arr: T[], i: number) => arr[i % arr.length];
 const day = (i: number, m = 9) => `2026-${String(m).padStart(2, '0')}-${String((i * 3) % 27 + 1).padStart(2, '0')}`;
@@ -75,6 +124,25 @@ const ST = {
   complaint: ['Mới', 'Đang xử lý', 'Chờ khách phản hồi', 'Đã giải quyết', 'Đóng'],
 };
 
+/** Shared order ledger: downstream warranty, points and complaint mock rows reference these codes. */
+const CUSTOMER_ORDER_ROWS = gen(30, (i) => {
+  const customerIndex = i % CUSTOMER_IDS.length;
+  const total = 12_900_000 + i * 2_300_000;
+  return {
+    code: code('DH', i),
+    customerId: CUSTOMER_IDS[customerIndex],
+    customer: NAMES[customerIndex],
+    product: pick(PRODUCTS, i),
+    address: `${20 + i} Lê Lợi, ${pick(CITIES, customerIndex)}`,
+    total,
+    payment: pick(PAYMENTS, i),
+    points: Math.floor(total / 100_000),
+    voucher: i % 4 === 0 ? 'WELCOME500' : '',
+    orderDate: day(i),
+    status: pick(ST.order, i),
+  };
+});
+
 // ----------------------------------------------------------------------
 export const SOFA2_CUSTOMER_GROUP: Sofa2AdminGroup = {
   slug: 'customer',
@@ -84,33 +152,47 @@ export const SOFA2_CUSTOMER_GROUP: Sofa2AdminGroup = {
     mod('dashboard', 'Dashboard', 'Tổng quan từng khách hàng: hạng, số đơn, chi tiêu, người chăm sóc.', 'solar:widget-2-bold-duotone',
       [{ label: 'Khách hàng', value: '2.846', trend: '+6%' }, { label: 'Hoạt động 30 ngày', value: '1.112' }, { label: 'Chi tiêu TB', value: '18,4tr' }, { label: 'Quay lại mua', value: '34%' }],
       [{ key: 'customerId', label: 'Mã khách' }, { key: 'name', label: 'Khách hàng' }, { key: 'tier', label: 'Hạng' }, { key: 'orders', label: 'Đơn', type: 'number' }, { key: 'spent', label: 'Tổng chi', type: 'money' }, { key: 'staff', label: 'Chăm sóc' }, S],
-      gen(10, (i) => ({ customerId: CUSTOMER_IDS[i], name: NAMES[i], tier: pick(TIERS, i + 1), orders: (i % 6) + 1, spent: 8_500_000 * ((i % 6) + 1), lastOrder: day(i), staff: pick(STAFF, i), note: '', status: pick(ST.dashboard, i % 5 === 4 ? 2 : i % 3 === 2 ? 1 : 0) }))),
+      gen(NAMES.length, (i) => ({ customerId: CUSTOMER_IDS[i], name: NAMES[i], tier: pick(TIERS, i + 1), orders: (i % 6) + 1, spent: 8_500_000 * ((i % 6) + 1), lastOrder: day(i), staff: pick(STAFF, i), note: '', status: pick(ST.dashboard, i === 17 ? 3 : i % 5 === 4 ? 2 : i % 3 === 2 ? 1 : 0) }))),
     mod('profiles', 'Hồ sơ', 'Thông tin cá nhân, địa chỉ giao hàng và tuỳ chọn nhận tin của khách.', 'solar:user-id-bold-duotone',
       [{ label: 'Hồ sơ', value: '2.846' }, { label: 'Đã xác minh', value: '91%' }, { label: 'Nhận email', value: '64%' }, { label: 'Nhận Zalo/SMS', value: '72%' }],
       [{ key: 'customerId', label: 'Mã khách' }, { key: 'name', label: 'Họ tên' }, { key: 'phone', label: 'Điện thoại' }, { key: 'email', label: 'Email' }, { key: 'city', label: 'Tỉnh/thành' }, S],
-      gen(10, (i) => ({ customerId: CUSTOMER_IDS[i], name: NAMES[i], phone: `09${String(12345678 + i * 1111).slice(0, 8)}`, email: `khach${i + 1}@gmail.com`, birthday: `199${i % 10}-0${(i % 9) + 1}-15`, gender: i % 2 ? 'Nam' : 'Nữ', address: `${12 + i} Nguyễn Huệ`, city: pick(CITIES, i), style: pick(STYLES, i), emailOptIn: i % 3 ? 'Có' : 'Không', smsOptIn: 'Có', status: pick(ST.profile, i % 7 === 6 ? 1 : 0) }))),
+      gen(NAMES.length, (i) => ({ customerId: CUSTOMER_IDS[i], name: NAMES[i], phone: `09${String(12345678 + i * 1111).slice(0, 8)}`, email: `khach${i + 1}@gmail.com`, birthday: `199${i % 10}-0${(i % 9) + 1}-15`, gender: i % 2 ? 'Nam' : 'Nữ', address: `${12 + i} Nguyễn Huệ`, city: pick(CITIES, i), style: pick(STYLES, i), emailOptIn: i % 3 ? 'Có' : 'Không', smsOptIn: i % 4 ? 'Có' : 'Không', status: pick(ST.profile, i === 17 ? 2 : i % 7 === 6 ? 1 : 0) }))),
     mod('customer-orders', 'Đơn hàng', 'Đơn mua của khách, hiển thị trong mục "Đơn hàng của tôi".', 'solar:bag-4-bold-duotone',
       [{ label: 'Đơn tháng', value: '468', trend: '+14%' }, { label: 'Giá trị TB', value: '21,6tr' }, { label: 'Đang giao', value: '37' }, { label: 'Tỷ lệ huỷ', value: '2,1%' }],
       [{ key: 'code', label: 'Mã đơn' }, { key: 'customer', label: 'Khách hàng' }, { key: 'product', label: 'Sản phẩm' }, { key: 'total', label: 'Tổng tiền', type: 'money' }, { key: 'payment', label: 'Thanh toán' }, S],
-      gen(10, (i) => ({ code: code('DH', i), customerId: CUSTOMER_IDS[i], customer: NAMES[i], product: pick(PRODUCTS, i), address: `${20 + i} Lê Lợi, ${pick(CITIES, i)}`, total: 12_900_000 + i * 2_300_000, payment: pick(PAYMENTS, i), points: 129 + i * 23, voucher: i % 3 ? '' : 'WELCOME500', orderDate: day(i), status: pick(ST.order, i) }))),
+      CUSTOMER_ORDER_ROWS),
     mod('warranties', 'Phiếu bảo hành', 'Phiếu bảo hành điện tử theo serial, lịch hẹn kỹ thuật viên.', 'solar:shield-check-bold-duotone',
       [{ label: 'Phiếu hiệu lực', value: '1.932' }, { label: 'Yêu cầu mở', value: '24' }, { label: 'Xử lý TB', value: '2,4 ngày' }, { label: 'Hài lòng', value: '94%' }],
       [{ key: 'code', label: 'Mã phiếu' }, { key: 'customer', label: 'Khách hàng' }, { key: 'product', label: 'Sản phẩm' }, { key: 'serial', label: 'Serial' }, { key: 'expiry', label: 'Hết hạn' }, S],
-      gen(8, (i) => ({ code: code('BH', i), customerId: CUSTOMER_IDS[i], customer: NAMES[i], product: pick(PRODUCTS, i), serial: `LX26${String(5000 + i * 37)}`, orderCode: code('DH', i), issue: i === 0 ? '' : pick(['Bong da tay vịn', 'Lún đệm ngồi', 'Kêu khung', 'Rách đường may'], i), purchaseDate: day(i, 3), expiry: day(i, 3).replace('2026', '2031'), technician: pick(STAFF, i + 1), appointment: day(i, 10), status: pick(ST.warranty, i) }))),
+      gen(14, (i) => {
+        const customerIndex = i % CUSTOMER_IDS.length;
+        return { code: code('BH', i), customerId: CUSTOMER_IDS[customerIndex], customer: NAMES[customerIndex], product: pick(PRODUCTS, i), serial: `LX26${String(5000 + i * 37)}`, orderCode: code('DH', i), issue: i === 0 ? '' : pick(['Bong da tay vịn', 'Lún đệm ngồi', 'Kêu khung', 'Rách đường may'], i), purchaseDate: day(i, 3), expiry: day(i, 3).replace('2026', '2031'), technician: pick(STAFF, i + 1), appointment: day(i, 10), status: pick(ST.warranty, i) };
+      })),
     mod('points', 'Điểm tích lũy', 'Số dư điểm, lịch sử cộng/đổi và hạn dùng theo hạng thành viên.', 'solar:star-rings-bold-duotone',
       [{ label: 'Điểm lưu hành', value: '1,28tr' }, { label: 'Đã đổi tháng', value: '86.400' }, { label: 'Sắp hết hạn', value: '42.100' }, { label: 'Tỷ lệ đổi', value: '27%' }],
       [{ key: 'customer', label: 'Khách hàng' }, { key: 'reason', label: 'Lý do' }, { key: 'points', label: 'Điểm (+/−)', type: 'number' }, { key: 'date', label: 'Ngày' }, S],
       [
-        { customerId: CUSTOMER_IDS[0], customer: NAMES[0], reason: 'Tích điểm đơn hàng DH1001', points: 12900, date: '2026-09-15', expiry: '2027-09-15', status: 'Đã ghi nhận' },
-        { customerId: CUSTOMER_IDS[0], customer: NAMES[0], reason: 'Đổi voucher sinh nhật', points: -2500, date: '2026-09-20', expiry: '', status: 'Đã ghi nhận' },
-        { customerId: CUSTOMER_IDS[0], customer: NAMES[0], reason: 'Đánh giá sản phẩm', points: 200, date: '2026-10-02', expiry: '2027-10-02', status: 'Đã ghi nhận' },
-        ...gen(7, (i) => ({ customerId: CUSTOMER_IDS[i + 1], customer: NAMES[i + 1], reason: i % 2 ? 'Tích điểm đơn hàng' : 'Quà sinh nhật', points: 1200 + i * 250, date: day(i), expiry: day(i, 12), status: pick(ST.points, i % 4 === 3 ? 1 : 0) })),
+        { customerId: CUSTOMER_IDS[0], customer: NAMES[0], reason: 'Tích điểm đơn hàng DH1001', points: 129, date: day(0), expiry: '2027-09-01', orderCode: 'DH1001', status: 'Đã ghi nhận' },
+        { customerId: CUSTOMER_IDS[0], customer: NAMES[0], reason: 'Tích điểm đơn hàng DH1021', points: 589, date: day(20), expiry: '2027-10-01', orderCode: 'DH1021', status: 'Đã ghi nhận' },
+        { customerId: CUSTOMER_IDS[0], customer: NAMES[0], reason: 'Đánh giá sản phẩm DH1001', points: 200, date: '2026-10-02', expiry: '2027-10-02', orderCode: 'DH1001', status: 'Đã ghi nhận' },
+        { customerId: CUSTOMER_IDS[0], customer: NAMES[0], reason: 'Thưởng sinh nhật thành viên', points: 500, date: '2026-10-15', expiry: '2027-10-15', status: 'Đã ghi nhận' },
+        { customerId: CUSTOMER_IDS[0], customer: NAMES[0], reason: 'Đổi voucher POINT1000', points: -1000, date: '2026-10-20', expiry: '', status: 'Đã ghi nhận' },
+        { customerId: CUSTOMER_IDS[1], customer: NAMES[1], reason: 'Điểm thưởng sắp hết hạn', points: 350, date: '2025-10-20', expiry: '2026-10-20', status: 'Đã ghi nhận' },
+        { customerId: CUSTOMER_IDS[2], customer: NAMES[2], reason: 'Điểm chờ xác nhận đơn DH1003', points: 240, date: '2026-10-11', expiry: '2027-10-11', status: 'Chờ duyệt' },
+        { customerId: CUSTOMER_IDS[3], customer: NAMES[3], reason: 'Giao dịch điểm bị huỷ', points: 100, date: '2026-10-12', expiry: '2027-10-12', status: 'Đã huỷ' },
+        ...gen(36, (i) => {
+          const customerIndex = (i % (CUSTOMER_IDS.length - 1)) + 1;
+          const isRedemption = i % 5 === 0;
+          const status = i % 13 === 0 ? 'Chờ duyệt' : i % 17 === 0 ? 'Đã huỷ' : 'Đã ghi nhận';
+          return { customerId: CUSTOMER_IDS[customerIndex], customer: NAMES[customerIndex], reason: isRedemption ? `Đổi voucher ${pick(['BDAY10', 'FREESHIP', 'BACK2SOFA'], i)}` : pick(['Tích điểm đơn hàng', 'Đánh giá sản phẩm', 'Thưởng sinh nhật'], i), points: isRedemption ? -(100 + (i % 4) * 50) : 80 + (i % 9) * 45, date: day(i, 10), expiry: isRedemption ? '' : i % 7 === 0 ? '2026-10-20' : day(i, 12).replace('2026', '2027'), status };
+        }),
       ]),
     mod('vouchers', 'Voucher', 'Mã giảm giá phát cho khách: chào mừng, sinh nhật, VIP, đổi điểm.', 'solar:ticket-sale-bold-duotone',
       [{ label: 'Voucher đang chạy', value: '12' }, { label: 'Đã phát', value: '5.840' }, { label: 'Đã dùng', value: '1.902' }, { label: 'Doanh thu gắn mã', value: '1,9 tỷ' }],
       [{ key: 'code', label: 'Mã' }, { key: 'customer', label: 'Khách nhận' }, { key: 'campaign', label: 'Chiến dịch' }, { key: 'value', label: 'Giá trị' }, { key: 'minOrder', label: 'Đơn tối thiểu', type: 'money' }, { key: 'endDate', label: 'Hết hạn' }, S],
       [
-        ['WELCOME500', 'Chào mừng', '500.000đ', 5_000_000, 0],
+        ...[
+          ['WELCOME500', 'Chào mừng', '500.000đ', 5_000_000, 0],
         ['BDAY10', 'Sinh nhật', '10%', 3_000_000, 0],
         ['VIPGOLD15', 'VIP', '15%', 15_000_000, 0],
         ['POINT1000', 'Đổi điểm', '1.000.000đ', 10_000_000, 0],
@@ -118,11 +200,18 @@ export const SOFA2_CUSTOMER_GROUP: Sofa2AdminGroup = {
         ['BACK2SOFA', 'Khách quay lại', '7%', 8_000_000, 2],
         ['TET2027', 'Tết', '12%', 12_000_000, 1],
         ['SUMMER25', 'Mùa hè', '5%', 4_000_000, 3],
-      ].map(([c, camp, v, min, s], i) => ({ id: `r${i + 1}`, code: c, customerId: 'Tất cả thành viên', customer: 'Tất cả thành viên', campaign: camp, value: v, minOrder: min, quantity: 500, pointsCost: camp === 'Đổi điểm' ? 1000 : 0, startDate: day(i, 9), endDate: day(i, 12), status: ST.voucher[Number(s)] })) as Row[]),
+      ].map(([c, camp, v, min, s], i) => ({ id: `r${i + 1}`, code: c, customerId: 'Tất cả thành viên', customer: 'Tất cả thành viên', campaign: camp, value: v, minOrder: min, quantity: 500, pointsCost: camp === 'Đổi điểm' ? 1000 : 0, startDate: day(i, 9), endDate: day(i, 12), status: ST.voucher[Number(s)] })) as Row[],
+      { code: 'BDAY10', customerId: CUSTOMER_IDS[0], customer: NAMES[0], campaign: 'Sinh nhật', value: '10%', minOrder: 3_000_000, quantity: 1, pointsCost: 0, startDate: '2026-09-01', endDate: '2027-01-15', status: 'Đã nhận' },
+      { code: 'POINT1000', customerId: CUSTOMER_IDS[0], customer: NAMES[0], campaign: 'Đổi điểm', value: '1.000.000đ', minOrder: 10_000_000, quantity: 1, pointsCost: 1000, startDate: '2026-09-01', endDate: '2027-01-15', status: 'Đã sử dụng' },
+      { code: 'WELCOME500', customerId: CUSTOMER_IDS[1], customer: NAMES[1], campaign: 'Chào mừng', value: '500.000đ', minOrder: 5_000_000, quantity: 1, pointsCost: 0, startDate: '2026-09-01', endDate: '2026-10-15', status: 'Hết hạn' },
+      ]),
     mod('complaints', 'Khiếu nại', 'Tiếp nhận và xử lý khiếu nại, theo dõi hạn xử lý và bồi thường.', 'solar:chat-round-dots-bold-duotone',
       [{ label: 'Đang mở', value: '18' }, { label: 'Quá hạn', value: '2' }, { label: 'Phản hồi TB', value: '3,2 giờ' }, { label: 'Giải quyết lần đầu', value: '78%' }],
       [{ key: 'code', label: 'Mã' }, { key: 'customer', label: 'Khách hàng' }, { key: 'type', label: 'Loại' }, { key: 'priority', label: 'Ưu tiên' }, { key: 'owner', label: 'Phụ trách' }, S],
-      gen(8, (i) => ({ code: code('KN', i), customerId: CUSTOMER_IDS[i], customer: NAMES[i], type: pick(['Giao hàng trễ', 'Sản phẩm lỗi', 'Sai màu/kích thước', 'Thái độ nhân viên', 'Thanh toán'], i), orderCode: code('DH', i), subject: pick(['Giao hàng chậm', 'Sản phẩm cần kiểm tra', 'Yêu cầu hỗ trợ đơn hàng'], i), content: 'Khách phản ánh vấn đề cần xử lý.', resolution: '', priority: pick(['Cao', 'Trung bình', 'Thấp'], i), owner: pick(STAFF, i), deadline: day(i, 10), compensate: i % 3 ? 'false' : 'true', created: day(i), status: pick(ST.complaint, i) }))),
+      gen(16, (i) => {
+        const customerIndex = i % CUSTOMER_IDS.length;
+        return { code: code('KN', i), customerId: CUSTOMER_IDS[customerIndex], customer: NAMES[customerIndex], type: pick(SOFA2_CUSTOMER_COMPLAINT_TYPES, i), orderCode: code('DH', i), subject: pick(['Giao hàng chậm', 'Sản phẩm cần kiểm tra', 'Yêu cầu hỗ trợ đơn hàng', 'Sai thông tin thanh toán'], i), content: 'Khách phản ánh vấn đề cần được kiểm tra và phản hồi.', resolution: i % 4 === 3 ? 'Đã liên hệ khách và thống nhất phương án xử lý.' : '', priority: pick(['Cao', 'Trung bình', 'Thấp'], i), owner: pick(STAFF, i), deadline: day(i, 10), compensate: i % 3 ? 'false' : 'true', created: day(i), status: pick(ST.complaint, i) };
+      })),
   ],
 };
 

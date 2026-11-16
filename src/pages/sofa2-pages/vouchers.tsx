@@ -6,17 +6,21 @@ import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Grid from '@mui/material/Unstable_Grid2';
 import Snackbar from '@mui/material/Snackbar';
+import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
 
 import { Iconify } from 'src/components/iconify';
 
-import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
-import { SOFA2_DEMO_CUSTOMER_ID } from 'src/sections/sofa2-admin/sofa2-customer';
-import { Sofa2CustomerPortalNav, formatSofa2Date } from 'src/sections/sofa2/sofa2-customer-portal';
-import { Sofa2PageHero, Sofa2Section } from 'src/sections/sofa2/sofa2-page-hero';
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { formatSofa2Date, Sofa2CustomerPortalNav } from 'src/sections/sofa2/sofa2-customer-portal';
+import {
+  sofa2LocalDateKey,
+  SOFA2_DEMO_CUSTOMER_ID,
+  isSofa2CustomerPointAvailable,
+} from 'src/sections/sofa2-admin/sofa2-customer';
 
 export default function Page() {
   const voucherStore = useSofa2AdminRows('customer', 'vouchers');
@@ -26,24 +30,45 @@ export default function Page() {
   const customerName = String(customer?.name || 'Nguyễn Minh Anh');
   const [toast, setToast] = useState('');
 
+  const today = sofa2LocalDateKey();
   const pointBalance = pointStore.rows
-    .filter((row) => String(row.customerId) === SOFA2_DEMO_CUSTOMER_ID && String(row.status) !== 'Đã huỷ')
+    .filter((row) => String(row.customerId) === SOFA2_DEMO_CUSTOMER_ID && isSofa2CustomerPointAvailable(row, today))
     .reduce((sum, row) => sum + Number(row.points || 0), 0);
+  const walletCodes = new Set(voucherStore.rows
+    .filter((row) => String(row.customerId) === SOFA2_DEMO_CUSTOMER_ID && ['Đã nhận', 'Đã sử dụng', 'Hết hạn'].includes(String(row.status)))
+    .map((row) => String(row.code ?? '')));
   const vouchers = voucherStore.rows
     .map((row, index) => ({ row, index }))
-    .filter(({ row }) =>
-      (String(row.customerId) === 'Tất cả thành viên' || String(row.customerId) === SOFA2_DEMO_CUSTOMER_ID) &&
-      ['Đang phát hành', 'Đã nhận'].includes(String(row.status))
-    );
+    .filter(({ row }) => {
+      const recipient = String(row.customerId ?? '');
+      const isForCustomer = recipient === 'Tất cả thành viên' || recipient === SOFA2_DEMO_CUSTOMER_ID;
+      const status = String(row.status ?? '');
+      const hasStarted = !row.startDate || String(row.startDate).slice(0, 10) <= today;
+      const hasNotExpired = !row.endDate || String(row.endDate).slice(0, 10) >= today;
+      const isInWallet = recipient === SOFA2_DEMO_CUSTOMER_ID &&
+        ['Đã nhận', 'Đã sử dụng', 'Hết hạn'].includes(status);
+      const isClaimedGlobalCampaign = recipient === 'Tất cả thành viên' && walletCodes.has(String(row.code ?? ''));
+      const isAvailable = isForCustomer && status === 'Đang phát hành' && hasStarted && hasNotExpired && !isClaimedGlobalCampaign;
+      return isInWallet || isAvailable;
+    });
 
   const claimVoucher = (index: number) => {
     const voucher = voucherStore.rows[index];
     if (!voucher) return;
+    const status = String(voucher.status ?? '');
+    const recipient = String(voucher.customerId ?? '');
+    const hasStarted = !voucher.startDate || String(voucher.startDate).slice(0, 10) <= today;
+    const hasNotExpired = !voucher.endDate || String(voucher.endDate).slice(0, 10) >= today;
+    if (status !== 'Đang phát hành' || !hasStarted || !hasNotExpired ||
+      !['Tất cả thành viên', SOFA2_DEMO_CUSTOMER_ID].includes(recipient)) {
+      setToast('Voucher hiện không nằm trong thời hạn phát hành.');
+      return;
+    }
     const alreadyClaimed = voucherStore.rows.some(
-      (row) => String(row.code) === String(voucher.code) &&
+      (row, rowIndex) => rowIndex !== index && String(row.code) === String(voucher.code) &&
         String(row.customerId) === SOFA2_DEMO_CUSTOMER_ID &&
         ['Đã nhận', 'Đã sử dụng'].includes(String(row.status))
-    );
+    ) || (recipient === SOFA2_DEMO_CUSTOMER_ID && ['Đã nhận', 'Đã sử dụng'].includes(status));
     if (alreadyClaimed) {
       setToast('Voucher này đã có trong ví của bạn.');
       return;
@@ -53,12 +78,16 @@ export default function Page() {
       setToast(`Bạn cần ${pointCost.toLocaleString('vi-VN')} điểm để đổi voucher này.`);
       return;
     }
-    voucherStore.createRow({
-      ...voucher,
-      customerId: SOFA2_DEMO_CUSTOMER_ID,
-      customer: customerName,
-      status: 'Đã nhận',
-    });
+    if (recipient === SOFA2_DEMO_CUSTOMER_ID) {
+      voucherStore.updateRow(index, { ...voucher, customer: customerName, status: 'Đã nhận' });
+    } else {
+      voucherStore.createRow({
+        ...voucher,
+        customerId: SOFA2_DEMO_CUSTOMER_ID,
+        customer: customerName,
+        status: 'Đã nhận',
+      });
+    }
     if (pointCost > 0) {
       pointStore.createRow({
         customerId: SOFA2_DEMO_CUSTOMER_ID,
@@ -92,13 +121,16 @@ export default function Page() {
         </Stack>
         <Grid container spacing={3}>
           {vouchers.map(({ row, index }) => {
-            const isClaimed = String(row.customerId) === SOFA2_DEMO_CUSTOMER_ID;
+            const isForCustomer = String(row.customerId) === SOFA2_DEMO_CUSTOMER_ID;
+            const expired = String(row.status) === 'Hết hạn' || (!!row.endDate && String(row.endDate).slice(0, 10) < today);
+            const used = String(row.status) === 'Đã sử dụng';
+            const isClaimed = isForCustomer && ['Đã nhận', 'Đã sử dụng', 'Hết hạn'].includes(String(row.status));
             return (
               <Grid key={`${row.code}-${row.customerId}-${index}`} xs={12} sm={6} md={4}>
                 <Card sx={{ p: 3, height: 1, display: 'flex', flexDirection: 'column' }}>
                   <Stack direction="row" justifyContent="space-between" spacing={1}>
                     <Chip size="small" label={String(row.campaign || 'Ưu đãi thành viên')} color="warning" variant="soft" />
-                    {isClaimed && <Chip size="small" label={String(row.status)} color="success" />}
+                    {isForCustomer && <Chip size="small" label={expired ? 'Hết hạn' : String(row.status)} color={used || expired ? 'default' : 'success'} />}
                   </Stack>
                   <Typography variant="h5" sx={{ mt: 2 }}>{String(row.code)}</Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1, flex: 1 }}>
@@ -111,12 +143,12 @@ export default function Page() {
                   <Button
                     fullWidth
                     sx={{ mt: 2 }}
-                    variant={isClaimed ? 'outlined' : 'contained'}
-                    disabled={isClaimed}
+                    variant={isClaimed || expired ? 'outlined' : 'contained'}
+                    disabled={isClaimed || expired}
                     onClick={() => claimVoucher(index)}
-                    startIcon={<Iconify icon={isClaimed ? 'eva:checkmark-fill' : 'solar:download-minimalistic-bold-duotone'} />}
+                    startIcon={<Iconify icon={isClaimed || expired ? 'eva:checkmark-fill' : 'solar:download-minimalistic-bold-duotone'} />}
                   >
-                    {isClaimed ? 'Đã có trong ví' : 'Lưu voucher'}
+                    {used ? 'Đã sử dụng' : expired ? 'Đã hết hạn' : isClaimed ? 'Đã có trong ví' : 'Lưu voucher'}
                   </Button>
                 </Card>
               </Grid>
