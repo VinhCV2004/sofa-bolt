@@ -139,6 +139,43 @@ type FormState = { open: boolean; mode: 'create' | 'edit'; index: number; values
 
 type Props = { group: Sofa2AdminGroup; module: Sofa2AdminModule; schema: Sofa2CmsSchema };
 
+const catalogCategoryProductCount = (category: AdminRow, products: AdminRow[]) => {
+  const parent = String(category.parent ?? '').toLowerCase();
+  const name = String(category.name ?? '').trim().toLowerCase();
+  const slug = sofa2Slugify(String(category.slug ?? category.name));
+  if (parent.includes('kích thước')) {
+    return products.filter((product) => {
+      const length = Number(String(product.dimensions ?? '').match(/\d+(?:\.\d+)?/)?.[0] ?? 0);
+      return slug === 'sofa-nho' ? length > 0 && length <= 140
+        : slug === 'sofa-trung' ? length > 140 && length <= 220
+          : slug === 'sofa-lon' ? length > 220 : false;
+    }).length;
+  }
+  if (parent.includes('khoảng giá')) {
+    return products.filter((product) => {
+      const price = Number(product.price ?? 0);
+      return slug === 'duoi-10-trieu' ? price < 10_000_000
+        : slug === '10-20-trieu' ? price >= 10_000_000 && price < 20_000_000
+          : slug === '20-50-trieu' ? price >= 20_000_000 && price < 50_000_000
+            : slug === 'tren-50-trieu' ? price >= 50_000_000 : false;
+    }).length;
+  }
+  const field = parent.includes('phong cách') ? 'style'
+    : parent.includes('không gian') ? 'space'
+      : parent.includes('kiểu dáng') ? 'category' : '';
+  return field && name
+    ? products.filter((product) => String(product[field] ?? '').trim().toLowerCase() === name).length
+    : 0;
+};
+
+const catalogCategoryProductField = (category: AdminRow) => {
+  const parent = String(category.parent ?? '').toLowerCase();
+  if (parent.includes('phong cách')) return 'style';
+  if (parent.includes('không gian')) return 'space';
+  if (parent.includes('kiểu dáng')) return 'category';
+  return '';
+};
+
 export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   const isAppendOnly = module.slug === 'audit-log';
   const isCustomerDashboard = group.slug === 'customer' && module.slug === 'dashboard';
@@ -365,7 +402,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     setErrors({});
     const existing = rows[index];
     const categoryProductCount = module.slug === 'categories'
-      ? catalogProducts.filter((product) => String(product.category ?? '').toLowerCase() === String(existing.name ?? '').toLowerCase()).length
+      ? catalogCategoryProductCount(existing, catalogProducts)
       : undefined;
     setForm({
       open: true,
@@ -769,8 +806,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         if (categories.some((row, index) => !(form.mode === 'edit' && index === form.index)
           && sofa2Slugify(String(row.slug || row.name)) === slug)) next.slug = 'Slug danh mục đã được sử dụng.';
         const original = form.mode === 'edit' ? rows[form.index] : undefined;
-        if (original && String(original.name ?? '') !== String(form.values.name ?? '')
-          && products.some((row) => String(row.category ?? '').toLowerCase() === String(original.name ?? '').toLowerCase())) {
+        const assignedField = original ? catalogCategoryProductField(original) : '';
+        if (original && String(original.name ?? '') !== String(form.values.name ?? '') && assignedField
+          && products.some((row) => String(row[assignedField] ?? '').trim().toLowerCase() === String(original.name ?? '').trim().toLowerCase())) {
           next.name = 'Danh mục đang được sản phẩm sử dụng; hãy chuyển sản phẩm sang danh mục khác trước khi đổi tên.';
         }
         if (String(form.values.image ?? '').trim() && !isSafeCmsUrl(form.values.image)) next.image = 'Ảnh cần là URL http(s) hoặc đường dẫn nội bộ an toàn.';
@@ -778,6 +816,15 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       if (module.slug === 'products') {
         unique('sku', 'Mã SKU đã được sử dụng.');
         unique('name', 'Tên sản phẩm đã tồn tại.');
+        const requestedSku = String(form.values.sku ?? '').trim().toLowerCase();
+        if (requestedSku && variants.some((variant) => String(variant.sku ?? '').trim().toLowerCase() === requestedSku)) {
+          next.sku = 'SKU đã được dùng cho biến thể sản phẩm.';
+        }
+        const requestedSlug = sofa2Slugify(String(form.values.slug || form.values.name));
+        if (requestedSlug && products.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index)
+          && sofa2Slugify(String(row.slug || row.name)) === requestedSlug
+        )) next.slug = 'Đường dẫn sản phẩm đã được sử dụng.';
         const previousSku = form.mode === 'edit' ? String(rows[form.index]?.sku ?? '') : '';
         const previousName = form.mode === 'edit' ? String(rows[form.index]?.name ?? '') : '';
         const nextSku = String(form.values.sku ?? '').trim();
@@ -791,6 +838,14 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         }
         const sku = String(form.values.sku ?? '').trim();
         if (sku && !/^[A-Za-z0-9][A-Za-z0-9._-]{2,39}$/.test(sku)) next.sku = 'SKU cần dài 3–40 ký tự, chỉ gồm chữ, số, dấu chấm, gạch ngang hoặc gạch dưới.';
+        const categoryField = fields.find((field) => field.key === 'category');
+        const activeTypes = categories.filter((row) => row.status !== 'Ẩn'
+          && !['phong cách', 'không gian', 'kích thước', 'khoảng giá'].some((parent) => String(row.parent ?? '').toLowerCase().includes(parent)))
+          .map((row) => String(row.name ?? '').trim().toLowerCase());
+        const category = String(form.values.category ?? '').trim().toLowerCase();
+        if (category && ![...(categoryField?.options ?? []).map((option) => option.toLowerCase()), ...activeTypes].includes(category)) {
+          next.category = 'Hãy chọn một danh mục sản phẩm đang hoạt động.';
+        }
         if (Number(form.values.price) <= 0) next.price = 'Giá bán phải lớn hơn 0.';
         if (Number(form.values.compareAt) > 0 && Number(form.values.compareAt) < Number(form.values.price)) next.compareAt = 'Giá niêm yết phải bằng hoặc cao hơn giá bán.';
         if (String(form.values.image ?? '').trim() && !isSafeCmsUrl(form.values.image)) next.image = 'Ảnh cần là URL http(s) hoặc đường dẫn nội bộ an toàn.';
@@ -806,7 +861,24 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       }
       if (module.slug === 'variants') {
         unique('sku', 'SKU biến thể đã được sử dụng.');
+        const requestedSku = String(form.values.sku ?? '').trim().toLowerCase();
+        if (requestedSku && products.some((row) => String(row.sku ?? '').trim().toLowerCase() === requestedSku)) {
+          next.sku = 'SKU đã được dùng cho sản phẩm cha.';
+        }
+        if (!/^[A-Za-z0-9][A-Za-z0-9._-]{2,39}$/.test(String(form.values.sku ?? '').trim())) {
+          next.sku = 'SKU cần dài 3–40 ký tự, chỉ gồm chữ, số, dấu chấm, gạch ngang hoặc gạch dưới.';
+        }
+        const originalSku = form.mode === 'edit' ? String(rows[form.index]?.sku ?? '').trim().toLowerCase() : '';
+        if (originalSku && originalSku !== requestedSku && [...getSofa2AdminRows('catalog', 'inventory'), ...getSofa2AdminRows('catalog', 'pricing')]
+          .some((linkedRow) => String(linkedRow.sku ?? '').trim().toLowerCase() === originalSku)) {
+          next.sku = 'Không thể đổi SKU biến thể khi đã có tồn kho hoặc bảng giá liên kết.';
+        }
         if (!product) next.product = 'Hãy chọn một sản phẩm đang tồn tại.';
+        if (form.mode === 'edit' && String(form.values.product ?? '') !== String(rows[form.index]?.product ?? '')
+          && [...getSofa2AdminRows('catalog', 'inventory'), ...getSofa2AdminRows('catalog', 'pricing')]
+            .some((linkedRow) => String(linkedRow.sku ?? '').trim().toLowerCase() === originalSku)) {
+          next.product = 'Không thể chuyển sản phẩm gốc khi SKU biến thể đã có tồn kho hoặc bảng giá.';
+        }
         if (!String(form.values.option ?? '').trim()) next.option = 'Hãy mô tả tổ hợp thuộc tính của biến thể.';
         if (Number(form.values.stock) < 0) next.stock = 'Tồn kho không thể âm.';
         if (Number(form.values.price) <= 0) next.price = 'Giá biến thể phải lớn hơn 0.';
@@ -1080,7 +1152,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         const available = Number(clean.stock) - Number(clean.reserved);
         clean.status = available <= 0 ? 'Hết hàng' : available <= Number(clean.minStock) ? 'Sắp hết' : 'Đủ hàng';
       }
-      if (module.slug === 'variants' && Number(clean.stock) <= 0) clean.status = 'Hết hàng';
+      if (module.slug === 'variants' && clean.status !== 'Ngừng bán') {
+        clean.status = Number(clean.stock) <= 0 ? 'Hết hàng' : 'Đang bán';
+      }
       if (module.slug === 'pricing') {
         const today = new Date().toISOString().slice(0, 10);
         const starts = toDateInput(clean.startDate);
@@ -1365,9 +1439,13 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     if (group.slug !== 'catalog') return '';
     const linked = (moduleName: string, predicate: (item: AdminRow) => boolean) =>
       getSofa2AdminRows('catalog', moduleName).some(predicate);
-    if (module.slug === 'categories' && linked('products', (item) =>
-      String(item.category ?? '').toLowerCase() === String(row.name ?? '').toLowerCase()
-    )) return 'Danh mục đang được sản phẩm sử dụng.';
+    if (module.slug === 'categories' && String(row.builtIn ?? '') === 'Có') {
+      return 'Đây là danh mục lõi của trang khách; hãy chuyển trạng thái sang Ẩn thay vì xoá để giữ taxonomy và đường dẫn.';
+    }
+    const assignmentField = module.slug === 'categories' ? catalogCategoryProductField(row) : '';
+    if (module.slug === 'categories' && assignmentField && linked('products', (item) =>
+      String(item[assignmentField] ?? '').trim().toLowerCase() === String(row.name ?? '').trim().toLowerCase()
+    )) return 'Danh mục đang được sản phẩm sử dụng; hãy chuyển sản phẩm sang danh mục khác trước khi xoá.';
     if (module.slug === 'products' && linked('variants', (item) =>
       String(item.product ?? '').toLowerCase() === String(row.name ?? '').toLowerCase()
       || String(item.product ?? '').toLowerCase() === String(row.sku ?? '').toLowerCase()
@@ -1568,10 +1646,16 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         const products = getSofa2AdminRows('catalog', 'products');
         const categories = getSofa2AdminRows('catalog', 'categories');
         const variants = getSofa2AdminRows('catalog', 'variants');
-        if (field.key === 'category') {
+        if (['category', 'style', 'space'].includes(field.key)) {
+          const parentMatch = field.key === 'style'
+            ? (parent: string) => parent.includes('phong cách')
+            : field.key === 'space'
+              ? (parent: string) => parent.includes('không gian')
+              : (parent: string) => !['phong cách', 'không gian', 'kích thước', 'khoảng giá'].some((label) => parent.includes(label));
           return Array.from(new Set([
             ...(field.options ?? []),
-            ...categories.filter((row) => row.status !== 'Ẩn').map((row) => String(row.name ?? '').trim()),
+            ...categories.filter((row) => row.status !== 'Ẩn' && parentMatch(String(row.parent ?? '').toLowerCase()))
+              .map((row) => String(row.name ?? '').trim()),
             String(value).trim(),
           ])).filter(Boolean);
         }
@@ -1936,7 +2020,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         return [
           { label: 'Danh mục', value: rows.length.toLocaleString('vi-VN') },
           { label: 'Danh mục đang hiển thị', value: rows.filter((row) => row.status !== 'Ẩn').length.toLocaleString('vi-VN') },
-          { label: 'Sản phẩm đã gán', value: products.filter((product) => rows.some((category) => String(category.name).toLowerCase() === String(product.category).toLowerCase())).length.toLocaleString('vi-VN') },
+          { label: 'Danh mục có sản phẩm', value: rows.filter((category) => catalogCategoryProductCount(category, products) > 0).length.toLocaleString('vi-VN') },
           { label: 'Ẩn', value: rows.filter((row) => row.status === 'Ẩn').length.toLocaleString('vi-VN') },
         ];
       }
@@ -2108,6 +2192,11 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         {group.slug === 'access' && module.slug === 'permissions' && (
           <Alert severity="info" sx={{ mb: 2 }}>
             Ma trận quyền lưu cấu hình theo module, hành động và vai trò; hiện chưa được nối vào danh tính đăng nhập thật. Không dùng các dòng này để cấp quyền vận hành; hành động phê duyệt vẫn cần quy trình độc lập phía máy chủ.
+          </Alert>
+        )}
+        {group.slug === 'catalog' && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Dữ liệu danh mục, sản phẩm, biến thể, tồn kho và giá bán được trang Sofa2 client đọc chung theo tên danh mục và SKU. Sản phẩm Bản nháp/Ngừng bán không hiển thị; giá và tồn khả dụng được tổng hợp từ các dòng liên kết. Dữ liệu demo lưu trên trình duyệt này, chưa có API hoặc kho dữ liệu dùng chung giữa thiết bị.
           </Alert>
         )}
         {group.slug === 'dealer' && (
@@ -2355,7 +2444,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
                             group.slug === 'access' && module.slug === 'roles' && col.key === 'users'
                               ? assignedCount
                               : group.slug === 'catalog' && module.slug === 'categories' && col.key === 'products'
-                                ? catalogProducts.filter((product) => String(product.category ?? '').toLowerCase() === String(row.name ?? '').toLowerCase()).length
+                                ? catalogCategoryProductCount(row, catalogProducts)
                                 : row[col.key] ?? '—';
                           return (
                             <TableCell key={col.key}>

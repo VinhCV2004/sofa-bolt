@@ -55,13 +55,37 @@ const mapCategoryGroup = (parent: unknown): keyof CatalogCategories => {
 export function useSofa2CatalogCategories(): CatalogCategories {
   const { rows } = useSofa2AdminRows('catalog', 'categories');
   return useMemo(() => {
-    const result: CatalogCategories = {
-      types: [...SOFA2_PRODUCT_CATEGORIES.types],
-      styles: [...SOFA2_PRODUCT_CATEGORIES.styles],
-      spaces: [...SOFA2_PRODUCT_CATEGORIES.spaces],
-      sizes: [...SOFA2_PRODUCT_CATEGORIES.sizes],
-      prices: [...SOFA2_PRODUCT_CATEGORIES.prices],
+    const source: CatalogCategories = {
+      types: SOFA2_PRODUCT_CATEGORIES.types,
+      styles: SOFA2_PRODUCT_CATEGORIES.styles,
+      spaces: SOFA2_PRODUCT_CATEGORIES.spaces,
+      sizes: SOFA2_PRODUCT_CATEGORIES.sizes,
+      prices: SOFA2_PRODUCT_CATEGORIES.prices,
     };
+    const configuredRow = (category: CatalogCategory, group: keyof CatalogCategories) =>
+      rows.find((row) => mapCategoryGroup(row.parent) === group && (
+        String(row.slug ?? '').trim() === category.slug
+        || String(row.name ?? '').trim().toLowerCase() === category.label.toLowerCase()
+      ));
+    const result = Object.fromEntries(
+      (Object.keys(source) as (keyof CatalogCategories)[]).map((group) => [group,
+        source[group].flatMap((category) => {
+          const row = configuredRow(category, group);
+          if (row && (row.status === 'Ẩn' || !enabled(row.showInFilter))) return [];
+          return [{
+            ...category,
+            ...(row ? {
+              slug: String(row.slug ?? category.slug),
+              label: String(row.name ?? category.label),
+              metaTitle: String(row.metaTitle ?? ''),
+              metaDescription: String(row.metaDescription ?? row.description ?? ''),
+              indexable: enabled(row.indexable),
+            } : {}),
+          }];
+        }),
+      ])
+    ) as CatalogCategories;
+
     rows
       .filter((row) => row.status !== 'Ẩn' && enabled(row.showInFilter))
       .forEach((row) => {
@@ -79,6 +103,13 @@ export function useSofa2CatalogCategories(): CatalogCategories {
           });
         }
       });
+    (Object.keys(result) as (keyof CatalogCategories)[]).forEach((group) => {
+      result[group].sort((a, b) => {
+        const aOrder = Number(rows.find((row) => String(row.slug ?? '') === a.slug)?.order ?? 0) || Number.MAX_SAFE_INTEGER;
+        const bOrder = Number(rows.find((row) => String(row.slug ?? '') === b.slug)?.order ?? 0) || Number.MAX_SAFE_INTEGER;
+        return aOrder - bOrder;
+      });
+    });
     return result;
   }, [rows]);
 }
@@ -96,21 +127,28 @@ function toClientProduct(
   ) ?? SOFA2_PRODUCTS[index % SOFA2_PRODUCTS.length];
   const sku = String(row.sku ?? '');
   const categoryName = String(row.category ?? fallback.category);
-  const matchedCategory = categories.find(
-    (category) => String(category.name ?? '').toLowerCase() === categoryName.toLowerCase()
-  );
-  const typeByLabel = SOFA2_PRODUCT_CATEGORIES.types.find(
-    (category) => category.label.toLowerCase() === categoryName.toLowerCase()
+  const matchedCategory = categories.find((item) => {
+    const parent = String(item.parent ?? '').toLowerCase();
+    const isProductType = !['phong cách', 'không gian', 'kích thước', 'khoảng giá'].some((label) => parent.includes(label));
+    return isProductType && String(item.name ?? '').trim().toLowerCase() === categoryName.trim().toLowerCase();
+  });
+  const typeByLabel = SOFA2_PRODUCT_CATEGORIES.types.find((item) =>
+    item.label.toLowerCase() === categoryName.toLowerCase() || item.slug === categoryName
   );
   const category = String(matchedCategory?.slug ?? typeByLabel?.slug ?? slugify(categoryName));
   const styleName = String(row.style ?? fallback.style);
-  const styleByLabel = SOFA2_PRODUCT_CATEGORIES.styles.find(
-    (item) => item.label.toLowerCase() === styleName.toLowerCase()
+  const matchedStyle = categories.find((item) =>
+    String(item.name ?? '').trim().toLowerCase() === styleName.trim().toLowerCase()
+    && String(item.parent ?? '').toLowerCase().includes('phong cách')
   );
-  const style = styleByLabel?.slug ?? slugify(styleName);
-  const rawVariants = variants.filter(
-    (variant) => String(variant.product ?? '').trim().toLowerCase() === String(row.name ?? '').trim().toLowerCase()
-      || String(variant.product ?? '').trim().toLowerCase() === sku.toLowerCase()
+  const styleByLabel = SOFA2_PRODUCT_CATEGORIES.styles.find((item) =>
+    item.label.toLowerCase() === styleName.toLowerCase() || item.slug === styleName
+  );
+  const style = String(matchedStyle?.slug ?? styleByLabel?.slug ?? slugify(styleName));
+  const rawVariants = variants.filter((variant) =>
+    String(variant.status ?? '') !== 'Ngừng bán'
+    && (String(variant.product ?? '').trim().toLowerCase() === String(row.name ?? '').trim().toLowerCase()
+      || String(variant.product ?? '').trim().toLowerCase() === sku.toLowerCase())
   );
   const linkedVariants: AdminRow[] = rawVariants.map((variant) => {
     const variantSku = String(variant.sku ?? '');
@@ -143,7 +181,13 @@ function toClientProduct(
     : fallback.colors;
   const status = String(row.status ?? 'Đang bán');
   const rawSpace = String(row.space ?? '').trim();
-  const spaceMatch = SOFA2_PRODUCT_CATEGORIES.spaces.find((item) => item.label.toLowerCase() === rawSpace.toLowerCase());
+  const matchedSpace = categories.find((item) =>
+    String(item.name ?? '').trim().toLowerCase() === rawSpace.toLowerCase()
+    && String(item.parent ?? '').toLowerCase().includes('không gian')
+  );
+  const spaceMatch = SOFA2_PRODUCT_CATEGORIES.spaces.find((item) =>
+    item.label.toLowerCase() === rawSpace.toLowerCase() || item.slug === rawSpace
+  );
   const description = String(row.description ?? fallback.description);
 
   return {
@@ -171,12 +215,12 @@ function toClientProduct(
     sku,
     status,
     stock,
-    available: activeProduct(row) && stock > 0,
+    available: activeProduct(row) && status !== 'Hết hàng' && stock > 0,
     variants: linkedVariants,
     metaTitle: String(row.metaTitle ?? ''),
     metaDescription: String(row.metaDescription ?? row.shortDescription ?? description),
     indexable: !['không', 'false', '0'].includes(String(row.indexable ?? 'Có').toLowerCase()),
-    ...(spaceMatch ? { space: spaceMatch.slug } : rawSpace ? { space: slugify(rawSpace) } : {}),
+    ...(matchedSpace ? { space: String(matchedSpace.slug ?? slugify(rawSpace)) } : spaceMatch ? { space: spaceMatch.slug } : rawSpace ? { space: slugify(rawSpace) } : {}),
   } as Sofa2CatalogProduct;
 }
 
@@ -213,11 +257,7 @@ export function filterSofa2CatalogProducts(
   const group = (Object.keys(categories) as (keyof CatalogCategories)[]).find((key) =>
     categories[key].some((item) => item.slug === slug)
   );
-  if (!group) {
-    return products.filter((product) =>
-      [product.category, product.style, String((product as any).space ?? '')].includes(slug)
-    );
-  }
+  if (!group) return [];
   if (group === 'prices') {
     if (slug === 'duoi-10-trieu') return products.filter((product) => product.price < 10_000_000);
     if (slug === '10-20-trieu') return products.filter((product) => product.price >= 10_000_000 && product.price < 20_000_000);
