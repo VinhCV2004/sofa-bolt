@@ -7,7 +7,6 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Unstable_Grid2';
-import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
@@ -15,29 +14,36 @@ import { RouterLink } from 'src/routes/components';
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
+import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { SOFA2_BLOG_POSTS, SOFA2_PAGE_IMAGES, SOFA2_BLOG_CATEGORIES } from 'src/sections/sofa2/sofa2-pages-data';
+import { cmsBlogPostToUi, useCmsBlogPosts, useCmsBlogCategories } from 'src/sections/sofa2/sofa2-cms-client';
 
 // ----------------------------------------------------------------------
 
 export default function Page() {
-  const theme = useTheme();
   const { slug } = useParams();
-  const category = SOFA2_BLOG_CATEGORIES.find((c) => c.slug === slug);
-  const posts = SOFA2_BLOG_POSTS.filter((p) => p.category === slug);
-  const label = category?.label ?? slug;
+  const { categories } = useCmsBlogCategories();
+  const { posts: cmsPosts } = useCmsBlogPosts();
+  const category = categories.find((item) => item.slug === slug);
+  const posts = cmsPosts
+    .filter((post) => post.categorySlug === slug)
+    .map((post, index) => cmsBlogPostToUi(post, index));
+  const label = category?.label ?? slug ?? 'Danh mục blog';
 
   return (
     <>
       <Helmet>
-        <title>{`${label} - Blog LUXE Sofa`}</title>
+        <title>{category?.metaTitle || `${label} - Blog LUXE Sofa`}</title>
+        {category?.metaDescription && <meta name="description" content={category.metaDescription} />}
+        {(category?.ogImage || category?.cover) && <meta property="og:image" content={category.ogImage || category.cover} />}
+        <meta name="robots" content={category?.indexable === false ? 'noindex, nofollow' : 'index, follow'} />
       </Helmet>
 
       <Sofa2PageHero
         overline="Danh mục blog"
         title={label}
-        subtitle="Tổng hợp các bài viết thuộc danh mục này — chia sẻ từ chuyên gia LUXE Sofa."
-        image={SOFA2_PAGE_IMAGES.blog1}
+        subtitle={category?.description || 'Tổng hợp các bài viết thuộc danh mục này — chia sẻ từ chuyên gia LUXE Sofa.'}
+        image={category?.cover || SOFA2_PAGE_IMAGES.blog1}
       />
 
       {/* Category chips */}
@@ -50,7 +56,7 @@ export default function Page() {
             clickable
             variant="soft"
           />
-          {SOFA2_BLOG_CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <Chip
               key={cat.slug}
               label={cat.label}

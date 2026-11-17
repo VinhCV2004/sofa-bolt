@@ -295,17 +295,91 @@ const cmsFaqRows: Record<string, string | number>[] = [
   },
 ];
 
-const SOFA2_CMS_BLOG_SEEDS: Record<string, string | number>[] = SOFA2_BLOG_POSTS.map((post, index) => {
+const CMS_BLOG_CATEGORY_SEEDS: Record<string, string | number>[] = [
+  { id: 'blog-category-company', slug: 'tin-cong-ty', label: 'Tin công ty', description: 'Tin tức thương hiệu, hoạt động, showroom và câu chuyện đội ngũ LUXE Sofa.', cover: SOFA2_PAGE_IMAGES.blog1, order: 1, status: 'Đã xuất bản', updated: '2026-11-15', metaTitle: 'Tin công ty | Blog LUXE Sofa', metaDescription: 'Tin tức và hoạt động mới nhất từ LUXE Sofa.' },
+  { id: 'blog-category-promotions', slug: 'tin-khuyen-mai', label: 'Tin khuyến mãi', description: 'Chương trình ưu đãi, sự kiện bán hàng và quyền lợi dành cho khách hàng.', cover: SOFA2_PAGE_IMAGES.product3, order: 2, status: 'Đã xuất bản', updated: '2026-11-15', metaTitle: 'Tin khuyến mãi | Blog LUXE Sofa', metaDescription: 'Cập nhật ưu đãi và chương trình mới từ LUXE Sofa.' },
+  { id: 'blog-category-buying', slug: 'kinh-nghiem-chon-sofa', label: 'Kinh nghiệm chọn sofa', description: 'Hướng dẫn chọn kiểu dáng, kích thước và chất liệu sofa phù hợp.', cover: SOFA2_PAGE_IMAGES.blog1, order: 3, status: 'Đã xuất bản', updated: '2026-11-15', metaTitle: 'Kinh nghiệm chọn sofa | LUXE Sofa', metaDescription: 'Kinh nghiệm chọn sofa phù hợp không gian và nhu cầu sử dụng.' },
+  { id: 'blog-category-trends', slug: 'xu-huong-noi-that', label: 'Xu hướng nội thất', description: 'Xu hướng thiết kế, màu sắc và phong cách nội thất mới.', cover: SOFA2_PAGE_IMAGES.blog3, order: 4, status: 'Đã xuất bản', updated: '2026-11-15', metaTitle: 'Xu hướng nội thất | LUXE Sofa', metaDescription: 'Khám phá xu hướng nội thất và sofa mới nhất.' },
+  { id: 'blog-category-materials', slug: 'kien-thuc-vat-lieu', label: 'Kiến thức vật liệu', description: 'Kiến thức về gỗ, mút, vải, da và vật liệu chế tác sofa.', cover: SOFA2_PAGE_IMAGES.blog5, order: 5, status: 'Đã xuất bản', updated: '2026-11-15', metaTitle: 'Kiến thức vật liệu sofa | LUXE Sofa', metaDescription: 'Tìm hiểu vật liệu cấu thành sofa và cách chọn phù hợp.' },
+  { id: 'blog-category-feng-shui', slug: 'phong-thuy-noi-that', label: 'Phong thủy nội thất', description: 'Gợi ý bố trí phòng khách, sofa và màu sắc hài hòa phong thủy.', cover: SOFA2_PAGE_IMAGES.blog6, order: 6, status: 'Đã xuất bản', updated: '2026-11-15', metaTitle: 'Phong thủy nội thất | LUXE Sofa', metaDescription: 'Bố trí nội thất và sofa hài hòa cho không gian sống.' },
+  { id: 'blog-category-cleaning', slug: 'huong-dan-ve-sinh-sofa', label: 'Hướng dẫn vệ sinh sofa', description: 'Cách vệ sinh, xử lý vết bẩn và chăm sóc sofa đúng chất liệu.', cover: SOFA2_PAGE_IMAGES.service3, order: 7, status: 'Đã xuất bản', updated: '2026-11-15', metaTitle: 'Hướng dẫn vệ sinh sofa | LUXE Sofa', metaDescription: 'Hướng dẫn vệ sinh và bảo dưỡng sofa tại nhà.' },
+  { id: 'blog-category-care', slug: 'huong-dan-bao-quan', label: 'Hướng dẫn bảo quản', description: 'Mẹo bảo quản, bảo dưỡng sofa để giữ độ bền và vẻ đẹp lâu dài.', cover: SOFA2_PAGE_IMAGES.blog2, order: 8, status: 'Đã xuất bản', updated: '2026-11-15', metaTitle: 'Hướng dẫn bảo quản sofa | LUXE Sofa', metaDescription: 'Mẹo bảo quản sofa vải, da và khung gỗ.' },
+  { id: 'blog-category-living', slug: 'thiet-ke-phong-khach', label: 'Thiết kế phòng khách', description: 'Ý tưởng phối màu, bố trí sofa và tối ưu công năng phòng khách.', cover: SOFA2_PAGE_IMAGES.blog4, order: 9, status: 'Đã xuất bản', updated: '2026-11-15', metaTitle: 'Thiết kế phòng khách | LUXE Sofa', metaDescription: 'Cảm hứng và kiến thức thiết kế phòng khách hiện đại.' },
+].map((category) => ({
+  ...category,
+  author: 'Ban biên tập LUXE Sofa',
+  ogImage: String(category.cover ?? ''),
+  indexable: 'Có',
+}));
+
+const CMS_BLOG_AUTHOR_SEEDS: Record<string, string | number>[] = [
+  { id: 'blog-author-minh-anh', name: 'Nguyễn Minh Anh', slug: 'nguyen-minh-anh', role: 'Trưởng ban biên tập', bio: 'Minh Anh phụ trách nội dung hướng dẫn chọn sofa, tối ưu không gian và cập nhật hoạt động thương hiệu LUXE Sofa.', avatar: SOFA2_PAGE_IMAGES.team, email: 'minhanh@example.test', facebook: 'https://www.facebook.com/', instagram: 'https://www.instagram.com/', linkedin: '', status: 'Đã xuất bản', updated: '2026-11-14' },
+  { id: 'blog-author-hoang-long', name: 'Trần Hoàng Long', slug: 'tran-hoang-long', role: 'Chuyên gia vật liệu', bio: 'Hoàng Long chia sẻ kiến thức về khung, đệm, da, vải bọc và quy trình chăm sóc sofa.', avatar: SOFA2_PAGE_IMAGES.workshop, email: 'hoanglong@example.test', facebook: '', instagram: '', linkedin: 'https://www.linkedin.com/', status: 'Đã xuất bản', updated: '2026-11-12' },
+  { id: 'blog-author-thu-ha', name: 'Lê Thu Hà', slug: 'le-thu-ha', role: 'Biên tập viên nội thất', bio: 'Thu Hà theo dõi xu hướng nội thất, phối màu và những giải pháp thiết kế phòng khách tiện nghi.', avatar: SOFA2_PAGE_IMAGES.team, email: 'thuha@example.test', facebook: 'https://www.facebook.com/', instagram: 'https://www.instagram.com/', linkedin: '', status: 'Đã xuất bản', updated: '2026-11-10' },
+  { id: 'blog-author-quoc-bao', name: 'Phạm Quốc Bảo', slug: 'pham-quoc-bao', role: 'Tư vấn thiết kế', bio: 'Quốc Bảo tư vấn bố trí sofa theo diện tích, công năng và phong cách sống của từng gia đình.', avatar: SOFA2_PAGE_IMAGES.showroom1, email: 'quocbao@example.test', facebook: '', instagram: '', linkedin: '', status: 'Đã xuất bản', updated: '2026-11-08' },
+  { id: 'blog-author-thu-ha-dang', name: 'Đặng Thu Hà', slug: 'dang-thu-ha', role: 'Chuyên viên chăm sóc sofa', bio: 'Thu Hà hướng dẫn vệ sinh, xử lý vết bẩn và bảo quản sofa theo từng nhóm chất liệu.', avatar: SOFA2_PAGE_IMAGES.service3, email: 'dangthuha@example.test', facebook: '', instagram: 'https://www.instagram.com/', linkedin: '', status: 'Đã xuất bản', updated: '2026-11-07' },
+  { id: 'blog-author-hoang-long-short', name: 'Hoàng Long', slug: 'hoang-long', role: 'Kỹ thuật viên dịch vụ', bio: 'Hoàng Long phụ trách nội dung thực hành về làm sạch và chăm sóc sofa tại nhà.', avatar: SOFA2_PAGE_IMAGES.service2, email: 'long@example.test', facebook: '', instagram: '', linkedin: '', status: 'Đã xuất bản', updated: '2026-11-05' },
+];
+
+const makeCmsBlogSeed = (
+  id: string, title: string, slug: string, categorySlug: string, excerpt: string, content: string,
+  cover: string, author: string, updated: string, views = 0, status = 'Đã xuất bản', tags = ''
+): Record<string, string | number> => {
+  const category = CMS_BLOG_CATEGORY_SEEDS.find((row) => row.slug === categorySlug);
+  return {
+    id, title, slug, categorySlug, category: String(category?.label ?? ''), excerpt, content, cover,
+    tags: tags || `${String(category?.label ?? '')}, sofa, nội thất`, status, views, updated, author,
+    authorId: String(CMS_BLOG_AUTHOR_SEEDS.find((item) => String(item.name ?? '') === author)?.id ?? ''),
+    metaTitle: `${title} | LUXE Sofa`.slice(0, 60), metaDescription: excerpt.slice(0, 160),
+    ogImage: cover, indexable: status === 'Đã xuất bản' ? 'Có' : 'Không',
+  };
+};
+
+const CMS_EXTRA_BLOG_SEEDS = [
+  makeCmsBlogSeed('cms-blog-company-2026', 'LUXE Sofa khai trương không gian trải nghiệm mới', 'khai-truong-khong-gian-trai-nghiem-moi', 'tin-cong-ty', 'Không gian trải nghiệm mới giúp khách hàng thử chất liệu, phối màu và nhận tư vấn thiết kế trực tiếp.', 'LUXE Sofa mở rộng không gian trải nghiệm với nhiều bộ sưu tập sofa, mẫu vải và da mới. Khách hàng có thể đặt lịch tư vấn, xem mẫu vật liệu và nhận gợi ý bố trí theo diện tích thực tế.', SOFA2_PAGE_IMAGES.showroom2, 'Nguyễn Minh Anh', '2026-11-12', 2450),
+  makeCmsBlogSeed('cms-blog-company-craft', 'Một ngày tại xưởng chế tác LUXE Sofa', 'mot-ngay-tai-xuong-che-tac-luxe', 'tin-cong-ty', 'Theo chân đội ngũ nghệ nhân từ khâu chọn gỗ đến hoàn thiện từng đường may.', 'Mỗi chiếc sofa bắt đầu từ bản vẽ, khung gỗ được kiểm tra kỹ, lớp đệm được cân chỉnh và chất liệu bọc được hoàn thiện bằng tay. Quy trình nhiều bước giúp sản phẩm giữ độ chắc chắn và tính thẩm mỹ lâu dài.', SOFA2_PAGE_IMAGES.workshop, 'Trần Hoàng Long', '2026-10-24', 1890),
+  makeCmsBlogSeed('cms-blog-promo-nov', 'Ưu đãi chăm sóc sofa tháng 11: đặt lịch bảo trì sớm', 'uu-dai-cham-soc-sofa-thang-11', 'tin-khuyen-mai', 'Tổng hợp ưu đãi vệ sinh, bảo trì và chăm sóc sofa đang áp dụng trong tháng.', 'Khách hàng có thể chọn gói bảo trì định kỳ, dịch vụ vệ sinh tại nhà hoặc tư vấn kiểm tra tình trạng sofa. Vui lòng xem điều kiện và thời hạn từng chương trình trên trang Khuyến mãi trước khi đặt lịch.', SOFA2_PAGE_IMAGES.service2, 'Lê Thu Hà', '2026-11-10', 3420),
+  makeCmsBlogSeed('cms-blog-promo-member', 'Quyền lợi thành viên khi mua sofa tại LUXE', 'quyen-loi-thanh-vien-luxe-sofa', 'tin-khuyen-mai', 'Ưu đãi theo hạng thành viên, mã giảm giá và các dịch vụ chăm sóc sau mua.', 'Thành viên được nhận thông báo ưu đãi theo hạng, theo dõi lịch sử mua hàng và đăng ký dịch vụ hậu mãi. Điều kiện sử dụng mã có thể khác nhau theo chiến dịch và cần được kiểm tra trước khi thanh toán.', SOFA2_PAGE_IMAGES.product5, 'Phạm Quốc Bảo', '2026-10-18', 2160),
+  makeCmsBlogSeed('cms-blog-buying-size', 'Cách đo sofa và lối đi trước khi đặt mua', 'cach-do-sofa-va-loi-di-truoc-khi-dat-mua', 'kinh-nghiem-chon-sofa', 'Checklist đo chiều dài, chiều sâu, cửa ra vào và khoảng lưu thông quanh sofa.', 'Đo chiều dài tường dự kiến kê sofa, khoảng cách đến bàn trà và lối đi chính. Đừng quên kiểm tra thang máy, hành lang, cửa căn hộ và góc cua để đảm bảo sản phẩm có thể vận chuyển vào nhà.', SOFA2_PAGE_IMAGES.blog4, 'Nguyễn Minh Anh', '2026-10-30', 5980),
+  makeCmsBlogSeed('cms-blog-trend-color', 'Bảng màu phòng khách 2026: trung tính ấm và xanh rêu', 'bang-mau-phong-khach-2026-trung-tinh-xanh-reu', 'xu-huong-noi-that', 'Gợi ý phối sofa với gỗ sáng, màu be, nâu đất và điểm nhấn xanh rêu.', 'Màu trung tính ấm tạo nền thư thái, trong khi xanh rêu hoặc xanh navy làm điểm nhấn có chiều sâu. Hãy cân nhắc ánh sáng tự nhiên, màu sàn và chất liệu rèm trước khi chọn màu bọc sofa.', SOFA2_PAGE_IMAGES.blog3, 'Lê Thu Hà', '2026-11-03', 4220),
+  makeCmsBlogSeed('cms-blog-material-foam', 'Mút sofa HR và memory foam khác nhau thế nào?', 'so-sanh-mut-hr-va-memory-foam', 'kien-thuc-vat-lieu', 'So sánh độ đàn hồi, cảm giác ngồi và cách chọn cấu trúc đệm theo nhu cầu.', 'Mút HR phục hồi nhanh và tạo cảm giác nâng đỡ chắc chắn. Memory foam ôm sát cơ thể hơn, phân tán áp lực tốt. Một số cấu trúc kết hợp nhiều lớp để cân bằng sự êm ái và độ bền.', SOFA2_PAGE_IMAGES.blog5, 'Trần Hoàng Long', '2026-11-05', 3070),
+  makeCmsBlogSeed('cms-blog-feng-shui-sofa', 'Chọn hướng và vị trí sofa cho phòng khách hài hòa', 'chon-huong-va-vi-tri-sofa-hai-hoa', 'phong-thuy-noi-that', 'Một số nguyên tắc bố trí sofa cân bằng công năng, ánh sáng và luồng di chuyển.', 'Nên ưu tiên vị trí có điểm tựa vững, tầm nhìn thoáng và không cản lối đi. Các gợi ý phong thủy chỉ mang tính tham khảo; điều quan trọng là bố trí phù hợp kích thước phòng và thói quen sinh hoạt.', SOFA2_PAGE_IMAGES.blog6, 'Phạm Quốc Bảo', '2026-10-28', 2750),
+  makeCmsBlogSeed('cms-blog-cleaning-stain', 'Xử lý vết bẩn trên sofa vải trong 10 phút đầu', 'xu-ly-vet-ban-sofa-vai-trong-10-phut', 'huong-dan-ve-sinh-sofa', 'Thấm đúng cách, thử dung dịch ở vùng khuất và tránh chà mạnh làm xù sợi vải.', 'Dùng khăn sạch thấm nhẹ từ ngoài vào trong để hạn chế vết bẩn lan rộng. Không đổ trực tiếp hóa chất lên bề mặt. Với vết bẩn khó hoặc sofa có chất liệu đặc biệt, hãy kiểm tra hướng dẫn của nhà sản xuất hoặc liên hệ dịch vụ vệ sinh.', SOFA2_PAGE_IMAGES.service3, 'Đặng Thu Hà', '2026-11-08', 3180),
+  makeCmsBlogSeed('cms-blog-care-leather', 'Bảo quản sofa da: dưỡng ẩm và tránh ánh nắng trực tiếp', 'bao-quan-sofa-da-duong-am-tranh-nang', 'huong-dan-bao-quan', 'Lịch vệ sinh nhẹ, dưỡng da phù hợp và những điều nên tránh khi chăm sóc sofa da.', 'Hút bụi khe ghế định kỳ, lau bằng khăn mềm và dùng sản phẩm chăm sóc tương thích với loại da. Tránh đặt sofa sát nguồn nhiệt hoặc nơi có nắng gắt kéo dài; luôn thử dung dịch tại vùng khuất trước khi sử dụng.', SOFA2_PAGE_IMAGES.blog2, 'Trần Hoàng Long', '2026-11-01', 4870),
+  makeCmsBlogSeed('cms-blog-living-small', 'Bố trí sofa chữ L cho phòng khách căn hộ nhỏ', 'bo-tri-sofa-chu-l-phong-khach-can-ho-nho', 'thiet-ke-phong-khach', 'Tận dụng góc phòng, chọn bàn trà gọn và giữ lối đi thông thoáng.', 'Đặt sofa chữ L sát tường hoặc ở góc ít cản sáng, chừa lối đi chính và chọn bàn trà có tỷ lệ phù hợp. Màu bọc sáng cùng chân ghế thanh thoát có thể giúp căn phòng trông rộng hơn.', SOFA2_PAGE_IMAGES.blog4, 'Lê Thu Hà', '2026-11-06', 3590),
+];
+
+// Bổ sung đủ dữ liệu kiểm thử cho từng trạng thái, danh mục, tag và trường SEO của CMS Blog.
+const CMS_ADDITIONAL_BLOG_SEEDS = [
+  makeCmsBlogSeed('cms-blog-mock-2026-company-showroom', 'Góc tư vấn mới tại showroom LUXE Sofa', 'goc-tu-van-moi-showroom-luxe-sofa', 'tin-cong-ty', 'Khách hàng có thể đặt lịch tư vấn riêng để chọn kích thước, màu sắc và vật liệu bọc.', 'Không gian tư vấn được bố trí để khách hàng xem mẫu vật liệu dưới nhiều điều kiện ánh sáng.\n\nĐội ngũ tư vấn ghi nhận diện tích phòng, thói quen sử dụng và ngân sách dự kiến trước khi đề xuất cấu hình sofa.\n\nKhách có thể mang theo ảnh chụp phòng khách hoặc bản vẽ mặt bằng để buổi trao đổi cụ thể hơn.', SOFA2_PAGE_IMAGES.showroom1, 'Nguyễn Minh Anh', '2026-11-14', 1260, 'Đã xuất bản', 'showroom, tư vấn nội thất, LUXE Sofa'),
+  makeCmsBlogSeed('cms-blog-mock-2026-company-craftsmanship', 'Kiểm tra chất lượng sofa trước khi bàn giao', 'kiem-tra-chat-luong-sofa-truoc-ban-giao', 'tin-cong-ty', 'Các hạng mục được rà soát từ khung, đường may đến độ cân bằng của sản phẩm.', 'Trước khi đóng gói, sofa được kiểm tra độ chắc của khung, độ cân bằng chân ghế và các điểm nối.\n\nBề mặt bọc được rà soát về màu sắc, đường may và độ phẳng; phụ kiện đi kèm được đối chiếu với phiếu sản xuất.\n\nQuy trình kiểm tra giúp phát hiện sớm sai lệch và lưu hồ sơ bàn giao cho từng đơn hàng.', SOFA2_PAGE_IMAGES.workshop, 'Trần Hoàng Long', '2026-11-09', 0, 'Bản nháp', 'quy trình sản xuất, kiểm tra chất lượng, xưởng sofa'),
+  makeCmsBlogSeed('cms-blog-mock-2026-promo-voucher', 'Cách kiểm tra điều kiện sử dụng voucher sofa', 'cach-kiem-tra-dieu-kien-voucher-sofa', 'tin-khuyen-mai', 'Lưu ý thời hạn, giá trị đơn tối thiểu và khả năng áp dụng đồng thời trước khi thanh toán.', 'Trước khi nhập mã, hãy kiểm tra ngày bắt đầu, ngày kết thúc và nhóm sản phẩm được áp dụng.\n\nMột số ưu đãi có giá trị đơn tối thiểu hoặc giới hạn số lượt sử dụng; thông tin chi tiết được ghi trong thể lệ chiến dịch.\n\nNếu mã không áp dụng, liên hệ nhân viên bán hàng để xác nhận điều kiện thay vì thử nhiều mã không tương thích.', SOFA2_PAGE_IMAGES.product3, 'Phạm Quốc Bảo', '2026-11-13', 930, 'Đã xuất bản', 'voucher, ưu đãi, hướng dẫn mua hàng'),
+  makeCmsBlogSeed('cms-blog-mock-2026-promo-year-end', 'Lịch ưu đãi cuối năm và lịch giao sofa', 'lich-uu-dai-cuoi-nam-va-giao-sofa', 'tin-khuyen-mai', 'Theo dõi thời hạn chương trình và chủ động xác nhận lịch giao lắp trong mùa cao điểm.', 'Các chương trình cuối năm có thể khác nhau theo sản phẩm, khu vực và số lượng hàng sẵn kho.\n\nKhách hàng nên xác nhận thời gian giao dự kiến trước khi đặt cọc, đặc biệt với sofa đặt theo kích thước hoặc màu riêng.\n\nBài viết ở trạng thái chờ duyệt để biên tập cập nhật thể lệ và mốc thời gian chính thức trước khi xuất bản.', SOFA2_PAGE_IMAGES.service1, 'Lê Thu Hà', '2026-11-15', 0, 'Chờ duyệt', 'ưu đãi cuối năm, giao hàng, lịch khuyến mãi'),
+  makeCmsBlogSeed('cms-blog-mock-2026-buying-room', 'Chọn sofa theo diện tích phòng khách', 'chon-sofa-theo-dien-tich-phong-khach', 'kinh-nghiem-chon-sofa', 'Đo mặt bằng và chừa lối lưu thông giúp chọn được sofa cân đối với căn phòng.', 'Bắt đầu bằng việc đo chiều dài tường, chiều sâu khu vực kê sofa và các lối đi thường sử dụng. Dùng băng giấy đánh dấu kích thước dự kiến trên sàn để hình dung tỷ lệ.\n\nVới phòng nhỏ, cân nhắc sofa chân cao, tay vịn gọn hoặc module tách rời. Phòng rộng có thể dùng bộ sofa lớn hơn nhưng vẫn cần giữ khoảng cách thoải mái tới bàn trà và lối ra vào.\n\nKích thước vận chuyển qua cửa, thang máy và hành lang cũng cần được kiểm tra trước khi chốt mẫu.', SOFA2_PAGE_IMAGES.blog1, 'Nguyễn Minh Anh', '2026-11-11', 2540, 'Đã xuất bản', 'kích thước sofa, phòng khách nhỏ, chọn sofa'),
+  makeCmsBlogSeed('cms-blog-mock-2026-buying-checklist', 'Checklist chọn sofa trước khi đặt mua', 'checklist-chon-sofa-truoc-khi-dat-mua', 'kinh-nghiem-chon-sofa', 'Bảy câu hỏi về kích thước, chất liệu, công năng, bảo hành và giao nhận cần làm rõ.', 'Bạn đã đo lối vào nhà chưa? Sofa sẽ phục vụ bao nhiêu người? Gia đình có trẻ nhỏ hoặc thú cưng không?\n\nHãy hỏi rõ cấu trúc khung, loại đệm, cách vệ sinh, thời gian sản xuất và điều kiện bảo hành. Yêu cầu báo giá thể hiện màu, kích thước và cấu hình đã thống nhất.\n\nDanh sách này đang được biên tập để bổ sung biểu mẫu tải về trước khi xuất bản.', SOFA2_PAGE_IMAGES.blog4, 'Đặng Thu Hà', '2026-11-07', 0, 'Chờ duyệt', 'checklist, kinh nghiệm mua sofa, bảo hành'),
+  makeCmsBlogSeed('cms-blog-mock-2026-trend-quiet-luxury', 'Quiet luxury trong phòng khách: tinh giản mà ấm áp', 'quiet-luxury-trong-phong-khach-tinh-gian-am-ap', 'xu-huong-noi-that', 'Tập trung vào tỷ lệ, chất liệu có chiều sâu và bảng màu trung tính thay vì nhiều chi tiết trang trí.', 'Phong cách quiet luxury ưu tiên hình khối gọn, đường nét rõ và vật liệu có bề mặt đẹp khi nhìn gần. Sofa màu kem, nâu ấm hoặc xám đá có thể kết hợp với gỗ tự nhiên và kim loại hoàn thiện mờ.\n\nThay vì thêm nhiều vật dụng, hãy chọn một vài điểm nhấn như đèn sàn, bàn phụ hoặc gối trang trí có kết cấu khác nhau.\n\nÁnh sáng nhiều lớp giúp không gian có chiều sâu vào buổi tối mà không làm mất cảm giác thư thái.', SOFA2_PAGE_IMAGES.blog3, 'Lê Thu Hà', '2026-11-12', 1870, 'Đã xuất bản', 'quiet luxury, xu hướng nội thất, phối màu'),
+  makeCmsBlogSeed('cms-blog-mock-2026-trend-texture', 'Phối chất liệu bouclé, gỗ và kim loại trong phòng khách', 'phoi-boucle-go-kim-loai-phong-khach', 'xu-huong-noi-that', 'Cách cân bằng bề mặt mềm, vân gỗ tự nhiên và chi tiết kim loại để tạo điểm nhấn.', 'Bouclé tạo cảm giác mềm và giàu kết cấu; gỗ bổ sung sắc ấm; kim loại có thể tạo nét tương phản nhẹ.\n\nNên chọn một chất liệu làm nền, một chất liệu làm điểm nhấn và lặp lại màu sắc ở vài vị trí nhỏ để căn phòng có sự liên kết.\n\nLuôn xem mẫu vật liệu cạnh sàn và rèm thực tế vì màu sắc thay đổi theo ánh sáng trong ngày.', SOFA2_PAGE_IMAGES.blog5, 'Trần Hoàng Long', '2026-11-10', 1640, 'Đã xuất bản', 'bouclé, chất liệu nội thất, xu hướng 2026'),
+  makeCmsBlogSeed('cms-blog-mock-2026-material-leather', 'Da thật và da microfiber: khác biệt khi sử dụng', 'da-that-va-da-microfiber-khac-biet-khi-su-dung', 'kien-thuc-vat-lieu', 'So sánh cảm giác bề mặt, cách chăm sóc và các yếu tố nên cân nhắc khi chọn chất liệu bọc.', 'Da thật có đặc điểm bề mặt tự nhiên và có thể thay đổi sắc độ theo quá trình sử dụng. Microfiber có cấu trúc đồng đều, dễ phối màu và thường được lựa chọn khi cần phương án chăm sóc đơn giản hơn.\n\nĐộ bền phụ thuộc vào chất lượng vật liệu, kỹ thuật bọc, môi trường và tần suất sử dụng. Hãy hỏi rõ hướng dẫn vệ sinh cho đúng dòng chất liệu cụ thể.\n\nNên trải nghiệm mẫu trực tiếp để so sánh độ mềm, độ nhám và cảm giác nhiệt trước khi quyết định.', SOFA2_PAGE_IMAGES.blog5, 'Trần Hoàng Long', '2026-11-08', 2110, 'Đã xuất bản', 'da thật, microfiber, chất liệu sofa'),
+  makeCmsBlogSeed('cms-blog-mock-2026-material-frame', 'Khung gỗ sofa: cấu tạo và cách nhận biết độ chắc chắn', 'khung-go-sofa-cau-tao-va-do-chac-chan', 'kien-thuc-vat-lieu', 'Tìm hiểu kết cấu khung, điểm liên kết và câu hỏi nên đặt ra khi chọn mua sofa.', 'Khung sofa gồm các thanh chịu lực và điểm nối được thiết kế theo tải trọng, hình dáng sản phẩm. Chất lượng không chỉ phụ thuộc tên loại gỗ mà còn ở độ khô, cách ghép và quy trình hoàn thiện.\n\nKhi tư vấn, hãy hỏi về cấu trúc khung, chính sách bảo hành và cách xử lý nếu phát sinh tiếng kêu hoặc lỏng mối nối.\n\nBản nháp này chờ đội ngũ sản phẩm xác nhận thông số kỹ thuật theo từng dòng sofa.', SOFA2_PAGE_IMAGES.workshop, 'Phạm Quốc Bảo', '2026-11-06', 0, 'Bản nháp', 'khung gỗ, cấu tạo sofa, bảo hành'),
+  makeCmsBlogSeed('cms-blog-mock-2026-feng-shui-layout', 'Bố trí sofa và bàn trà thuận tiện cho sinh hoạt', 'bo-tri-sofa-ban-tra-thuan-tien-sinh-hoat', 'phong-thuy-noi-that', 'Giữ điểm tựa vững, lối đi thông thoáng và tầm nhìn kết nối trong phòng khách.', 'Nếu có thể, đặt lưng sofa tựa vào tường hoặc một điểm tựa ổn định để tạo cảm giác an tâm. Tránh chắn cửa ra vào và giữ lối di chuyển chính đủ rộng.\n\nKhoảng cách giữa sofa và bàn trà nên phù hợp với tầm với, đồng thời vẫn đủ chỗ để đứng lên và di chuyển.\n\nCác quan niệm phong thủy khác nhau theo trường phái; ưu tiên công năng, an toàn và sự thoải mái của gia đình.', SOFA2_PAGE_IMAGES.blog6, 'Nguyễn Minh Anh', '2026-11-09', 1180, 'Đã xuất bản', 'bố trí sofa, bàn trà, phong thủy phòng khách'),
+  makeCmsBlogSeed('cms-blog-mock-2026-feng-shui-color', 'Chọn màu sofa hài hòa với ánh sáng và bảng màu căn nhà', 'chon-mau-sofa-hai-hoa-anh-sang-noi-that', 'phong-thuy-noi-that', 'Kết hợp màu sofa với ánh sáng tự nhiên, màu sàn và sở thích của gia đình.', 'Màu be, ghi và nâu thường dễ kết hợp với nhiều bảng màu; xanh rêu hoặc xanh navy có thể tạo điểm nhấn rõ hơn. Hãy xem mẫu dưới ánh sáng ban ngày và buổi tối trước khi chọn.\n\nNếu tham khảo màu sắc theo phong thủy, nên xem đó là một yếu tố gợi ý bên cạnh công năng, độ bền và sở thích cá nhân.\n\nBài viết đang tạm ẩn để rà soát nội dung tư vấn trước khi mở công khai.', SOFA2_PAGE_IMAGES.blog6, 'Lê Thu Hà', '2026-11-04', 0, 'Tạm ẩn', 'màu sắc nội thất, ánh sáng, phong thủy'),
+  makeCmsBlogSeed('cms-blog-mock-2026-cleaning-fabric', 'Vệ sinh sofa vải định kỳ tại nhà', 've-sinh-sofa-vai-dinh-ky-tai-nha', 'huong-dan-ve-sinh-sofa', 'Lịch hút bụi, xử lý vết bẩn và thử dung dịch an toàn cho sofa vải.', 'Hút bụi bề mặt và khe ghế mỗi tuần để hạn chế bụi tích tụ. Khi có vết bẩn mới, dùng khăn sạch thấm nhẹ, tránh chà mạnh khiến vết bẩn lan rộng hoặc làm xù sợi.\n\nThử dung dịch vệ sinh ở vùng khuất và kiểm tra nhãn chăm sóc của sản phẩm trước khi sử dụng. Không làm ướt đẫm phần đệm nếu không có hướng dẫn phù hợp.\n\nVết bẩn cũ hoặc chất liệu đặc biệt nên được xử lý bởi đơn vị có kinh nghiệm.', SOFA2_PAGE_IMAGES.service3, 'Đặng Thu Hà', '2026-11-14', 2230, 'Đã xuất bản', 'vệ sinh sofa vải, xử lý vết bẩn, chăm sóc tại nhà'),
+  makeCmsBlogSeed('cms-blog-mock-2026-cleaning-pet', 'Khử mùi và làm sạch sofa khi nhà có thú cưng', 'lam-sach-khu-mui-sofa-nha-co-thu-cung', 'huong-dan-ve-sinh-sofa', 'Mẹo vệ sinh lông, xử lý mùi và bảo vệ bề mặt sofa trong sinh hoạt hằng ngày.', 'Dùng đầu hút phù hợp để lấy lông trên bề mặt và khe ghế; vệ sinh định kỳ giúp giảm bụi và mùi bám. Với chất lỏng, thấm khô ngay thay vì chà mạnh.\n\nTránh sử dụng tinh dầu hoặc hóa chất không rõ thành phần trên vải bọc. Một số chất có thể gây kích ứng cho vật nuôi hoặc làm đổi màu vật liệu.\n\nNếu mùi hoặc vết bẩn không giảm, hãy tham khảo hướng dẫn của nhà sản xuất hoặc dịch vụ vệ sinh chuyên nghiệp.', SOFA2_PAGE_IMAGES.service2, 'Hoàng Long', '2026-11-05', 1480, 'Đã xuất bản', 'thú cưng, khử mùi, vệ sinh sofa'),
+  makeCmsBlogSeed('cms-blog-mock-2026-care-schedule', 'Lịch chăm sóc sofa theo mùa trong năm', 'lich-cham-soc-sofa-theo-mua-trong-nam', 'huong-dan-bao-quan', 'Lịch kiểm tra nhanh giúp phát hiện sớm bụi bẩn, lỏng chân ghế và dấu hiệu hao mòn.', 'Hằng tuần, hút bụi bề mặt và kiểm tra các khe dễ tích tụ bụi. Hằng tháng, xem lại chân ghế, đệm và các điểm tiếp xúc thường xuyên.\n\nKhi chuyển mùa hoặc thời tiết ẩm, giữ phòng thông thoáng và tránh để sofa tiếp xúc lâu với nguồn ẩm. Với sofa da, dùng sản phẩm chăm sóc đúng khuyến nghị của nhà sản xuất.\n\nLưu lại lịch vệ sinh và bảo trì để theo dõi tình trạng sản phẩm lâu dài.', SOFA2_PAGE_IMAGES.blog2, 'Trần Hoàng Long', '2026-11-02', 1760, 'Đã xuất bản', 'bảo quản sofa, lịch chăm sóc, bảo trì'),
+  makeCmsBlogSeed('cms-blog-mock-2026-care-sunlight', 'Hạn chế bạc màu và lão hóa bề mặt sofa', 'han-che-bac-mau-lao-hoa-be-mat-sofa', 'huong-dan-bao-quan', 'Điều chỉnh vị trí kê, rèm cửa và cách vệ sinh để sofa giữ vẻ đẹp lâu hơn.', 'Ánh nắng trực tiếp kéo dài có thể làm một số vật liệu bạc màu hoặc khô bề mặt. Cân nhắc dùng rèm, đổi hướng kê hoặc chọn vị trí tránh nguồn nhiệt.\n\nKhông đặt vật nóng lên bề mặt bọc; lau bụi bằng khăn mềm và dùng dung dịch phù hợp với chất liệu. Luôn thử ở vùng khuất trước khi vệ sinh toàn bộ.\n\nNếu màu sắc thay đổi bất thường, liên hệ nơi bán để được tư vấn theo dòng vật liệu cụ thể.', SOFA2_PAGE_IMAGES.blog2, 'Phạm Quốc Bảo', '2026-10-29', 1340, 'Đã xuất bản', 'bạc màu, bảo quản sofa, ánh nắng'),
+  makeCmsBlogSeed('cms-blog-mock-2026-living-rug', 'Phối sofa với thảm và bàn trà trong phòng khách', 'phoi-sofa-tham-ban-tra-phong-khach', 'thiet-ke-phong-khach', 'Chọn tỷ lệ thảm, hình dáng bàn trà và màu sắc để kết nối khu vực tiếp khách.', 'Thảm nên đủ lớn để liên kết nhóm ghế và bàn trà; với phòng nhỏ, chọn họa tiết nhẹ để tránh chia vụn không gian.\n\nBàn trà cần cân đối với chiều dài sofa và chừa khoảng di chuyển thuận tiện. Có thể lặp lại một màu nhấn ở gối tựa, tranh hoặc phụ kiện để tạo liên kết.\n\nTrước khi mua, đặt thử mẫu màu cạnh sàn và vải sofa trong điều kiện ánh sáng thực tế.', SOFA2_PAGE_IMAGES.blog4, 'Lê Thu Hà', '2026-11-10', 1950, 'Đã xuất bản', 'phối thảm, bàn trà, thiết kế phòng khách'),
+  makeCmsBlogSeed('cms-blog-mock-2026-living-light', 'Bố trí ánh sáng nhiều lớp quanh khu vực sofa', 'bo-tri-anh-sang-nhieu-lop-khu-vuc-sofa', 'thiet-ke-phong-khach', 'Kết hợp ánh sáng chung, ánh sáng đọc sách và đèn điểm nhấn để tăng tiện nghi.', 'Ánh sáng chung giúp căn phòng dễ sử dụng; đèn sàn hoặc đèn bàn hỗ trợ đọc sách; đèn điểm nhấn làm nổi bật tranh và vật liệu.\n\nChọn nhiệt độ màu phù hợp với bảng màu nội thất và hạn chế chiếu trực tiếp gây chói khi ngồi trên sofa. Công tắc tách lớp giúp điều chỉnh không khí theo từng hoạt động.\n\nBản phối ánh sáng nên được xem cùng vị trí ổ cắm, lối đi và hướng mở cửa.', SOFA2_PAGE_IMAGES.blog3, 'Nguyễn Minh Anh', '2026-11-01', 1620, 'Đã xuất bản', 'ánh sáng phòng khách, đèn trang trí, bố trí sofa'),
+];
+
+const SOFA2_CMS_BLOG_SEEDS: Record<string, string | number>[] = [...SOFA2_BLOG_POSTS.map((post, index) => {
   const [day, month, year] = post.date.split('/');
-  const category = post.category.includes('xu-huong') ? 'Xu hướng'
-    : post.category.includes('bao-quan') || post.category.includes('ve-sinh') ? 'Bảo dưỡng'
-      : post.category.includes('du-an') ? 'Dự án' : 'Tư vấn';
   const status = index === 4 ? 'Chờ duyệt' : index === 5 ? 'Bản nháp' : 'Đã xuất bản';
   return {
     id: `cms-blog-${post.id}`,
     title: post.title,
     slug: post.slug,
-    category,
+    category: post.categoryLabel,
+    categorySlug: post.category,
     excerpt: post.excerpt,
     content: `${post.content}\n\n${post.excerpt}`,
     cover: post.image,
@@ -314,12 +388,50 @@ const SOFA2_CMS_BLOG_SEEDS: Record<string, string | number>[] = SOFA2_BLOG_POSTS
     views: status === 'Đã xuất bản' ? Math.max(420, 18620 - index * 2170) : 0,
     updated: `${year}-${month}-${day}`,
     author: post.author,
+    authorId: String(CMS_BLOG_AUTHOR_SEEDS.find((item) => String(item.name ?? '') === post.author)?.id ?? ''),
     metaTitle: `${post.title} | LUXE Sofa`.slice(0, 60),
     metaDescription: post.excerpt.slice(0, 160),
     ogImage: post.image,
     indexable: status === 'Đã xuất bản' ? 'Có' : 'Không',
   };
-});
+}), ...CMS_EXTRA_BLOG_SEEDS, ...CMS_ADDITIONAL_BLOG_SEEDS];
+
+const makeCmsBlogComment = (
+  id: string, postSlug: string, name: string, email: string, content: string, status: string, createdAt: string, reply = ''
+): Record<string, string | number> => {
+  const post = SOFA2_CMS_BLOG_SEEDS.find((row) => String(row.slug ?? '') === postSlug);
+  return {
+    id, postSlug, postTitle: String(post?.title ?? postSlug), name, email, content, status, createdAt,
+    source: 'Website', approvedBy: status === 'Đã duyệt' ? 'Ban biên tập' : '', reply,
+  };
+};
+
+const CMS_BLOG_COMMENT_SEEDS: Record<string, string | number>[] = [
+  makeCmsBlogComment('blog-comment-001', 'cach-chon-sofa-scandinavia', 'Mai Phương', 'maiphuong@example.test', 'Bài viết dễ hiểu, phần lưu ý đo cửa và lối đi rất hữu ích.', 'Đã duyệt', '2026-11-14', 'Cảm ơn bạn đã chia sẻ trải nghiệm. Đội ngũ sẽ bổ sung thêm gợi ý kích thước trong bài viết liên quan.'),
+  makeCmsBlogComment('blog-comment-002', 'cach-chon-sofa-scandinavia', 'Quốc Huy', 'quochuy@example.test', 'Có thể gợi ý thêm kích thước sofa cho phòng khách 18 m² không?', 'Chờ duyệt', '2026-11-15'),
+  makeCmsBlogComment('blog-comment-003', 'bao-duong-da-bo-industrial', 'Hồng Nhung', 'hongnhung@example.test', 'Mình đã thử lau bằng khăn mềm, bề mặt sofa sạch hơn nhiều.', 'Đã duyệt', '2026-11-12'),
+  makeCmsBlogComment('blog-comment-004', 'xu-huong-sofa-2025', 'Đức Anh', 'ducanh@example.test', 'Màu xanh rêu kết hợp gỗ sáng nhìn rất hài hòa.', 'Đã duyệt', '2026-11-11'),
+  makeCmsBlogComment('blog-comment-005', 'phoi-mau-sofa-bac-au', 'Thanh Trúc', 'thanhtruc@example.test', 'Xin tư vấn màu sofa cho tường trắng kem và sàn gỗ vàng nhạt.', 'Chờ duyệt', '2026-11-15'),
+  makeCmsBlogComment('blog-comment-006', 'so-sanh-mut-hr-va-memory-foam', 'Tuấn Kiệt', 'tuankiet@example.test', 'Thông tin phân biệt hai loại đệm rất rõ ràng.', 'Đã duyệt', '2026-11-10'),
+  makeCmsBlogComment('blog-comment-007', 'chon-huong-va-vi-tri-sofa-hai-hoa', 'Bảo Ngọc', 'baongoc@example.test', 'Cảm ơn bài viết đã nhấn mạnh công năng và sự thoải mái.', 'Đã duyệt', '2026-11-09'),
+  makeCmsBlogComment('blog-comment-008', 'khai-truong-khong-gian-trai-nghiem-moi', 'Minh Tâm', 'minhtam@example.test', 'Showroom mới có cần đặt lịch trước khi ghé không?', 'Chờ duyệt', '2026-11-14'),
+  makeCmsBlogComment('blog-comment-009', 'cach-do-sofa-va-loi-di-truoc-khi-dat-mua', 'Anh Thư', 'anhthu@example.test', 'Checklist đo cửa và thang máy đã giúp gia đình mình chọn đúng mẫu.', 'Đã duyệt', '2026-11-13'),
+  makeCmsBlogComment('blog-comment-010', 'xu-ly-vet-ban-sofa-vai-trong-10-phut', 'Văn Nam', 'vannam@example.test', 'Nội dung hướng dẫn xử lý vết bẩn rất thực tế.', 'Đã duyệt', '2026-11-12'),
+  makeCmsBlogComment('blog-comment-011', 'bao-quan-sofa-da-duong-am-tranh-nang', 'Khánh Linh', 'khanhlinh@example.test', 'Cho mình hỏi nên dùng khăn khô hay khăn hơi ẩm để lau bụi?', 'Chờ duyệt', '2026-11-15'),
+  makeCmsBlogComment('blog-comment-012', 'bo-tri-sofa-chu-l-phong-khach-can-ho-nho', 'Hải Yến', 'haiyen@example.test', 'Ảnh minh họa bố trí thêm sẽ giúp mình dễ hình dung hơn.', 'Từ chối', '2026-11-08'),
+  makeCmsBlogComment('blog-comment-013', 'chon-sofa-theo-dien-tich-phong-khach', 'Thảo Nhi', 'thaonhi@example.test', 'Mình đã thử đánh dấu kích thước sofa bằng băng giấy, cách này rất hiệu quả.', 'Đã duyệt', '2026-11-14'),
+  makeCmsBlogComment('blog-comment-014', 've-sinh-sofa-vai-dinh-ky-tai-nha', 'Gia Bảo', 'giabao@example.test', 'Có nên dùng máy hút bụi công suất lớn cho vải bouclé không?', 'Chờ duyệt', '2026-11-15'),
+  makeCmsBlogComment('blog-comment-015', 'phoi-sofa-tham-ban-tra-phong-khach', 'Ngọc Mai', 'ngocmai@example.test', 'Mình muốn nhận tư vấn phối thảm cho sofa màu be.', 'Đã duyệt', '2026-11-13'),
+  makeCmsBlogComment('blog-comment-016', 'bao-duong-da-bo-industrial', 'Free Voucher', 'spam@example.test', 'Click link để nhận quà ngay tại example.test', 'Spam', '2026-11-10'),
+];
+
+const CMS_BLOG_SOCIAL_SEEDS: Record<string, string | number>[] = [
+  { id: 'blog-social-facebook', channel: 'facebook', label: 'Facebook', icon: 'eva:facebook-fill', action: 'share', urlTemplate: 'https://www.facebook.com/sharer/sharer.php?u={url}', enabled: 'Có', order: 1, status: 'Đã xuất bản', updated: '2026-11-15' },
+  { id: 'blog-social-zalo', channel: 'zalo', label: 'Zalo', icon: 'simple-icons:zalo', action: 'share', urlTemplate: 'https://zalo.me/share?url={url}', enabled: 'Có', order: 2, status: 'Đã xuất bản', updated: '2026-11-15' },
+  { id: 'blog-social-linkedin', channel: 'linkedin', label: 'LinkedIn', icon: 'eva:linkedin-fill', action: 'share', urlTemplate: 'https://www.linkedin.com/sharing/share-offsite/?url={url}', enabled: 'Có', order: 3, status: 'Đã xuất bản', updated: '2026-11-15' },
+  { id: 'blog-social-pinterest', channel: 'pinterest', label: 'Pinterest', icon: 'eva:pin-fill', action: 'share', urlTemplate: 'https://pinterest.com/pin/create/button/?url={url}&media={image}&description={title}', enabled: 'Không', order: 4, status: 'Đã xuất bản', updated: '2026-11-15' },
+  { id: 'blog-social-copy', channel: 'copy', label: 'Sao chép liên kết', icon: 'solar:copy-bold', action: 'copy', urlTemplate: '', enabled: 'Có', order: 5, status: 'Đã xuất bản', updated: '2026-11-15' },
+];
 
 const CMS_PROMOTION_SERVICE_SEEDS: Record<string, string | number>[] = [
   {
@@ -517,6 +629,28 @@ const CMS_GROUP: Sofa2AdminGroup = {
       ['Thêm trang dịch vụ', 'Xem trang client']
     ),
     mod(
+      'blog-categories',
+      'Chuyên mục blog',
+      'Quản lý taxonomy blog, đường dẫn danh mục, thứ tự hiển thị, mô tả SEO và trạng thái xuất bản trên trang khách.',
+      'solar:folder-with-files-bold-duotone',
+      [
+        { label: 'Chuyên mục', value: String(CMS_BLOG_CATEGORY_SEEDS.length) },
+        { label: 'Đang hiển thị', value: String(CMS_BLOG_CATEGORY_SEEDS.filter((row) => row.status === 'Đã xuất bản').length) },
+        { label: 'Bài viết mẫu', value: String(SOFA2_CMS_BLOG_SEEDS.length) },
+        { label: 'Trang client', value: '/sofa2/blog' },
+      ],
+      [
+        { key: 'label', label: 'Chuyên mục' },
+        { key: 'slug', label: 'Đường dẫn' },
+        { key: 'description', label: 'Mô tả' },
+        { key: 'order', label: 'Thứ tự', type: 'number' },
+        STATUS_COL,
+        { key: 'updated', label: 'Cập nhật' },
+      ],
+      CMS_BLOG_CATEGORY_SEEDS,
+      ['Thêm chuyên mục', 'Xem trang client']
+    ),
+    mod(
       'blog',
       'Trang blog',
       'Quản lý bài viết, chuyên mục, tác giả và lịch đăng bài.',
@@ -536,6 +670,70 @@ const CMS_GROUP: Sofa2AdminGroup = {
       ],
       SOFA2_CMS_BLOG_SEEDS,
       ['Viết bài', 'Duyệt bài']
+    ),
+    mod(
+      'blog-authors',
+      'Tác giả blog',
+      'Quản lý hồ sơ, chuyên môn, ảnh đại diện và trạng thái hiển thị của tác giả trên trang chi tiết bài viết.',
+      'solar:user-id-bold-duotone',
+      [
+        { label: 'Tác giả', value: String(CMS_BLOG_AUTHOR_SEEDS.length) },
+        { label: 'Đang hiển thị', value: String(CMS_BLOG_AUTHOR_SEEDS.filter((row) => row.status === 'Đã xuất bản').length) },
+        { label: 'Bài viết liên kết', value: String(SOFA2_CMS_BLOG_SEEDS.filter((row) => row.authorId).length) },
+        { label: 'Trang client', value: '/sofa2/blog/:slug' },
+      ],
+      [
+        { key: 'name', label: 'Tác giả' },
+        { key: 'role', label: 'Vai trò' },
+        { key: 'slug', label: 'Slug' },
+        STATUS_COL,
+        { key: 'updated', label: 'Cập nhật' },
+      ],
+      CMS_BLOG_AUTHOR_SEEDS,
+      ['Thêm tác giả', 'Xem trang client']
+    ),
+    mod(
+      'blog-comments',
+      'Bình luận blog',
+      'Duyệt, trả lời, từ chối hoặc đánh dấu spam bình luận; chỉ bình luận đã duyệt được hiển thị công khai.',
+      'solar:chat-round-dots-bold-duotone',
+      [
+        { label: 'Tổng bình luận', value: String(CMS_BLOG_COMMENT_SEEDS.length) },
+        { label: 'Chờ duyệt', value: String(CMS_BLOG_COMMENT_SEEDS.filter((row) => row.status === 'Chờ duyệt').length) },
+        { label: 'Đã duyệt', value: String(CMS_BLOG_COMMENT_SEEDS.filter((row) => row.status === 'Đã duyệt').length) },
+        { label: 'Spam / từ chối', value: String(CMS_BLOG_COMMENT_SEEDS.filter((row) => ['Spam', 'Từ chối'].includes(String(row.status))).length) },
+      ],
+      [
+        { key: 'postTitle', label: 'Bài viết' },
+        { key: 'name', label: 'Người bình luận' },
+        { key: 'content', label: 'Nội dung' },
+        { key: 'createdAt', label: 'Ngày gửi' },
+        STATUS_COL,
+      ],
+      CMS_BLOG_COMMENT_SEEDS,
+      ['Duyệt bình luận', 'Trả lời']
+    ),
+    mod(
+      'blog-social',
+      'Chia sẻ mạng xã hội',
+      'Cấu hình kênh, biểu tượng, URL chia sẻ và trạng thái hiển thị trên trang chi tiết bài viết.',
+      'solar:share-bold-duotone',
+      [
+        { label: 'Kênh cấu hình', value: String(CMS_BLOG_SOCIAL_SEEDS.length) },
+        { label: 'Đang bật', value: String(CMS_BLOG_SOCIAL_SEEDS.filter((row) => row.enabled === 'Có' && row.status === 'Đã xuất bản').length) },
+        { label: 'Trang client', value: '/sofa2/blog/:slug' },
+        { label: 'Hành động', value: 'Chia sẻ / sao chép link' },
+      ],
+      [
+        { key: 'label', label: 'Kênh chia sẻ' },
+        { key: 'channel', label: 'Mã kênh' },
+        { key: 'action', label: 'Hành động' },
+        { key: 'enabled', label: 'Đang bật' },
+        STATUS_COL,
+        { key: 'order', label: 'Thứ tự', type: 'number' },
+      ],
+      CMS_BLOG_SOCIAL_SEEDS,
+      ['Thêm kênh', 'Xem trang client']
     ),
     mod(
       'menu',

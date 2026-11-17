@@ -9,6 +9,7 @@ export type Sofa2CmsBlogPost = {
   title: string;
   slug: string;
   category: string;
+  categorySlug: string;
   excerpt: string;
   content: string;
   cover: string;
@@ -16,9 +17,57 @@ export type Sofa2CmsBlogPost = {
   status: string;
   views: number;
   author: string;
+  authorId: string;
   publishedAt: string;
   metaTitle: string;
   metaDescription: string;
+};
+
+export type Sofa2CmsBlogCategory = {
+  id: string;
+  slug: string;
+  label: string;
+  description: string;
+  cover: string;
+  status: string;
+  order: number;
+  metaTitle: string;
+  metaDescription: string;
+  ogImage: string;
+  indexable: boolean;
+};
+
+export type Sofa2CmsBlogAuthor = {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  bio: string;
+  avatar: string;
+  email: string;
+  facebook: string;
+  instagram: string;
+  linkedin: string;
+};
+
+export type Sofa2CmsBlogComment = {
+  id: string;
+  postSlug: string;
+  postTitle: string;
+  name: string;
+  content: string;
+  createdAt: string;
+  reply: string;
+};
+
+export type Sofa2CmsBlogSocialChannel = {
+  id: string;
+  channel: string;
+  label: string;
+  icon: string;
+  action: 'share' | 'copy';
+  urlTemplate: string;
+  order: number;
 };
 
 export type Sofa2CmsPageBlock = {
@@ -135,28 +184,12 @@ const seoFromRow = (row: Record<string, string | number> | undefined) => {
   };
 };
 
-const FALLBACK_BLOG_POSTS: Sofa2CmsBlogPost[] = SOFA2_BLOG_POSTS.map((post) => ({
-  id: post.id,
-  title: post.title,
-  slug: post.slug,
-  category: post.categoryLabel,
-  excerpt: post.excerpt,
-  content: post.content,
-  cover: post.image,
-  tags: [],
-  status: 'published',
-  views: 0,
-  author: post.author,
-  publishedAt: post.date,
-  metaTitle: post.title,
-  metaDescription: post.excerpt,
-}));
-
 const toBlogPost = (row: Record<string, string | number>): Sofa2CmsBlogPost => ({
   id: String(row.id ?? ''),
   title: String(row.title ?? ''),
   slug: String(row.slug ?? ''),
   category: String(row.category ?? ''),
+  categorySlug: String(row.categorySlug ?? SOFA2_BLOG_POSTS.find((post) => post.slug === String(row.slug ?? ''))?.category ?? ''),
   excerpt: String(row.excerpt ?? ''),
   content: String(row.content ?? ''),
   cover: String(row.cover ?? ''),
@@ -167,25 +200,67 @@ const toBlogPost = (row: Record<string, string | number>): Sofa2CmsBlogPost => (
   status: String(row.status ?? ''),
   views: Number(row.views ?? 0),
   author: String(row.author ?? ''),
+  authorId: String(row.authorId ?? ''),
   publishedAt: String(row.updated ?? ''),
   metaTitle: String(row.metaTitle ?? ''),
   metaDescription: String(row.metaDescription ?? ''),
 });
 
+const toBlogCategory = (row: Record<string, string | number>, index: number): Sofa2CmsBlogCategory => ({
+  id: String(row.id ?? `category-${index}`),
+  slug: String(row.slug ?? ''),
+  label: String(row.label ?? ''),
+  description: String(row.description ?? ''),
+  cover: String(row.cover ?? ''),
+  status: String(row.status ?? ''),
+  order: Number(row.order ?? index),
+  metaTitle: String(row.metaTitle ?? ''),
+  metaDescription: String(row.metaDescription ?? ''),
+  ogImage: String(row.ogImage ?? ''),
+  indexable: !['false', 'không'].includes(String(row.indexable ?? 'Có').toLocaleLowerCase()),
+});
+
+export function useCmsBlogCategories() {
+  const { rows, loading } = useSofa2AdminRows('cms', 'blog-categories');
+  const categories = rows.map(toBlogCategory)
+    .filter((category) => isPublished(category.status))
+    .sort((a, b) => a.order - b.order);
+  return { categories, loading };
+}
+
+export async function fetchPublishedBlogCategories(): Promise<Sofa2CmsBlogCategory[]> {
+  const rows = getSofa2AdminRows('cms', 'blog-categories');
+  return rows.map(toBlogCategory)
+    .filter((category) => isPublished(category.status))
+    .sort((a, b) => a.order - b.order);
+}
+
+const withCurrentBlogCategoryLabel = (post: Sofa2CmsBlogPost, categories: Sofa2CmsBlogCategory[]) => {
+  const category = categories.find((item) => item.slug === post.categorySlug);
+  return category ? { ...post, category: category.label } : post;
+};
+
+const getPublishedBlogPosts = (
+  rows: Record<string, string | number>[],
+  categories: Sofa2CmsBlogCategory[]
+) => rows
+  .filter((row) => isPublished(row.status))
+  .map(toBlogPost)
+  .filter((post) => categories.some((category) => category.slug === post.categorySlug))
+  .map((post) => withCurrentBlogCategoryLabel(post, categories));
+
 export function useCmsBlogPosts() {
   const { rows, loading } = useSofa2AdminRows('cms', 'blog');
-  const posts = rows.length
-    ? rows.filter((row) => isPublished(row.status)).map(toBlogPost)
-    : FALLBACK_BLOG_POSTS;
+  const { categories } = useCmsBlogCategories();
+  const posts = getPublishedBlogPosts(rows, categories);
   return { posts, loading };
 }
 
 export async function fetchPublishedBlogPosts(): Promise<Sofa2CmsBlogPost[]> {
   const cmsRows = getSofa2AdminRows('cms', 'blog');
-  if (!cmsRows.length) return FALLBACK_BLOG_POSTS;
-  const rows = cmsRows.filter((row) => isPublished(row.status));
-
-  return rows.map(toBlogPost);
+  if (!cmsRows.length) return [];
+  const categories = await fetchPublishedBlogCategories();
+  return getPublishedBlogPosts(cmsRows, categories);
 }
 
 export async function fetchBlogPostBySlug(slug: string): Promise<Sofa2CmsBlogPost | null> {
@@ -193,8 +268,64 @@ export async function fetchBlogPostBySlug(slug: string): Promise<Sofa2CmsBlogPos
   return posts.find((post) => post.slug === slug) ?? null;
 }
 
-export function hasCmsBlogPost(slug: string) {
-  return getSofa2AdminRows('cms', 'blog').some((row) => String(row.slug ?? '') === slug);
+const toBlogAuthor = (row: Record<string, string | number>): Sofa2CmsBlogAuthor => ({
+  id: String(row.id ?? ''),
+  name: String(row.name ?? ''),
+  slug: String(row.slug ?? ''),
+  role: String(row.role ?? ''),
+  bio: String(row.bio ?? ''),
+  avatar: String(row.avatar ?? ''),
+  email: String(row.email ?? ''),
+  facebook: String(row.facebook ?? ''),
+  instagram: String(row.instagram ?? ''),
+  linkedin: String(row.linkedin ?? ''),
+});
+
+export function useCmsBlogAuthors() {
+  const { rows, loading } = useSofa2AdminRows('cms', 'blog-authors');
+  const authors = rows.filter((row) => isPublished(row.status)).map(toBlogAuthor);
+  return { authors, loading };
+}
+
+export async function fetchPublishedBlogAuthors(): Promise<Sofa2CmsBlogAuthor[]> {
+  return getSofa2AdminRows('cms', 'blog-authors')
+    .filter((row) => isPublished(row.status))
+    .map(toBlogAuthor);
+}
+
+export function useCmsBlogComments(postSlug: string) {
+  const { rows, loading, createRow } = useSofa2AdminRows('cms', 'blog-comments');
+  const comments = rows
+    .filter((row) => String(row.postSlug ?? '') === postSlug && String(row.status ?? '') === 'Đã duyệt')
+    .map((row): Sofa2CmsBlogComment => ({
+      id: String(row.id ?? ''),
+      postSlug: String(row.postSlug ?? ''),
+      postTitle: String(row.postTitle ?? ''),
+      name: String(row.name ?? ''),
+      content: String(row.content ?? ''),
+      createdAt: String(row.createdAt ?? ''),
+      reply: String(row.reply ?? ''),
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return { comments, loading, createComment: createRow };
+}
+
+export function useCmsBlogSocialChannels() {
+  const { rows, loading } = useSofa2AdminRows('cms', 'blog-social');
+  const channels = rows
+    .filter((row) => isPublished(row.status)
+      && ['có', 'true', 'yes', '1'].includes(String(row.enabled ?? '').trim().toLocaleLowerCase()))
+    .map((row): Sofa2CmsBlogSocialChannel => ({
+      id: String(row.id ?? ''),
+      channel: String(row.channel ?? ''),
+      label: String(row.label ?? ''),
+      icon: String(row.icon ?? ''),
+      action: String(row.action ?? 'share') === 'copy' ? 'copy' : 'share',
+      urlTemplate: String(row.urlTemplate ?? ''),
+      order: Number(row.order ?? 0),
+    }))
+    .sort((a, b) => a.order - b.order);
+  return { channels, loading };
 }
 
 export async function fetchPublishedPageBlocks(slug: string): Promise<Sofa2CmsPageBlock[]> {
@@ -247,14 +378,17 @@ export function cmsBlogPostToUi(post: Sofa2CmsBlogPost, index: number) {
     id: post.slug || post.id,
     title: post.title,
     slug: post.slug,
-    category: post.slug,
+    category: post.categorySlug,
     categoryLabel: post.category,
+    authorId: post.authorId,
     excerpt: post.excerpt,
     content: post.content,
     image: post.cover || fallbackImages[index % fallbackImages.length],
     author: post.author || 'LUXE Sofa',
     date: post.publishedAt || '',
     readTime: `${Math.max(3, Math.ceil(post.content.length / 600))} phút`,
+    metaTitle: post.metaTitle || post.title,
+    metaDescription: post.metaDescription || post.excerpt,
   };
 }
 

@@ -15,9 +15,9 @@ import { RouterLink } from 'src/routes/components';
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
+import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { SOFA2_PAGE_IMAGES, SOFA2_BLOG_CATEGORIES } from 'src/sections/sofa2/sofa2-pages-data';
-import { useCmsSeo, cmsBlogPostToUi, useCmsBlogPosts } from 'src/sections/sofa2/sofa2-cms-client';
+import { useCmsSeo, cmsBlogPostToUi, useCmsBlogPosts, useCmsBlogCategories } from 'src/sections/sofa2/sofa2-cms-client';
 
 type UiPost = {
   id: string;
@@ -36,6 +36,7 @@ type UiPost = {
 export default function Page() {
   const { seo } = useCmsSeo('/sofa2/blog');
   const { posts: cmsPosts, loading } = useCmsBlogPosts();
+  const { categories } = useCmsBlogCategories();
   const posts = cmsPosts.map((post, index) => cmsBlogPostToUi(post, index) as UiPost);
   const featured = posts[0];
   const rest = posts.slice(1);
@@ -100,7 +101,7 @@ export default function Page() {
             clickable
             color="primary"
           />
-          {SOFA2_BLOG_CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <Chip
               key={cat.slug}
               label={cat.label}
