@@ -1,6 +1,9 @@
-// SOFA2 ADMIN — Module Khách hàng (đồng bộ với trang Tài khoản khách hàng /sofa2/account)
-// 7 trang: Dashboard, Hồ sơ, Đơn hàng, Phiếu bảo hành, Điểm tích lũy, Voucher, Khiếu nại.
+// SOFA2 ADMIN — Module Tài khoản khách hàng, dùng chung dữ liệu với các trang client /sofa2.
+// Bao phủ hồ sơ, đăng ký/đăng nhập/đặt lại mật khẩu, địa chỉ, đơn hàng, wishlist,
+// giao dịch, bảo hành, điểm, voucher và khiếu nại.
 // ----------------------------------------------------------------------
+
+import { SOFA2_PRODUCTS as CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
 
 import type { Sofa2CmsField, Sofa2CmsSchema, Sofa2CmsFieldType } from './sofa2-cms';
 import type { Sofa2AdminGroup, Sofa2AdminColumn, Sofa2AdminModule } from './sofa2-admin-data';
@@ -104,13 +107,19 @@ const TIERS = ['Thành viên', 'Bạc', 'Vàng', 'Kim cương'];
 const CITIES = ['TP.HCM', 'Hà Nội', 'Đà Nẵng', 'Bình Dương', 'Hải Phòng', 'Cần Thơ'];
 const STAFF = ['Minh Anh', 'Thu Hà', 'Hoàng Long', 'Quốc Bảo', 'Chưa gán'];
 const STYLES = ['Hiện đại', 'Tối giản', 'Bắc Âu', 'Cổ điển', 'Indochine'];
-const PAYMENTS = ['COD', 'Chuyển khoản', 'Thẻ tín dụng', 'Trả góp 0%', 'Ví điện tử'];
+const PAYMENTS = ['COD', 'Chuyển khoản', 'Thẻ tín dụng', 'Thẻ Visa/Master', 'Ví điện tử', 'Ví MoMo', 'VNPay', 'VNPay QR', 'Trả góp 0%', 'Trả góp'];
 const PRODUCTS = ['Sofa góc Milano', 'Sofa da Verona', 'Sofa băng Oslo', 'Ghế thư giãn Luna', 'Sofa nỉ Kyoto', 'Bàn trà Marble'];
 export const SOFA2_CUSTOMER_COMPLAINT_TYPES = ['Sản phẩm', 'Giao hàng', 'Lắp đặt', 'Dịch vụ', 'Thanh toán', 'Khác', 'Sản phẩm lỗi', 'Giao hàng trễ', 'Sai màu/kích thước', 'Thái độ nhân viên'];
 const NAMES = [SOFA2_DEMO_CUSTOMER_NAME, 'Trần Minh Khoa', 'Lê Hoàng Yến', 'Phạm Quốc Huy', 'Võ Ngọc Hân', 'Đặng Gia Bảo', 'Bùi Thanh Tâm', 'Hồ Mỹ Linh', 'Ngô Đức Thắng', 'Đỗ Phương Anh', 'Nguyễn Thùy Dương', 'Đỗ Anh Tuấn', 'Phan Ngọc Hà', 'Vũ Hoàng Nam', 'Trương Bảo Ngọc', 'Lý Gia Phúc', 'Mai Thanh Vy', 'Đặng Quốc Việt', 'Cao Minh Châu', 'Tạ Minh Trang'];
 const CUSTOMER_IDS = NAMES.map((_, i) => `KH-${1001 + i}`);
+const customerEmail = (i: number) => `khach${i + 1}@gmail.com`;
+const customerPhone = (i: number) => `09${String(12345678 + i * 1111).slice(0, 8)}`;
 const pick = <T,>(arr: T[], i: number) => arr[i % arr.length];
 const day = (i: number, m = 9) => `2026-${String(m).padStart(2, '0')}-${String((i * 3) % 27 + 1).padStart(2, '0')}`;
+const recentDay = (daysAgo: number) => {
+  const date = new Date(Date.UTC(2026, 10, 15 - daysAgo));
+  return date.toISOString().slice(0, 10);
+};
 const code = (p: string, i: number) => `${p}${String(1001 + i)}`;
 const gen = (n: number, fn: (i: number) => Row) => Array.from({ length: n }, (_, i) => ({ id: `r${i + 1}`, ...fn(i) }));
 
@@ -125,6 +134,26 @@ const ST = {
 };
 
 /** Shared order ledger: downstream warranty, points and complaint mock rows reference these codes. */
+const CUSTOMER_PROFILE_ROWS = gen(NAMES.length, (i) => ({
+  customerId: CUSTOMER_IDS[i],
+  name: NAMES[i],
+  phone: customerPhone(i),
+  email: customerEmail(i),
+  avatar: '',
+  birthday: `199${i % 10}-0${(i % 9) + 1}-15`,
+  gender: i % 2 ? 'Nam' : 'Nữ',
+  address: `${12 + i * 3} ${pick(['Nguyễn Trãi', 'Lê Lợi', 'Bạch Đằng', 'Hai Bà Trưng', 'Điện Biên Phủ'], i)}`,
+  city: pick(CITIES, i),
+  style: pick(STYLES, i),
+  emailOptIn: i % 3 ? 'Có' : 'Không',
+  smsOptIn: i % 4 ? 'Có' : 'Không',
+  emailVerified: i % 7 === 6 ? 'Không' : 'Có',
+  lastLogin: recentDay((i * 3) % 30),
+  failedAttempts: i === 17 ? 8 : i % 4,
+  lockUntil: i === 17 ? '2026-11-30' : '',
+  status: pick(ST.profile, i === 17 ? 2 : i % 7 === 6 ? 1 : 0),
+}));
+
 const CUSTOMER_ORDER_ROWS = gen(30, (i) => {
   const customerIndex = i % CUSTOMER_IDS.length;
   const total = 12_900_000 + i * 2_300_000;
@@ -132,8 +161,8 @@ const CUSTOMER_ORDER_ROWS = gen(30, (i) => {
     code: code('DH', i),
     customerId: CUSTOMER_IDS[customerIndex],
     customer: NAMES[customerIndex],
-    phone: `09${String(12345678 + customerIndex * 1111).slice(0, 8)}`,
-    email: `khach${customerIndex + 1}@gmail.com`,
+    phone: customerPhone(customerIndex),
+    email: customerEmail(customerIndex),
     product: pick(PRODUCTS, i),
     address: `${20 + i} Lê Lợi, ${pick(CITIES, customerIndex)}`,
     total,
@@ -155,10 +184,14 @@ export const SOFA2_CUSTOMER_GROUP: Sofa2AdminGroup = {
       [{ label: 'Khách hàng', value: '2.846', trend: '+6%' }, { label: 'Hoạt động 30 ngày', value: '1.112' }, { label: 'Chi tiêu TB', value: '18,4tr' }, { label: 'Quay lại mua', value: '34%' }],
       [{ key: 'customerId', label: 'Mã khách' }, { key: 'name', label: 'Khách hàng' }, { key: 'tier', label: 'Hạng' }, { key: 'orders', label: 'Đơn', type: 'number' }, { key: 'spent', label: 'Tổng chi', type: 'money' }, { key: 'staff', label: 'Chăm sóc' }, S],
       gen(NAMES.length, (i) => ({ customerId: CUSTOMER_IDS[i], name: NAMES[i], tier: pick(TIERS, i + 1), orders: (i % 6) + 1, spent: 8_500_000 * ((i % 6) + 1), lastOrder: day(i), staff: pick(STAFF, i), note: '', status: pick(ST.dashboard, i === 17 ? 3 : i % 5 === 4 ? 2 : i % 3 === 2 ? 1 : 0) }))),
-    mod('profiles', 'Hồ sơ', 'Thông tin cá nhân, địa chỉ giao hàng và tuỳ chọn nhận tin của khách.', 'solar:user-id-bold-duotone',
+    mod('accounts', 'Tài khoản truy cập', 'Trạng thái tài khoản, xác minh email, hoạt động đăng nhập và khóa/mở tài khoản.', 'solar:shield-user-bold-duotone',
+      [{ label: 'Tài khoản', value: '2.846' }, { label: 'Đã xác minh email', value: '91%' }, { label: 'Đăng nhập 30 ngày', value: '1.112' }, { label: 'Bị khóa', value: '4' }],
+      [{ key: 'customerId', label: 'Mã khách' }, { key: 'name', label: 'Khách hàng' }, { key: 'email', label: 'Email' }, { key: 'emailVerified', label: 'Email xác minh' }, { key: 'lastLogin', label: 'Đăng nhập gần nhất' }, { key: 'failedAttempts', label: 'Lần lỗi', type: 'number' }, { key: 'lockUntil', label: 'Khóa đến' }, S],
+      CUSTOMER_PROFILE_ROWS),
+    mod('profiles', 'Hồ sơ cá nhân', 'Thông tin cá nhân, địa chỉ giao hàng và tuỳ chọn nhận tin của khách.', 'solar:user-id-bold-duotone',
       [{ label: 'Hồ sơ', value: '2.846' }, { label: 'Đã xác minh', value: '91%' }, { label: 'Nhận email', value: '64%' }, { label: 'Nhận Zalo/SMS', value: '72%' }],
-      [{ key: 'customerId', label: 'Mã khách' }, { key: 'name', label: 'Họ tên' }, { key: 'phone', label: 'Điện thoại' }, { key: 'email', label: 'Email' }, { key: 'city', label: 'Tỉnh/thành' }, S],
-      gen(NAMES.length, (i) => ({ customerId: CUSTOMER_IDS[i], name: NAMES[i], phone: `09${String(12345678 + i * 1111).slice(0, 8)}`, email: `khach${i + 1}@gmail.com`, birthday: `199${i % 10}-0${(i % 9) + 1}-15`, gender: i % 2 ? 'Nam' : 'Nữ', address: `${12 + i} Nguyễn Huệ`, city: pick(CITIES, i), style: pick(STYLES, i), emailOptIn: i % 3 ? 'Có' : 'Không', smsOptIn: i % 4 ? 'Có' : 'Không', status: pick(ST.profile, i === 17 ? 2 : i % 7 === 6 ? 1 : 0) }))),
+      [{ key: 'customerId', label: 'Mã khách' }, { key: 'name', label: 'Họ tên' }, { key: 'phone', label: 'Điện thoại' }, { key: 'email', label: 'Email' }, { key: 'city', label: 'Tỉnh/thành' }, { key: 'emailVerified', label: 'Email xác minh' }, { key: 'lastLogin', label: 'Đăng nhập gần nhất' }, S],
+      CUSTOMER_PROFILE_ROWS),
     mod('customer-orders', 'Đơn hàng', 'Đơn mua của khách, hiển thị trong mục "Đơn hàng của tôi".', 'solar:bag-4-bold-duotone',
       [{ label: 'Đơn tháng', value: '468', trend: '+14%' }, { label: 'Giá trị TB', value: '21,6tr' }, { label: 'Đang giao', value: '37' }, { label: 'Tỷ lệ huỷ', value: '2,1%' }],
       [{ key: 'code', label: 'Mã đơn' }, { key: 'customer', label: 'Khách hàng' }, { key: 'product', label: 'Sản phẩm' }, { key: 'total', label: 'Tổng tiền', type: 'money' }, { key: 'payment', label: 'Thanh toán' }, S],
@@ -214,6 +247,149 @@ export const SOFA2_CUSTOMER_GROUP: Sofa2AdminGroup = {
         const customerIndex = i % CUSTOMER_IDS.length;
         return { code: code('KN', i), customerId: CUSTOMER_IDS[customerIndex], customer: NAMES[customerIndex], type: pick(SOFA2_CUSTOMER_COMPLAINT_TYPES, i), orderCode: code('DH', i), subject: pick(['Giao hàng chậm', 'Sản phẩm cần kiểm tra', 'Yêu cầu hỗ trợ đơn hàng', 'Sai thông tin thanh toán'], i), content: 'Khách phản ánh vấn đề cần được kiểm tra và phản hồi.', resolution: i % 4 === 3 ? 'Đã liên hệ khách và thống nhất phương án xử lý.' : '', priority: pick(['Cao', 'Trung bình', 'Thấp'], i), owner: pick(STAFF, i), deadline: day(i, 10), compensate: i % 3 ? 'false' : 'true', created: day(i), status: pick(ST.complaint, i) };
       })),
+    mod('addresses', 'Địa chỉ giao hàng', 'Sổ địa chỉ nhiều người nhận, đặt địa chỉ mặc định và ghi chú giao hàng cho khách.', 'solar:map-point-bold-duotone',
+      [{ label: 'Địa chỉ đang lưu', value: '5.120' }, { label: 'Địa chỉ mặc định', value: '2.846' }, { label: 'Ngoài vùng giao', value: '84' }, { label: 'Cập nhật tháng', value: '126' }],
+      [{ key: 'customerId', label: 'Mã khách' }, { key: 'customer', label: 'Khách hàng' }, { key: 'label', label: 'Nhãn' }, { key: 'recipient', label: 'Người nhận' }, { key: 'phone', label: 'Điện thoại' }, { key: 'city', label: 'Tỉnh/thành' }, { key: 'isDefault', label: 'Mặc định' }, S],
+      gen(30, (i) => {
+        const customerIndex = i % CUSTOMER_IDS.length;
+        const isDefault = i < CUSTOMER_IDS.length;
+        const suffix = Math.floor(i / CUSTOMER_IDS.length) + 1;
+        const city = pick(CITIES, customerIndex);
+        const district = pick(['Quận 1', 'Quận 3', 'Cầu Giấy', 'Thanh Xuân', 'Hải Châu', 'Ninh Kiều'], i);
+        const addressStatus = isDefault
+          ? 'Mặc định'
+          : i === 21 ? 'Ngoài vùng giao' : i === 25 ? 'Tạm ẩn' : i === 28 ? 'Đã xác minh' : 'Phụ';
+        return {
+          addressId: `ADDR-${CUSTOMER_IDS[customerIndex]}-${String(suffix).padStart(2, '0')}`,
+          customerId: CUSTOMER_IDS[customerIndex],
+          customer: NAMES[customerIndex],
+          label: isDefault ? 'Nhà' : pick(['Văn phòng', 'Nhà người thân', 'Cửa hàng'], i),
+          recipient: isDefault ? NAMES[customerIndex] : pick(NAMES, customerIndex + 3),
+          phone: customerPhone(isDefault ? customerIndex : (customerIndex + 1) % NAMES.length),
+          address: `${12 + i * 3} ${pick(['Nguyễn Trãi', 'Lê Lợi', 'Bạch Đằng', 'Hai Bà Trưng', 'Điện Biên Phủ'], i)}`,
+          ward: pick(['Bến Nghé', 'Thượng Đình', 'Thạch Thang', 'Bến Thành', 'An Khánh'], i),
+          district,
+          city,
+          zipCode: pick(['700000', '100000', '550000', '820000', '180000'], customerIndex),
+          deliveryType: pick(['Giao tận nhà', 'Giao giờ hành chính', 'Nhận tại cửa hàng'], i),
+          deliveryNote: i % 4 === 0 ? 'Gọi trước 15 phút khi giao.' : '',
+          isDefault: isDefault ? 'Có' : 'Không',
+          status: addressStatus,
+        };
+      })),
+    mod('wishlist', 'Yêu thích', 'Danh sách sản phẩm khách lưu; theo dõi thông báo giá và chuyển đổi sang giỏ hàng.', 'solar:heart-bold-duotone',
+      [{ label: 'Lượt lưu sản phẩm', value: '2.846' }, { label: 'Khách có wishlist', value: '934' }, { label: 'Thông báo giá bật', value: '682' }, { label: 'Tỷ lệ chuyển đơn', value: '14%' }],
+      [{ key: 'customer', label: 'Khách hàng' }, { key: 'product', label: 'Sản phẩm' }, { key: 'added', label: 'Ngày lưu' }, { key: 'notify', label: 'Báo giảm giá' }, S],
+      gen(40, (i) => {
+        const customerIndex = i % CUSTOMER_IDS.length;
+        const product = pick(CLIENT_PRODUCTS, i * 7 + customerIndex);
+        const status = i % 13 === 12 ? 'Đã bỏ' : i % 7 === 6 ? 'Đã mua' : 'Đang lưu';
+        return {
+          customerId: CUSTOMER_IDS[customerIndex],
+          customer: NAMES[customerIndex],
+          productId: product.id,
+          product: product.name,
+          added: recentDay((i * 2) % 60),
+          notify: i % 3 === 0 ? 'Có' : 'Không',
+          notifyStock: i % 4 === 0 ? 'Có' : 'Không',
+          status,
+        };
+      })),
+    mod('transactions', 'Lịch sử giao dịch', 'Đối soát thanh toán, hoàn tiền và phương thức giao dịch trong cổng tài khoản khách.', 'solar:wallet-money-bold-duotone',
+      [{ label: 'Giao dịch tháng', value: '1.032' }, { label: 'Thanh toán thành công', value: '986' }, { label: 'Đang xử lý/hoàn tiền', value: '41' }, { label: 'Lỗi cổng thanh toán', value: '5' }],
+      [{ key: 'txnId', label: 'Mã giao dịch' }, { key: 'customer', label: 'Khách hàng' }, { key: 'order', label: 'Mã đơn' }, { key: 'method', label: 'Phương thức' }, { key: 'amount', label: 'Số tiền', type: 'money' }, { key: 'date', label: 'Ngày giao dịch' }, { key: 'reference', label: 'Mã đối soát' }, S],
+      gen(CUSTOMER_ORDER_ROWS.length, (i) => {
+        const order: Row = CUSTOMER_ORDER_ROWS[i];
+        const statuses = ['Thành công', 'Thành công', 'Đang xử lý', 'Thất bại', 'Hoàn tiền', 'Đã hoàn'];
+        const status = pick(statuses, i);
+        return {
+          txnId: `GD-${order.customerId}-${String(i + 1).padStart(3, '0')}`,
+          customerId: order.customerId,
+          customer: order.customer,
+          order: order.code,
+          method: order.payment,
+          amount: order.total,
+          date: recentDay((i * 3) % 75),
+          reference: status === 'Thất bại' ? '' : `DEMO-${String(2611000 + i)}`,
+          note: status === 'Thành công' ? 'Đã đối soát với đơn hàng.'
+            : status === 'Đang xử lý' ? 'Đang chờ cổng thanh toán xác nhận.'
+              : status === 'Thất bại' ? 'Thanh toán không thành công; chưa ghi nhận tiền.'
+                : status === 'Hoàn tiền' ? 'Đã khởi tạo yêu cầu hoàn tiền.'
+                  : 'Đã hoàn tiền về phương thức thanh toán ban đầu.',
+          status,
+        };
+      })),
+    mod('registrations', 'Đăng ký tài khoản', 'Hồ sơ đăng ký website chờ xác minh, duyệt hoặc từ chối; không lưu mật khẩu.', 'solar:user-plus-bold-duotone',
+      [{ label: 'Chờ xác minh', value: '18' }, { label: 'Đăng ký tháng', value: '124' }, { label: 'Đã duyệt', value: '96' }, { label: 'Từ chối / trùng', value: '10' }],
+      [{ key: 'requestId', label: 'Mã đăng ký' }, { key: 'name', label: 'Họ tên' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Điện thoại' }, { key: 'source', label: 'Nguồn' }, { key: 'consent', label: 'Đồng ý điều khoản' }, { key: 'customerId', label: 'Mã khách đã tạo' }, { key: 'createdAt', label: 'Ngày gửi' }, S],
+      gen(20, (i) => {
+        const statuses = ['Chờ xác minh', 'Đang xem xét', 'Đã duyệt', 'Từ chối', 'Đã huỷ'];
+        const status = pick(statuses, i);
+        const isLead = status === 'Chờ xác minh' || status === 'Đang xem xét';
+        const email = isLead ? `dangky${String(i + 1).padStart(2, '0')}@example.test` : customerEmail(i);
+        const reviewed = !isLead && status !== 'Đã huỷ';
+        return {
+          requestId: `REG-2611-${String(i + 1).padStart(3, '0')}`,
+          name: isLead ? `${NAMES[i]} (đăng ký mới)` : NAMES[i],
+          email,
+          phone: customerPhone(i),
+          source: pick(['Website', 'Landing page', 'Cửa hàng', 'Khác'], i),
+          consent: i % 9 === 8 ? 'Không' : 'Có',
+          customerId: status === 'Đã duyệt' ? CUSTOMER_IDS[i] : '',
+          createdAt: recentDay((i * 2) % 21),
+          reviewedBy: reviewed ? pick(STAFF, i) : '',
+          reviewedAt: reviewed ? recentDay(Math.max(0, (i * 2) % 21 - 1)) : '',
+          note: status === 'Chờ xác minh' ? 'Chờ xác minh email; chưa tạo hồ sơ truy cập.'
+            : status === 'Đang xem xét' ? 'Đang kiểm tra thông tin đăng ký.'
+              : status === 'Đã duyệt' ? 'Đã duyệt; liên kết hồ sơ khách hàng tương ứng.'
+                : status === 'Từ chối' ? (i % 2 ? 'Thông tin không đầy đủ.' : 'Email đã thuộc hồ sơ hiện có.')
+                  : 'Người đăng ký đã yêu cầu huỷ.',
+          status,
+        };
+      })),
+    mod('login-activity', 'Lịch sử đăng nhập', 'Theo dõi sự kiện đăng nhập ở mức demo; chỉ lưu email, kết quả và thiết bị, tuyệt đối không lưu mật khẩu.', 'solar:shield-user-bold-duotone',
+      [{ label: 'Sự kiện 7 ngày', value: '428' }, { label: 'Thành công', value: '392' }, { label: 'Thất bại', value: '31' }, { label: 'Tài khoản khóa', value: '5' }],
+      [{ key: 'eventId', label: 'Mã sự kiện' }, { key: 'email', label: 'Email' }, { key: 'occurredAt', label: 'Thời gian' }, { key: 'result', label: 'Kết quả' }, { key: 'device', label: 'Thiết bị' }, { key: 'ip', label: 'IP' }, S],
+      gen(30, (i) => {
+        const isUnknown = i % 7 === 0;
+        const isLocked = i % 11 === 0;
+        const customerIndex = isLocked ? 17 : i % CUSTOMER_IDS.length;
+        const email = isUnknown ? `unknown${i + 1}@example.test` : customerEmail(customerIndex);
+        const needsReview = isUnknown || isLocked;
+        const status = i > 24 ? 'Đã lưu trữ' : needsReview ? 'Cần rà soát' : 'Demo';
+        return {
+          eventId: `AUTH-2611-${String(1100 - i).padStart(4, '0')}`,
+          email,
+          occurredAt: `${recentDay((i * 2) % 14)}T${String(8 + (i % 12)).padStart(2, '0')}:${String((i * 7) % 60).padStart(2, '0')}:00+07:00`,
+          result: isUnknown ? 'Không tìm thấy tài khoản (demo)'
+            : isLocked ? 'Tài khoản đã khóa (demo)'
+              : 'Đã ghi nhận demo — chưa xác thực',
+          device: pick(['Chrome / Windows', 'Safari / iOS', 'Chrome / Android', 'Firefox / macOS', 'Edge / Windows'], i),
+          ip: 'Không khả dụng trong demo',
+          note: isLocked ? 'Tài khoản đang bị khóa; không có xác thực mật khẩu trong demo.' : 'Mật khẩu và token không được lưu.',
+          status,
+        };
+      })),
+    mod('password-resets', 'Yêu cầu đặt lại mật khẩu', 'Danh sách yêu cầu quên mật khẩu; không lưu token hoặc mật khẩu, trạng thái xử lý được cập nhật thủ công.', 'solar:lock-keyhole-bold-duotone',
+      [{ label: 'Mới tiếp nhận', value: '7' }, { label: 'Đã gửi hướng dẫn', value: '18' }, { label: 'Hoàn tất', value: '104' }, { label: 'Hết hạn', value: '3' }],
+      [{ key: 'requestId', label: 'Mã yêu cầu' }, { key: 'email', label: 'Email' }, { key: 'requestedAt', label: 'Ngày yêu cầu' }, { key: 'processedBy', label: 'Người xử lý' }, { key: 'note', label: 'Ghi chú' }, S],
+      gen(18, (i) => {
+        const statuses = ['Tiếp nhận', 'Đã gửi hướng dẫn', 'Hoàn tất', 'Hết hạn', 'Từ chối'];
+        const status = pick(statuses, i);
+        const processed = status !== 'Tiếp nhận';
+        return {
+          requestId: `PWD-2611-${String(20 - i).padStart(3, '0')}`,
+          email: customerEmail(i % CUSTOMER_IDS.length),
+          requestedAt: `${recentDay((i * 3) % 30)}T${String(9 + (i % 10)).padStart(2, '0')}:${String((i * 11) % 60).padStart(2, '0')}:00+07:00`,
+          processedBy: processed ? pick(STAFF, i + 1) : '',
+          note: status === 'Tiếp nhận' ? 'Yêu cầu demo mới; chưa gửi email thực.'
+            : status === 'Đã gửi hướng dẫn' ? 'Đã hướng dẫn khách qua kênh chăm sóc; không phát hành token trong demo.'
+              : status === 'Hoàn tất' ? 'Đã hoàn tất quy trình demo; không thay đổi mật khẩu thật.'
+                : status === 'Hết hạn' ? 'Yêu cầu quá thời hạn xử lý demo.'
+                  : 'Không thể xác minh yêu cầu; đã từ chối trong dữ liệu demo.',
+          status,
+        };
+      })),
   ],
 };
 
@@ -231,6 +407,16 @@ export const SOFA2_CUSTOMER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('staff', 'Nhân viên chăm sóc', 'select', 'display', { options: STAFF }),
     SEO_NOTE,
   ]),
+  accounts: schema('tài khoản khách hàng', 'customerId', ST.profile, [
+    f('customerId', 'Mã khách hàng', 'text', 'content', { required: true, placeholder: 'KH-1###' }),
+    f('name', 'Họ tên', 'text', 'content', { required: true, maxLength: 80 }),
+    f('email', 'Email đăng nhập', 'text', 'content', { required: true }),
+    f('phone', 'Số điện thoại', 'text', 'content', { required: true, maxLength: 15 }),
+    f('emailVerified', 'Email đã xác minh', 'switch', 'display'),
+    f('lastLogin', 'Đăng nhập gần nhất', 'date', 'display'),
+    f('failedAttempts', 'Số lần đăng nhập chưa xác thực', 'number', 'display'),
+    f('lockUntil', 'Khóa đến ngày', 'date', 'display'),
+  ], ST.profile[1], '/sofa2/login'),
   profiles: schema('hồ sơ', 'name', ST.profile, [
     f('customerId', 'Mã khách hàng', 'text', 'content', { required: true }),
     f('name', 'Họ tên', 'text', 'content', { required: true, maxLength: 80 }),
@@ -244,6 +430,10 @@ export const SOFA2_CUSTOMER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('style', 'Phong cách yêu thích', 'select', 'display', { options: STYLES }),
     f('emailOptIn', 'Nhận email khuyến mãi', 'switch', 'display'),
     f('smsOptIn', 'Nhận SMS/Zalo', 'switch', 'display'),
+    f('emailVerified', 'Email đã xác minh', 'switch', 'display'),
+    f('lastLogin', 'Đăng nhập gần nhất', 'date', 'display'),
+    f('failedAttempts', 'Số lần đăng nhập demo', 'number', 'display'),
+    f('lockUntil', 'Khóa đến ngày', 'date', 'display'),
     f('status', 'Trạng thái hồ sơ', 'select', 'display', { options: ST.profile }),
   ], ST.profile[1], '/sofa2/profile'),
   'customer-orders': schema('đơn hàng', 'code', ST.order, [
@@ -295,6 +485,70 @@ export const SOFA2_CUSTOMER_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('startDate', 'Bắt đầu', 'date', 'display'),
     f('endDate', 'Hết hạn', 'date', 'display'),
   ], ST.voucher[1], '/sofa2/vouchers'),
+  addresses: schema('địa chỉ giao hàng', 'addressId', ['Mặc định', 'Phụ', 'Đã xác minh', 'Ngoài vùng giao', 'Tạm ẩn'], [
+    f('addressId', 'Mã địa chỉ', 'text', 'content', { required: true }),
+    f('customerId', 'Mã khách hàng', 'text', 'content', { required: true }),
+    f('customer', 'Khách hàng', 'text', 'content', { required: true }),
+    f('label', 'Nhãn địa chỉ', 'text', 'content', { required: true, placeholder: 'Nhà / Văn phòng' }),
+    f('recipient', 'Người nhận', 'text', 'content', { required: true }),
+    f('phone', 'Điện thoại nhận hàng', 'text', 'content', { required: true }),
+    f('address', 'Địa chỉ chi tiết', 'textarea', 'content', { required: true, multiline: 2 }),
+    f('ward', 'Phường / xã', 'text', 'content'),
+    f('district', 'Quận / huyện', 'text', 'content'),
+    f('city', 'Tỉnh / thành phố', 'select', 'content', { options: CITIES }),
+    f('zipCode', 'Mã bưu chính', 'text', 'content'),
+    f('deliveryType', 'Hình thức giao', 'select', 'content', { options: ['Giao tận nhà', 'Giao giờ hành chính', 'Nhận tại cửa hàng'] }),
+    f('deliveryNote', 'Ghi chú giao hàng', 'textarea', 'content', { multiline: 2 }),
+    f('isDefault', 'Địa chỉ mặc định', 'switch', 'display'),
+  ], 'Phụ', '/sofa2/addresses'),
+  wishlist: schema('sản phẩm yêu thích', 'product', ['Đang lưu', 'Đã mua', 'Đã bỏ'], [
+    f('customerId', 'Mã khách hàng', 'text', 'content', { required: true }),
+    f('customer', 'Khách hàng', 'text', 'content', { required: true }),
+    f('productId', 'Mã sản phẩm', 'text', 'content'),
+    f('product', 'Sản phẩm', 'select', 'content', { required: true, options: CLIENT_PRODUCTS.map((product) => product.name) }),
+    f('added', 'Ngày lưu', 'date', 'display'),
+    f('notify', 'Thông báo giảm giá', 'select', 'display', { options: ['Có', 'Không'] }),
+  ], 'Đang lưu', '/sofa2/wishlist'),
+  transactions: schema('giao dịch thanh toán', 'txnId', ['Thành công', 'Đang xử lý', 'Thất bại', 'Hoàn tiền', 'Đã hoàn'], [
+    f('txnId', 'Mã giao dịch', 'text', 'content', { required: true }),
+    f('customerId', 'Mã khách hàng', 'text', 'content', { required: true }),
+    f('customer', 'Khách hàng', 'text', 'content', { required: true }),
+    f('order', 'Mã đơn hàng', 'text', 'content', { required: true }),
+    f('method', 'Phương thức thanh toán', 'select', 'content', { required: true, options: PAYMENTS }),
+    f('amount', 'Số tiền (₫)', 'number', 'content', { required: true }),
+    f('date', 'Ngày giao dịch', 'date', 'display'),
+    f('reference', 'Mã tham chiếu cổng thanh toán', 'text', 'display'),
+    f('note', 'Ghi chú đối soát / hoàn tiền', 'textarea', 'display', { multiline: 2 }),
+  ], 'Đang xử lý', '/sofa2/transactions'),
+  registrations: schema('yêu cầu đăng ký tài khoản', 'requestId', ['Chờ xác minh', 'Đang xem xét', 'Đã duyệt', 'Từ chối', 'Đã huỷ'], [
+    f('requestId', 'Mã yêu cầu', 'text', 'content', { required: true }),
+    f('name', 'Họ tên', 'text', 'content', { required: true, maxLength: 80 }),
+    f('email', 'Email', 'text', 'content', { required: true }),
+    f('phone', 'Số điện thoại', 'text', 'content', { required: true }),
+    f('customerId', 'Mã hồ sơ sau khi duyệt', 'text', 'display', { helper: 'Để trống khi chưa tạo hồ sơ.' }),
+    f('source', 'Nguồn đăng ký', 'select', 'display', { options: ['Website', 'Landing page', 'Cửa hàng', 'Khác'] }),
+    f('consent', 'Đồng ý điều khoản', 'switch', 'display'),
+    f('createdAt', 'Ngày gửi', 'date', 'display'),
+    f('reviewedBy', 'Người xét duyệt', 'text', 'display'),
+    f('reviewedAt', 'Ngày xét duyệt', 'date', 'display'),
+    f('note', 'Ghi chú xét duyệt', 'textarea', 'display', { multiline: 3 }),
+  ], 'Chờ xác minh', '/sofa2/register'),
+  'login-activity': schema('sự kiện đăng nhập', 'eventId', ['Demo', 'Cần rà soát', 'Đã lưu trữ'], [
+    f('eventId', 'Mã sự kiện', 'text', 'content', { required: true }),
+    f('email', 'Email đăng nhập', 'text', 'content', { required: true }),
+    f('occurredAt', 'Thời gian', 'text', 'display'),
+    f('result', 'Kết quả', 'text', 'display'),
+    f('device', 'Thiết bị / trình duyệt', 'text', 'display'),
+    f('ip', 'Địa chỉ IP', 'text', 'display'),
+    f('note', 'Ghi chú an toàn', 'textarea', 'display', { multiline: 2 }),
+  ], 'Demo', '/sofa2/login'),
+  'password-resets': schema('yêu cầu đặt lại mật khẩu', 'requestId', ['Tiếp nhận', 'Đã gửi hướng dẫn', 'Hoàn tất', 'Hết hạn', 'Từ chối'], [
+    f('requestId', 'Mã yêu cầu', 'text', 'content', { required: true }),
+    f('email', 'Email tài khoản', 'text', 'content', { required: true }),
+    f('requestedAt', 'Thời gian yêu cầu', 'text', 'display'),
+    f('processedBy', 'Người xử lý', 'text', 'display'),
+    f('note', 'Ghi chú xử lý', 'textarea', 'display', { multiline: 2, helper: 'Không lưu token đặt lại hoặc mật khẩu.' }),
+  ], 'Tiếp nhận', '/sofa2/forgot-password'),
   complaints: schema('khiếu nại', 'code', ST.complaint, [
     f('code', 'Mã khiếu nại', 'text', 'content', { required: true }),
     f('customerId', 'Mã khách hàng', 'text', 'content', { required: true, placeholder: 'KH-1001' }),

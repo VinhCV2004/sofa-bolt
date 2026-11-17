@@ -56,6 +56,7 @@ import {
   type AdminRow,
   getSofa2AdminRows,
   useSofa2AdminRows,
+  createSofa2AdminRow,
   loadSofa2DealerRows,
   syncSofa2DealerRows,
 } from '../sofa2-admin-store';
@@ -459,9 +460,35 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           String(row[key] ?? '').trim().toLowerCase() === candidate
         )) next[key] = message;
       };
-      if (['dashboard', 'profiles'].includes(module.slug)) uniqueValue('customerId', 'Mã khách hàng đã được sử dụng.');
+      if (['dashboard', 'accounts', 'profiles'].includes(module.slug)) uniqueValue('customerId', 'Mã khách hàng đã được sử dụng.');
       if (['customer-orders', 'warranties', 'complaints'].includes(module.slug)) uniqueValue('code', 'Mã này đã được sử dụng.');
       if (module.slug === 'warranties') uniqueValue('serial', 'Serial đã được đăng ký bảo hành.');
+      if (module.slug === 'addresses') uniqueValue('addressId', 'Mã địa chỉ đã được sử dụng.');
+      if (module.slug === 'transactions') uniqueValue('txnId', 'Mã giao dịch đã tồn tại.');
+      if (['registrations', 'password-resets'].includes(module.slug)) uniqueValue('requestId', 'Mã yêu cầu đã tồn tại.');
+      if (module.slug === 'login-activity') uniqueValue('eventId', 'Mã sự kiện đã tồn tại.');
+      if (['registrations', 'password-resets', 'login-activity'].includes(module.slug)) {
+        const email = String(form.values.email ?? '').trim().toLowerCase();
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Vui lòng nhập email hợp lệ.';
+      }
+      if (module.slug === 'registrations') {
+        const email = String(form.values.email ?? '').trim().toLowerCase();
+        const pendingEmail = rows.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index) &&
+          String(row.email ?? '').trim().toLowerCase() === email &&
+          ['Chờ xác minh', 'Đang xem xét'].includes(String(row.status))
+        );
+        if (email && pendingEmail) next.email = 'Email đã có yêu cầu đăng ký đang chờ xử lý.';
+      }
+      if (module.slug === 'wishlist') {
+        const duplicateProduct = rows.some((row, index) =>
+          !(form.mode === 'edit' && index === form.index) &&
+          String(row.customerId ?? '') === String(form.values.customerId ?? '') &&
+          String(row.productId ?? row.product ?? '') === String(form.values.productId ?? form.values.product ?? '') &&
+          String(row.status) !== 'Đã bỏ'
+        );
+        if (duplicateProduct) next.product = 'Sản phẩm này đã có trong danh sách yêu thích của khách.';
+      }
 
       const profiles = getSofa2AdminRows('customer', 'profiles');
       const customerId = String(form.values.customerId ?? '').trim();
@@ -478,7 +505,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           || getSofa2AdminRows('shopping', 'transactions').some((item) => String(item.order ?? '') === oldCode);
         if (isLinked) next.code = 'Không thể đổi mã đơn đã được liên kết với bảo hành, khiếu nại hoặc thanh toán.';
       }
-      if (!['dashboard', 'profiles'].includes(module.slug) && module.slug !== 'vouchers' && customerId && !profile) {
+      if (!['dashboard', 'accounts', 'profiles'].includes(module.slug) && module.slug !== 'vouchers' && customerId && !profile) {
         next.customerId = 'Mã khách hàng chưa có hồ sơ.';
       }
       if (module.slug === 'vouchers' && customerId && customerId !== 'Tất cả thành viên' && !profile) {
@@ -487,7 +514,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       if (profile && String(form.values.customer ?? '').trim() && String(form.values.customer).trim() !== String(profile.name ?? '').trim()) {
         next.customer = 'Tên khách hàng không khớp với mã hồ sơ đã chọn.';
       }
-      if (module.slug === 'profiles') {
+      if (['profiles', 'accounts'].includes(module.slug)) {
         const email = String(form.values.email ?? '').trim().toLowerCase();
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Vui lòng nhập email hợp lệ.';
         if (email && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
@@ -501,6 +528,9 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         if (form.mode === 'edit' && String(form.values.customerId) !== String(rows[form.index]?.customerId)) {
           next.customerId = 'Không thể đổi mã khách hàng sau khi tạo vì các giao dịch đang liên kết mã này.';
         }
+      }
+      if (module.slug === 'transactions' && Number(form.values.amount) <= 0) {
+        next.amount = 'Số tiền giao dịch phải lớn hơn 0.';
       }
       if (module.slug === 'customer-orders') {
         if (Number(form.values.total) <= 0) next.total = 'Tổng tiền đơn hàng phải lớn hơn 0.';
@@ -1091,6 +1121,15 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       if (field.type === 'number') clean[field.key] = Number(clean[field.key]) || 0;
       else clean[field.key] = String(clean[field.key] ?? '').trim();
     });
+    if (group.slug === 'customer' && ['registrations', 'password-resets'].includes(module.slug)) {
+      clean.email = String(clean.email ?? '').trim().toLowerCase();
+    }
+    if (group.slug === 'customer' && module.slug === 'addresses') {
+      const isDefault = isPortalEnabled(clean.isDefault);
+      clean.isDefault = isDefault ? 'Có' : 'Không';
+      if (isDefault) clean.status = 'Mặc định';
+      else if (String(clean.status) === 'Mặc định') clean.status = 'Phụ';
+    }
     if (group.slug === 'access' && module.slug === 'users') {
       clean.email = String(clean.email ?? '').toLowerCase();
     }
@@ -1231,11 +1270,60 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     }
     if (fields.some((x) => x.key === 'updated')) clean.updated = sofa2Today();
 
+    let approvedProfileToCreate: AdminRow | null = null;
+    if (group.slug === 'customer' && module.slug === 'registrations'
+      && ['Đã duyệt', 'Từ chối'].includes(String(clean.status))) {
+      clean.reviewedAt = sofa2Today();
+      clean.reviewedBy = getSofa2DemoAdminSession()?.name ?? 'Quản trị viên demo';
+      if (String(clean.status) === 'Đã duyệt') {
+        const email = String(clean.email ?? '').trim().toLowerCase();
+        const existingProfile = getSofa2AdminRows('customer', 'profiles').find(
+          (profile) => String(profile.email ?? '').trim().toLowerCase() === email
+        );
+        const customerId = String(existingProfile?.customerId ?? clean.customerId ?? '')
+          || `KH-${String(Date.now()).slice(-6)}`;
+        clean.customerId = customerId;
+        if (!existingProfile) {
+          approvedProfileToCreate = {
+            customerId,
+            name: String(clean.name ?? ''),
+            phone: String(clean.phone ?? ''),
+            email,
+            avatar: '',
+            birthday: '',
+            gender: '',
+            address: '',
+            city: '',
+            style: '',
+            emailOptIn: 'Có',
+            smsOptIn: 'Không',
+            emailVerified: 'Không',
+            lastLogin: '',
+            failedAttempts: 0,
+            lockUntil: '',
+            status: 'Chưa xác minh',
+          };
+        }
+      }
+    }
+
     const previousRow = form.mode === 'edit' ? rows[form.index] : undefined;
     if (form.mode === 'create') {
       createRow(clean);
     } else {
       updateRow(form.index, clean);
+    }
+    if (approvedProfileToCreate) createSofa2AdminRow('customer', 'profiles', approvedProfileToCreate);
+    if (group.slug === 'customer' && module.slug === 'addresses' && isPortalEnabled(clean.isDefault)) {
+      getSofa2AdminRows('customer', 'addresses').forEach((address, index) => {
+        if (
+          String(address.customerId ?? '') === String(clean.customerId ?? '') &&
+          String(address.addressId ?? '') !== String(clean.addressId ?? '') &&
+          isPortalEnabled(address.isDefault)
+        ) {
+          updateRow(index, { ...address, isDefault: 'Không', status: 'Phụ' });
+        }
+      });
     }
 
     let generatedOrderCode = '';
@@ -1406,9 +1494,15 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           return 'Chiến dịch voucher đã có khách nhận; hãy tạm dừng hoặc hết hạn thay vì xoá để giữ lịch sử.';
         }
       }
-      if (module.slug === 'profiles' && ['customer-orders', 'warranties', 'points', 'complaints', 'vouchers'].some((name) =>
+      if (['profiles', 'accounts'].includes(module.slug) && ['customer-orders', 'warranties', 'points', 'complaints', 'vouchers', 'addresses', 'wishlist', 'transactions'].some((name) =>
         linked(name, (item) => String(item.customerId ?? '') === customerId)
-      )) return 'Khách hàng còn giao dịch liên kết; hãy lưu trữ hồ sơ thay vì xoá.';
+      )) return 'Khách hàng còn đơn hàng, địa chỉ hoặc lịch sử liên kết; hãy khóa/lưu trữ hồ sơ thay vì xoá.';
+      if (module.slug === 'registrations' && String(row.status) === 'Đã duyệt') {
+        return 'Yêu cầu đã tạo hồ sơ khách hàng; hãy lưu trữ yêu cầu thay vì xoá lịch sử đồng ý.';
+      }
+      if (module.slug === 'transactions' && ['Thành công', 'Hoàn tiền', 'Đã hoàn'].includes(String(row.status))) {
+        return 'Giao dịch đã được ghi nhận tài chính; hãy cập nhật trạng thái hoặc ghi chú thay vì xoá.';
+      }
       if (module.slug === 'customer-orders' && (
         linked('warranties', (item) => String(item.orderCode ?? '') === String(row.code ?? ''))
         || getSofa2AdminRows('shopping', 'transactions').some((item) => String(item.order ?? '') === String(row.code ?? ''))
@@ -1589,7 +1683,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     const value = form.values[field.key] ?? '';
     const error = errors[field.key];
     const isCustomerLookup = group.slug === 'customer'
-      && !['dashboard', 'profiles'].includes(module.slug)
+      && !['dashboard', 'accounts', 'profiles'].includes(module.slug)
       && ['customerId', 'customer', 'orderCode'].includes(field.key);
     const isHrJobLookup = group.slug === 'hr'
       && ['submit-cv', 'applicant-profile'].includes(module.slug)
