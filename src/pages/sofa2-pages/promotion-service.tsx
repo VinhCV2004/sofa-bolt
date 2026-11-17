@@ -21,32 +21,11 @@ import { varAlpha, textGradient } from 'src/theme/styles';
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { SOFA2_FAQS, SOFA2_PAGE_IMAGES, SOFA2_PROMOTION_SERVICES } from 'src/sections/sofa2/sofa2-pages-data';
+import { SOFA2_FAQS, SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 
 // ----------------------------------------------------------------------
-
-const COVERED = [
-  'Tư vấn và khảo sát miễn phí tận nơi',
-  'Báo giá chi tiết minh bạch trước khi thực hiện',
-  'Thực hiện bởi nghệ nhân lành nghề',
-  'Sử dụng vật tư chính hãng, an toàn',
-  'Kiểm tra chất lượng sau khi hoàn thành',
-  'Cấp phiếu bảo hành dịch vụ',
-];
-
-const STEPS = [
-  { title: 'Tiếp nhận', desc: 'Liên hệ qua hotline hoặc đặt lịch online.' },
-  { title: 'Khảo sát', desc: 'Chuyên gia đánh giá tình trạng tận nơi.' },
-  { title: 'Thực hiện', desc: 'Nghệ nhân xử lý với máy móc chuyên dụng.' },
-  { title: 'Bàn giao', desc: 'Kiểm tra chất lượng và cấp phiếu bảo hành.' },
-];
-
-const PRICING = [
-  { tier: 'Cơ bản', price: 'Miễn phí', period: 'năm đầu', features: ['Bảo trì định kỳ 2 lần/năm', 'Tư vấn qua điện thoại', 'Bảo hành khung gỗ 10 năm'], popular: false },
-  { tier: 'Tiêu chuẩn', price: '500.000đ', period: '/năm', features: ['Bảo trì định kỳ 4 lần/năm', 'Vệ sinh sofa 1 lần/năm', 'Ưu đãi 20% sửa chữa', 'Bảo hành 10 năm'], popular: true },
-  { tier: 'Cao cấp', price: '1.200.000đ', period: '/năm', features: ['Bảo trì không giới hạn', 'Vệ sinh sofa 2 lần/năm', 'Ưu đãi 30% sửa chữa', 'Hỗ trợ 24/7', 'Bảo hành 10 năm'], popular: false },
-];
 
 const SERVICE_IMAGES: Record<string, string> = {
   warranty: SOFA2_PAGE_IMAGES.service4,
@@ -56,10 +35,26 @@ const SERVICE_IMAGES: Record<string, string> = {
   returns: SOFA2_PAGE_IMAGES.service1,
 };
 
+const parseLines = (value: unknown) => String(value ?? '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+const parsePairs = (value: unknown) => parseLines(value).map((line) => {
+  const [title = '', desc = ''] = line.split('|').map((part) => part.trim());
+  return { title, desc };
+}).filter((item) => item.title);
+const parsePlans = (value: unknown) => parseLines(value).map((line) => {
+  const [tier = '', price = '', period = '', rawFeatures = '', popular = ''] = line.split('|').map((part) => part.trim());
+  return { tier, price, period, features: rawFeatures.split(';').map((feature) => feature.trim()).filter(Boolean), popular: popular === 'Có' };
+}).filter((plan) => plan.tier);
+
 export default function Page() {
   const theme = useTheme();
   const { service } = useParams();
-  const item = SOFA2_PROMOTION_SERVICES.find((s) => s.slug === service);
+  const { rows: serviceRows } = useSofa2AdminRows('cms', 'promotion-services');
+  const item = serviceRows.find((row) => String(row.slug ?? '') === service && String(row.status ?? '') === 'Đã xuất bản');
+  const covered = parseLines(item?.included);
+  const steps = parsePairs(item?.steps);
+  const plans = parsePlans(item?.plans);
+  const serviceFaqs = parsePairs(item?.faq);
+  const faqs = serviceFaqs.length ? serviceFaqs : SOFA2_FAQS.map((faq) => ({ title: faq.question, desc: faq.answer }));
   const [expanded, setExpanded] = useState<string | false>(false);
 
   if (!item) {
@@ -83,14 +78,15 @@ export default function Page() {
   return (
     <>
       <Helmet>
-        <title>{`${item.title} - LUXE Sofa`}</title>
+        <title>{String(item.metaTitle || `${item.title} - LUXE Sofa`)}</title>
+        {String(item.metaDescription ?? '') && <meta name="description" content={String(item.metaDescription)} />}
       </Helmet>
 
       <Sofa2PageHero
         overline="Dịch vụ hậu mãi"
-        title={item.title}
-        subtitle={item.description}
-        image={SERVICE_IMAGES[item.slug] ?? SOFA2_PAGE_IMAGES.service1}
+        title={String(item.title ?? '')}
+        subtitle={String(item.description ?? '')}
+        image={String(item.image || SERVICE_IMAGES[String(item.slug)] || SOFA2_PAGE_IMAGES.service1)}
       />
 
       {/* Description + covered */}
@@ -100,17 +96,14 @@ export default function Page() {
             <Stack spacing={3} component={m.div} variants={varFade({ distance: 24 }).inUp}>
               <Typography variant="overline" sx={{ color: 'text.disabled' }}>Mô tả chi tiết</Typography>
               <Typography variant="h3">{item.title}</Typography>
-              <Typography sx={{ color: 'text.secondary' }}>{item.description}</Typography>
-              <Typography sx={{ color: 'text.secondary' }}>
-                Đội ngũ chuyên gia của LUXE Sofa cam kết mang đến chất lượng dịch vụ tốt nhất. Mọi quy
-                trình đều tuân thủ tiêu chuẩn khắt khe để đảm bảo sự hài lòng tuyệt đối của khách hàng.
-              </Typography>
+              <Typography sx={{ color: 'text.secondary' }}>{String(item.description ?? '')}</Typography>
+              <Typography sx={{ color: 'text.secondary' }}>{String(item.detail ?? '')}</Typography>
             </Stack>
           </Grid>
           <Grid xs={12} md={5}>
             <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ p: 4, borderRadius: 2, bgcolor: (t) => varAlpha(t.vars.palette.primary.mainChannel, 0.04) }}>
               <Typography variant="h6">Dịch vụ bao gồm</Typography>
-              {COVERED.map((c) => (
+              {covered.map((c) => (
                 <Stack key={c} direction="row" spacing={1.5} alignItems="flex-start">
                   <Iconify icon="eva:checkmark-circle-2-fill" sx={{ color: 'primary.main', mt: 0.25 }} width={20} />
                   <Typography variant="body2">{c}</Typography>
@@ -125,10 +118,10 @@ export default function Page() {
       <Sofa2Section bg="grey">
         <Stack spacing={2} sx={{ mb: { xs: 5, md: 8 } }}>
           <Typography variant="overline" sx={{ color: 'text.disabled' }}>Quy trình</Typography>
-          <Typography variant="h2">Bốn bước thực hiện</Typography>
+          <Typography variant="h2">Quy trình thực hiện</Typography>
         </Stack>
         <Grid container spacing={3}>
-          {STEPS.map((step, index) => (
+          {steps.map((step, index) => (
             <Grid key={step.title} xs={12} sm={6} md={3}>
               <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ position: 'relative', p: 3 }}>
                 <Box sx={{ width: 56, height: 56, display: 'flex', borderRadius: '50%', alignItems: 'center', justifyContent: 'center', bgcolor: 'primary.main', color: 'common.white', fontWeight: 'fontWeightBold', fontSize: 22 }}>
@@ -143,13 +136,13 @@ export default function Page() {
       </Sofa2Section>
 
       {/* Pricing table */}
-      <Sofa2Section>
+      {plans.length > 0 && <Sofa2Section>
         <Stack spacing={2} sx={{ textAlign: 'center', maxWidth: 640, mx: 'auto', mb: { xs: 5, md: 8 } }}>
           <Typography variant="overline" sx={{ color: 'text.disabled' }}>Bảng giá</Typography>
           <Typography variant="h2">Gói dịch vụ</Typography>
         </Stack>
         <Grid container spacing={3} alignItems="stretch">
-          {PRICING.map((plan) => (
+          {plans.map((plan) => (
             <Grid key={plan.tier} xs={12} md={4}>
               <Stack
                 component={m.div}
@@ -183,14 +176,14 @@ export default function Page() {
                     </Stack>
                   ))}
                 </Stack>
-                <Button component={RouterLink} href="/sofa2/contact" variant={plan.popular ? 'contained' : 'outlined'} sx={{ mt: 'auto' }} endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}>
+                <Button component={RouterLink} href={`/sofa2/contact?service=${encodeURIComponent(String(item.title ?? ''))}`} variant={plan.popular ? 'contained' : 'outlined'} sx={{ mt: 'auto' }} endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}>
                   Đặt lịch
                 </Button>
               </Stack>
             </Grid>
           ))}
         </Grid>
-      </Sofa2Section>
+      </Sofa2Section>}
 
       {/* FAQ */}
       <Sofa2Section bg="grey">
@@ -200,17 +193,17 @@ export default function Page() {
         </Stack>
         <Container component={MotionViewport} maxWidth="md" sx={{ px: 0 }}>
           <Stack spacing={1.5}>
-            {SOFA2_FAQS.map((faq) => (
+            {faqs.map((faq) => (
               <Accordion
-                key={faq.question}
-                expanded={expanded === faq.question}
-                onChange={(_, isExpanded) => setExpanded(isExpanded ? faq.question : false)}
+                key={faq.title}
+                expanded={expanded === faq.title}
+                onChange={(_, isExpanded) => setExpanded(isExpanded ? faq.title : false)}
               >
                 <AccordionSummary expandIcon={<Iconify icon="eva:arrow-ios-downward-fill" />}>
-                  <Typography variant="subtitle1">{faq.question}</Typography>
+                  <Typography variant="subtitle1">{faq.title}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Typography sx={{ color: 'text.secondary' }}>{faq.answer}</Typography>
+                  <Typography sx={{ color: 'text.secondary' }}>{faq.desc}</Typography>
                 </AccordionDetails>
               </Accordion>
             ))}
@@ -222,8 +215,8 @@ export default function Page() {
       <Sofa2Section>
         <Stack component={MotionViewport} spacing={3} alignItems="center" sx={{ textAlign: 'center', maxWidth: 640, mx: 'auto' }}>
           <Typography variant="h3">Đặt lịch dịch vụ ngay</Typography>
-          <Typography sx={{ color: 'text.secondary' }}>Liên hệ để được tư vấn và đặt lịch dịch vụ {item.title.toLowerCase()} từ LUXE Sofa.</Typography>
-          <Button component={RouterLink} href="/sofa2/contact" size="large" variant="contained" color="primary" startIcon={<Iconify icon="solar:calendar-bold-duotone" />}>
+          <Typography sx={{ color: 'text.secondary' }}>Liên hệ để được tư vấn và đặt lịch dịch vụ {String(item.title ?? '').toLowerCase()} từ LUXE Sofa.</Typography>
+          <Button component={RouterLink} href={`/sofa2/contact?service=${encodeURIComponent(String(item.title ?? ''))}`} size="large" variant="contained" color="primary" startIcon={<Iconify icon="solar:calendar-bold-duotone" />}>
             Đặt lịch ngay
           </Button>
         </Stack>
