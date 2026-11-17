@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 
 import { sofa2Slugify } from './sofa2-cms';
+import { deleteSofa2HrCv } from './sofa2-hr-files';
 import { SOFA2_ADMIN_GROUPS } from './sofa2-admin-data';
 
 // ----------------------------------------------------------------------
@@ -341,6 +342,36 @@ store[key('hr', 'recruitment')] = (store[key('hr', 'recruitment')] ?? []).map((r
   });
 });
 
+const HR_SAMPLE_MIGRATION_KEY = 'sofa2-hr-samples-v2';
+function migrateHrSampleApplications() {
+  if (typeof window === 'undefined') return false;
+  try {
+    if (window.localStorage.getItem(HR_SAMPLE_MIGRATION_KEY)) return false;
+    let addedRows = false;
+    (['submit-cv', 'applicant-profile'] as const).forEach((module) => {
+      const defaults = SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'hr')?.modules
+        .find((item) => item.slug === module)?.rows ?? [];
+      const rowKey = key('hr', module);
+      const existingRows = store[rowKey] ?? [];
+      const existingIds = new Set(existingRows.map((row) => String(row.applicationId ?? '')));
+      const extraSamples = defaults.filter((row) => {
+        const id = String(row.applicationId ?? '');
+        const sequence = Number(id.slice(-4));
+        return id.startsWith('APP-2026-') && sequence >= 11 && sequence <= 40 && !existingIds.has(id);
+      });
+      if (extraSamples.length) {
+        store[rowKey] = [...existingRows, ...extraSamples];
+        addedRows = true;
+      }
+    });
+    window.localStorage.setItem(HR_SAMPLE_MIGRATION_KEY, 'done');
+    return addedRows;
+  } catch {
+    return false;
+  }
+}
+const hrSampleRowsMigrated = migrateHrSampleApplications();
+
 function adjustRecruitmentApplicants(application: AdminRow, change: number) {
   const jobId = String(application.jobId ?? '');
   const jobTitle = String(application.job ?? application.appliedJob ?? '');
@@ -376,6 +407,10 @@ function removeLinkedApplications(sourceModule: 'submit-cv' | 'applicant-profile
   const targetKey = key('hr', targetModule);
   const ids = new Set(removed.map((row) => String(row.applicationId ?? '')).filter(Boolean));
   const targetRows = store[targetKey] ?? [];
+  removed.forEach((row) => {
+    const applicationId = String(row.applicationId ?? '');
+    if (applicationId) deleteSofa2HrCv(applicationId).catch(() => undefined);
+  });
   if (sourceModule === 'submit-cv') {
     removed.forEach((row) => adjustRecruitmentApplicants(row, -1));
   } else {
@@ -384,6 +419,58 @@ function removeLinkedApplications(sourceModule: 'submit-cv' | 'applicant-profile
   store[targetKey] = targetRows.filter((row) => !ids.has(String(row.applicationId ?? '')));
 }
 
+function reconcileRecruitmentData() {
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const metricsByJob = new Map<string, Record<string, number>>();
+  (store[key('hr', 'submit-cv')] ?? []).forEach((application) => {
+    const jobKey = String(application.jobId ?? '').trim() || String(application.job ?? '').trim();
+    if (!jobKey || jobKey === 'Ứng tuyển vị trí phù hợp') return;
+    const status = String(application.status ?? '');
+    const metrics = metricsByJob.get(jobKey) ?? {
+      applicants: 0,
+      screeningPassed: 0,
+      interviewing: 0,
+      offered: 0,
+      hired: 0,
+      rejected: 0,
+    };
+    metrics.applicants += 1;
+    if (String(application.screeningResult ?? '') === 'Qua' || ['Phỏng vấn', 'Thử việc', 'Trúng tuyển'].includes(status)) metrics.screeningPassed += 1;
+    if (status === 'Phỏng vấn') metrics.interviewing += 1;
+    if (['Có', 'true', 'yes', '1'].includes(String(application.offerSent ?? '').toLowerCase()) || ['Thử việc', 'Trúng tuyển'].includes(status)) metrics.offered += 1;
+    if (status === 'Trúng tuyển') metrics.hired += 1;
+    if (status === 'Không đạt') metrics.rejected += 1;
+    metricsByJob.set(jobKey, metrics);
+  });
+
+  let changed = false;
+  const jobsKey = key('hr', 'recruitment');
+  store[jobsKey] = (store[jobsKey] ?? []).map((job) => {
+    const jobKey = String(job.jobId ?? '').trim() || String(job.title ?? '').trim();
+    const metrics = metricsByJob.get(jobKey) ?? {
+      applicants: 0,
+      screeningPassed: 0,
+      interviewing: 0,
+      offered: 0,
+      hired: 0,
+      rejected: 0,
+    };
+    const rawDeadline = String(job.deadline ?? '').trim();
+    const deadline = /^\d{4}-\d{2}-\d{2}/.test(rawDeadline) ? rawDeadline.slice(0, 10) : '';
+    const isExpiredOpenJob = String(job.status ?? '') === 'Đang tuyển' && !!deadline && deadline < today;
+    const next = {
+      ...job,
+      ...metrics,
+      ...(isExpiredOpenJob ? { status: 'Đã đóng', closedDate: String(job.closedDate || deadline) } : {}),
+    };
+    if (isExpiredOpenJob || Object.keys(metrics).some((field) => Number(job[field] ?? 0) !== metrics[field])) changed = true;
+    return next;
+  });
+  return changed;
+}
+
+const recruitmentDataReconciled = reconcileRecruitmentData();
 const listeners = new Set<() => void>();
 
 if (typeof window !== 'undefined') {
@@ -406,6 +493,8 @@ const emit = () => {
   }
   listeners.forEach((l) => l());
 };
+
+if (hrSampleRowsMigrated || recruitmentDataReconciled) emit();
 
 /** Đọc nhanh dữ liệu một module (không cần hook) */
 export const getSofa2AdminRows = (groupSlug: string, moduleSlug: string) =>
@@ -1087,6 +1176,7 @@ export function useSofa2AdminRows(
           availableDate: String(nextRow.availableDate ?? ''),
           coverLetter: String(nextRow.coverLetter ?? ''),
           cvUrl: String(nextRow.cvUrl ?? ''),
+          cvFileId: String(nextRow.cvFileId ?? ''),
           cvFileName: String(nextRow.cvFileName ?? ''),
           interviewRound: String(profiles[profileIndex]?.interviewRound ?? 'Sàng lọc CV'),
           status: String(nextRow.status ?? 'Mới'),
@@ -1110,6 +1200,7 @@ export function useSofa2AdminRows(
           source: String(existing.source ?? nextRow.source ?? 'Website'),
           status: String(existing.status ?? nextRow.status ?? 'Mới'),
           cvUrl: String(existing.cvUrl ?? nextRow.cvUrl ?? ''),
+          cvFileId: String(existing.cvFileId ?? nextRow.cvFileId ?? ''),
           cvFileName: String(existing.cvFileName ?? nextRow.cvFileName ?? ''),
           expectedSalary: Number(existing.expectedSalary ?? nextRow.expectedSalary ?? 0),
           availableDate: String(existing.availableDate ?? nextRow.availableDate ?? ''),
@@ -1131,6 +1222,7 @@ export function useSofa2AdminRows(
           source: String(profileRow.source ?? existing?.source ?? 'Website'),
           submittedDate: String(profileRow.appliedDate ?? existing?.submittedDate ?? ''),
           cvUrl: String(profileRow.cvUrl ?? existing?.cvUrl ?? ''),
+          cvFileId: String(profileRow.cvFileId ?? existing?.cvFileId ?? ''),
           cvFileName: String(profileRow.cvFileName ?? existing?.cvFileName ?? ''),
           expectedSalary: Number(profileRow.expectedSalary ?? existing?.expectedSalary ?? 0),
           availableDate: String(profileRow.availableDate ?? existing?.availableDate ?? ''),
@@ -1235,8 +1327,8 @@ export function useSofa2AdminRows(
               status: row.status,
             };
             return sourceModule === 'submit-cv'
-              ? { ...candidate, ...shared, name: row.applicant, appliedJob: row.job, appliedDate: row.submittedDate, jobId: row.jobId, source: row.source, expectedSalary: row.expectedSalary, availableDate: row.availableDate, coverLetter: row.coverLetter, offerSent: row.offerSent ?? candidate.offerSent, cvUrl: row.cvUrl, cvFileName: row.cvFileName }
-              : { ...candidate, ...shared, applicant: row.name, job: row.appliedJob, submittedDate: row.appliedDate, jobId: row.jobId, source: row.source, expectedSalary: row.expectedSalary, availableDate: row.availableDate, coverLetter: row.coverLetter, offerSent: row.offerSent ?? candidate.offerSent, cvUrl: row.cvUrl, cvFileName: row.cvFileName };
+              ? { ...candidate, ...shared, name: row.applicant, appliedJob: row.job, appliedDate: row.submittedDate, jobId: row.jobId, source: row.source, expectedSalary: row.expectedSalary, availableDate: row.availableDate, coverLetter: row.coverLetter, offerSent: row.offerSent ?? candidate.offerSent, cvUrl: row.cvUrl, cvFileId: row.cvFileId, cvFileName: row.cvFileName }
+              : { ...candidate, ...shared, applicant: row.name, job: row.appliedJob, submittedDate: row.appliedDate, jobId: row.jobId, source: row.source, expectedSalary: row.expectedSalary, availableDate: row.availableDate, coverLetter: row.coverLetter, offerSent: row.offerSent ?? candidate.offerSent, cvUrl: row.cvUrl, cvFileId: row.cvFileId, cvFileName: row.cvFileName };
           });
           if (!hasTarget && sourceModule === 'submit-cv') {
             store[targetKey] = [{
@@ -1249,6 +1341,7 @@ export function useSofa2AdminRows(
               appliedDate: String(row.submittedDate ?? ''),
               source: String(row.source ?? 'Website'),
               cvUrl: String(row.cvUrl ?? ''),
+              cvFileId: String(row.cvFileId ?? ''),
               cvFileName: String(row.cvFileName ?? ''),
               interviewRound: 'Sàng lọc CV',
               status: String(row.status ?? 'Mới'),
@@ -1271,6 +1364,7 @@ export function useSofa2AdminRows(
               source: String(row.source ?? 'Website'),
               submittedDate: String(row.appliedDate ?? ''),
               cvUrl: String(row.cvUrl ?? ''),
+              cvFileId: String(row.cvFileId ?? ''),
               cvFileName: String(row.cvFileName ?? ''),
               screeningResult: 'Chưa sàng lọc',
               status: String(row.status ?? 'Mới'),
