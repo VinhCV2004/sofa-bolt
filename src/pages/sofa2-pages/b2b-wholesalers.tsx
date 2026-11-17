@@ -2,36 +2,26 @@ import { m } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
 import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Unstable_Grid2';
-import { alpha, useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
-
-import { varAlpha } from 'src/theme/styles';
 
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 
 // ----------------------------------------------------------------------
 
 const metadata = { title: 'Nhà phân phối — LUXE Sofa' };
-
-const DISTRIBUTORS = [
-  { name: 'Furniture Distribution JSC', region: 'Toàn quốc', discount: '32%', contract: 'HD-NPP-2026-01', expires: '31/12/2026' },
-  { name: 'Home Supply North', region: 'Miền Bắc', discount: '28%', contract: 'HD-NPP-2026-02', expires: '30/06/2027' },
-  { name: 'Decor Distribute South', region: 'Miền Nam', discount: '30%', contract: 'HD-NPP-2026-03', expires: '15/11/2026' },
-  { name: 'Mid Furniture Co.', region: 'Miền Trung', discount: '25%', contract: 'HD-NPP-2025-08', expires: '30/09/2026' },
-  { name: 'Vina Home Supply', region: 'Toàn quốc', discount: '22%', contract: 'HD-NPP-2026-04', expires: '31/12/2026' },
-];
 
 const ADVANTAGES = [
   { icon: 'solar:box-bold-duotone', title: 'Nguồn hàng ổn định', desc: 'Cam kết sản lượng và thời gian giao hàng cho nhà phân phối.' },
@@ -41,7 +31,16 @@ const ADVANTAGES = [
 ];
 
 export default function Page() {
-  const theme = useTheme();
+  const { rows } = useSofa2AdminRows('b2b', 'wholesalers', { load: false });
+  const distributors = rows
+    .filter((row) => ['Đang chạy', 'Sắp hết hạn'].includes(String(row.status ?? '')))
+    .map((row) => ({
+      name: String(row.name ?? ''),
+      region: String(row.region ?? ''),
+      discount: row.discount == null || row.discount === '' ? '' : `${String(row.discount)}%`,
+      contract: String(row.contract ?? ''),
+      expires: String(row.expires ?? ''),
+    }));
 
   return (
     <>
@@ -94,7 +93,7 @@ export default function Page() {
         <Box component={m.div} variants={varFade({ distance: 24 }).inUp}>
           <Paper sx={{ borderRadius: 2, boxShadow: (t) => t.customShadows.card, overflow: 'hidden' }}>
             <Stack divider={<Divider />}>
-              {DISTRIBUTORS.map((d) => (
+              {distributors.map((d) => (
                 <Stack
                   key={d.contract}
                   direction={{ xs: 'column', md: 'row' }}
@@ -111,9 +110,9 @@ export default function Page() {
                     </Stack>
                   </Stack>
                   <Stack direction="row" spacing={2} alignItems="center">
-                    <Chip label={`Chiết khấu ${d.discount}`} size="small" color="success" variant="soft" />
-                    <Chip label={d.contract} size="small" variant="outlined" />
-                    <Typography variant="caption" sx={{ color: 'text.disabled' }}>HĐ đến {d.expires}</Typography>
+                    {d.discount && <Chip label={`Chiết khấu ${d.discount}`} size="small" color="success" variant="soft" />}
+                    {d.contract && <Chip label={d.contract} size="small" variant="outlined" />}
+                    {d.expires && <Typography variant="caption" sx={{ color: 'text.disabled' }}>HĐ đến {d.expires}</Typography>}
                   </Stack>
                 </Stack>
               ))}

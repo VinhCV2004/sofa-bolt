@@ -23,13 +23,6 @@ const DEALER_LEVELS = ['Cấp 1', 'Cấp 2', 'Cấp 3'];
 const CITIES = ['TP.HCM', 'Hà Nội', 'Đà Nẵng', 'Bình Dương', 'Hải Phòng', 'Cần Thơ', 'Nha Trang'];
 const PROJECT_TYPES = ['Căn hộ', 'Biệt thự', 'Khách sạn', 'Resort', 'Văn phòng', 'Showroom', 'Nhà hàng'];
 const POLICY_TYPES = ['Chiết khấu', 'Hoa hồng', 'Hỗ trợ MKT', 'Hậu mãi', 'Khác'];
-const OEM_PARTNERS = [
-  'Nordic Home SE',
-  'Tokyo Living JP',
-  'Decor World US',
-  'Home Europe FR',
-  'Blue Interior KR',
-];
 const CONTRACTOR_SPECIALTIES = [
   'Căn hộ & Biệt thự',
   'Khách sạn & Resort',
@@ -57,6 +50,8 @@ export const SOFA2_B2B_SCHEMAS: Record<string, Sofa2CmsSchema> = {
         options: ['Banner', 'Rich text', 'Danh sách bước', 'Form liên hệ', 'Video', 'CTA'],
       }),
       f('heading', 'Tiêu đề hiển thị', 'text', 'content'),
+      f('icon', 'Icon (class)', 'text', 'content', { placeholder: 'solar:hand-money-bold-duotone' }),
+      f('slug', 'Mã khối', 'text', 'display', { helper: 'Mã dùng để nhận diện nội dung trong bản demo.' }),
       f('content', 'Nội dung', 'textarea', 'content', { multiline: 6 }),
       f('image', 'Ảnh minh hoạ', 'url', 'content', { placeholder: 'https://...' }),
       f('ctaLabel', 'Nhãn nút hành động', 'text', 'content'),
@@ -158,7 +153,7 @@ export const SOFA2_B2B_SCHEMAS: Record<string, Sofa2CmsSchema> = {
       f('region', 'Khu vực mong muốn', 'select', 'content', { required: true, options: REGIONS }),
       f('city', 'Tỉnh/TP', 'select', 'content', { options: CITIES }),
       f('businessType', 'Loại hình kinh doanh', 'select', 'content', {
-        options: ['Cửa hàng nội thất', 'Showroom', 'Nhà phân phối', 'Online / E-commerce', 'Nội thất theo dự án', 'Khác'],
+        options: ['Cửa hàng nội thất', 'Nhà thiết kế', 'Nhà thầu', 'Showroom', 'Đại lý phân phối', 'Nhà phân phối', 'Online / E-commerce', 'Nội thất theo dự án', 'Khác'],
       }),
       f('showroomSize', 'Diện tích showroom (m²)', 'number', 'content'),
       f('existingBrands', 'Thương hiệu đang phân phối', 'textarea', 'content', { multiline: 2 }),
@@ -226,7 +221,7 @@ export const SOFA2_B2B_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     hideClientLink: true,
     fields: [
       f('code', 'Mã OEM', 'text', 'content', { required: true, placeholder: 'OEM-YYMM-##' }),
-      f('partner', 'Đối tác / Thương hiệu', 'select', 'content', { required: true, options: OEM_PARTNERS }),
+      f('partner', 'Đối tác / Thương hiệu', 'text', 'content', { required: true }),
       f('country', 'Quốc gia đối tác', 'select', 'content', {
         options: ['Thụy Điển', 'Nhật Bản', 'Mỹ', 'Pháp', 'Hàn Quốc', 'Đức', 'Anh', 'Khác'],
       }),

@@ -19,6 +19,7 @@ import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { createSofa2AdminRow } from 'src/sections/sofa2-admin/sofa2-admin-store';
 
 // ----------------------------------------------------------------------
 
@@ -54,27 +55,46 @@ export default function Page() {
           {/* Form */}
           <Grid xs={12} md={8}>
             <Stack
-              component={m.div}
+              component={m.form}
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                const submitted = new Date().toISOString().slice(0, 10);
+                createSofa2AdminRow('b2b', 'registration', {
+                  code: `DK-${Date.now()}`,
+                  company: String(data.get('company') ?? ''),
+                  contact: String(data.get('contact') ?? ''),
+                  email: String(data.get('email') ?? ''),
+                  phone: String(data.get('phone') ?? ''),
+                  businessType: String(data.get('businessType') ?? ''),
+                  taxCode: String(data.get('taxCode') ?? ''),
+                  region: 'Toàn quốc',
+                  note: [String(data.get('address') ?? ''), String(data.get('note') ?? '')].filter(Boolean).join(' — '),
+                  submitted,
+                  status: 'Chờ duyệt',
+                });
+                setSent(true);
+              }}
               variants={varFade({ distance: 24 }).inUp}
               spacing={3}
               sx={{ p: { xs: 3, md: 5 }, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}
             >
               <Typography variant="h5">Thông tin doanh nghiệp</Typography>
               <Grid container spacing={2}>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Tên công ty" /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Người liên hệ" /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Email" type="email" /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Số điện thoại" /></Grid>
+                <Grid xs={12} sm={6}><TextField required name="company" fullWidth label="Tên công ty" /></Grid>
+                <Grid xs={12} sm={6}><TextField required name="contact" fullWidth label="Người liên hệ" /></Grid>
+                <Grid xs={12} sm={6}><TextField name="email" fullWidth label="Email" type="email" /></Grid>
+                <Grid xs={12} sm={6}><TextField required name="phone" fullWidth label="Số điện thoại" /></Grid>
                 <Grid xs={12} sm={6}>
-                  <TextField fullWidth select label="Loại hình kinh doanh" defaultValue="">
+                  <TextField name="businessType" fullWidth select label="Loại hình kinh doanh" defaultValue="">
                     {BUSINESS_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                   </TextField>
                 </Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Mã số thuế" /></Grid>
-                <Grid xs={12}><TextField fullWidth label="Địa chỉ" /></Grid>
-                <Grid xs={12}><TextField fullWidth label="Lời nhắn" multiline rows={3} /></Grid>
+                <Grid xs={12} sm={6}><TextField name="taxCode" fullWidth label="Mã số thuế" /></Grid>
+                <Grid xs={12}><TextField name="address" fullWidth label="Địa chỉ" /></Grid>
+                <Grid xs={12}><TextField name="note" fullWidth label="Lời nhắn" multiline rows={3} /></Grid>
               </Grid>
-              <Button variant="contained" size="large" startIcon={<Iconify icon="solar:hand-shake-bold-duotone" />} sx={{ width: 'fit-content' }} onClick={() => setSent(true)}>
+              <Button type="submit" variant="contained" size="large" startIcon={<Iconify icon="solar:hand-shake-bold-duotone" />} sx={{ width: 'fit-content' }}>
                 {sent ? 'Đã gửi đăng ký' : 'Gửi đăng ký'}
               </Button>
             </Stack>
