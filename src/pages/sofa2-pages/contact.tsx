@@ -1,6 +1,7 @@
 import { m } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { useState, type FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
@@ -44,10 +45,11 @@ const SOCIALS = [
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Page() {
+  const [searchParams] = useSearchParams();
   const [sent, setSent] = useState(false);
   const [formError, setFormError] = useState('');
   const [sentCode, setSentCode] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
+  const [form, setForm] = useState(() => ({ name: '', email: '', phone: '', subject: searchParams.get('service') ?? '', message: '' }));
   const { blocks: cmsBlocks } = useCmsPageBlocks('contact');
   const { seo } = useCmsSeo('/sofa2/contact');
   const contactInfoStore = useSofa2AdminRows('support', 'contact-info');

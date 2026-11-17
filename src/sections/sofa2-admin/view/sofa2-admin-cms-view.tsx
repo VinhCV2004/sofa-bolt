@@ -430,6 +430,37 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       else if (field.maxLength && value.length > field.maxLength)
         next[field.key] = `Tối đa ${field.maxLength} ký tự (hiện ${value.length})`;
     });
+    if (group.slug === 'cms' && module.slug === 'promotions') {
+      const code = String(form.values.code ?? '').trim();
+      if (code && !/^[A-Z0-9-]+$/.test(code)) next.code = 'Mã chỉ gồm chữ in hoa, số và dấu gạch ngang.';
+      if (code && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.code ?? '').trim().toUpperCase() === code.toUpperCase())) {
+        next.code = 'Mã ưu đãi đã tồn tại.';
+      }
+      const discountType = String(form.values.discountType ?? '');
+      const discountValue = Number(form.values.discountValue ?? 0);
+      if (discountValue < 0 || (discountType === 'Phần trăm' && discountValue > 100)) {
+        next.discountValue = discountType === 'Phần trăm' ? 'Giá trị phần trăm phải từ 0 đến 100.' : 'Giá trị ưu đãi không được âm.';
+      }
+      const startAt = String(form.values.startAt ?? '').trim();
+      const endAt = String(form.values.endAt ?? '').trim();
+      if (startAt && endAt && endAt < startAt) next.endAt = 'Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.';
+      const stockLimit = Number(form.values.stockLimit ?? 0);
+      const usedCount = Number(form.values.usedCount ?? 0);
+      if (stockLimit > 0 && usedCount > stockLimit) next.usedCount = 'Lượt đã dùng không thể vượt quá giới hạn.';
+      const ctaLink = String(form.values.ctaLink ?? '').trim();
+      if (ctaLink && !/^\/sofa2(?:\/|$)/.test(ctaLink)) next.ctaLink = 'Liên kết phải là đường dẫn nội bộ bắt đầu bằng /sofa2.';
+    }
+    if (group.slug === 'cms' && module.slug === 'promotion-services') {
+      const slug = String(form.values.slug ?? '').trim();
+      if (slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+        next.slug = 'Slug chỉ gồm chữ thường, số và dấu gạch ngang; không bắt đầu hoặc kết thúc bằng dấu gạch ngang.';
+      }
+      if (slug && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.slug ?? '').trim().toLowerCase() === slug.toLowerCase())) {
+        next.slug = 'Đường dẫn dịch vụ đã được sử dụng.';
+      }
+    }
     if (group.slug === 'support') {
       const uniqueValue = (key: string, message = 'Giá trị này đã tồn tại.') => {
         const candidate = String(form.values[key] ?? '').trim().toLowerCase();
