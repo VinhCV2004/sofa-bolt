@@ -130,22 +130,32 @@ export default function Page() {
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography variant="h5">Đổi mật khẩu</Typography>
-              <Grid container spacing={2}>
-                <Grid xs={12}><TextField fullWidth label="Mật khẩu hiện tại" type="password" /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Mật khẩu mới" type="password" /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Xác nhận mật khẩu mới" type="password" /></Grid>
-              </Grid>
-              <Button variant="outlined" sx={{ width: 'fit-content' }} startIcon={<Iconify icon="solar:lock-keyhole-bold-duotone" />}>Cập nhật mật khẩu</Button>
+              <Typography variant="h5">Bảo mật tài khoản</Typography>
+              <Alert severity="info">Không nhập mật khẩu vào biểu mẫu demo. Yêu cầu đặt lại sẽ được ghi nhận cục bộ, chưa gửi email.</Alert>
+              <Button component={RouterLink} href="/sofa2/forgot-password" variant="outlined" sx={{ width: 'fit-content' }} startIcon={<Iconify icon="solar:lock-keyhole-bold-duotone" />}>Tạo yêu cầu đặt lại mật khẩu</Button>
 
               <Divider sx={{ my: 2 }} />
 
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Box>
-                  <Typography variant="subtitle2" sx={{ color: 'error.main' }}>Xoá tài khoản</Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Xoá vĩnh viễn tài khoản và tất cả dữ liệu liên quan.</Typography>
+                  <Typography variant="subtitle2" sx={{ color: 'error.main' }}>Khoá tài khoản demo</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Giữ nguyên đơn hàng, giao dịch và bảo hành để bảo toàn lịch sử.</Typography>
                 </Box>
-                <Button variant="outlined" color="error" startIcon={<Iconify icon="solar:trash-bin-trash-bold-duotone" />}>Xoá tài khoản</Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  disabled={String(profile.status) === 'Đã khoá'}
+                  onClick={() => {
+                    if (!window.confirm('Khoá tài khoản demo này? Lịch sử giao dịch sẽ được giữ lại.')) return;
+                    const lockedProfile = { ...profile, status: 'Đã khoá' };
+                    if (profileIndex < 0) profileStore.createRow(lockedProfile);
+                    else profileStore.updateRow(profileIndex, lockedProfile);
+                    setToast('Đã khoá tài khoản demo; dữ liệu lịch sử được giữ nguyên.');
+                  }}
+                  startIcon={<Iconify icon="solar:trash-bin-trash-bold-duotone" />}
+                >
+                  Khoá tài khoản
+                </Button>
               </Stack>
             </Stack>
           </Grid>

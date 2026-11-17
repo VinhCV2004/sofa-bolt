@@ -23,6 +23,12 @@ const key = (group: string, module: string) => {
     if (module === 'tracking') return 'shop/tracking';
     if (module === 'wishlist') return 'shop/wishlist';
   }
+  if (group === 'customer') {
+    if (module === 'accounts') return 'customer/profiles';
+    if (module === 'addresses') return 'shopping/addresses';
+    if (module === 'wishlist') return 'shop/wishlist';
+    if (module === 'transactions') return 'shopping/transactions';
+  }
   return `${group}/${module}`;
 };
 
@@ -223,6 +229,55 @@ try {
   }
 } catch {
   /* bỏ qua */
+}
+
+// Add newly introduced customer demo fixtures to existing browser stores once, without
+// replacing edited records or duplicating natural keys from the previous fixture set.
+const CUSTOMER_MOCK_MIGRATION_KEY = 'sofa2-customer-mock-v2';
+if (typeof window !== 'undefined') {
+  try {
+    if (window.localStorage.getItem(CUSTOMER_MOCK_MIGRATION_KEY) !== 'done') {
+      const customerGroup = SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'customer');
+      let changed = false;
+      customerGroup?.modules.forEach((module) => {
+        const moduleKey = key('customer', module.slug);
+        const current = store[moduleKey] ?? [];
+        const identity = (row: AdminRow) => {
+          const customerId = String(row.customerId ?? '');
+          if (['dashboard', 'accounts', 'profiles'].includes(module.slug)) return customerId;
+          if (module.slug === 'addresses') {
+            const isDefault = ['có', 'yes', 'true', '1'].includes(String(row.isDefault ?? '').trim().toLowerCase());
+            return isDefault ? `${customerId}|default` : String(row.addressId ?? '');
+          }
+          if (module.slug === 'wishlist') return `${customerId}|${row.productId ?? row.product ?? ''}`;
+          if (module.slug === 'transactions') return String(row.order ?? row.txnId ?? '');
+          if (['customer-orders', 'warranties', 'complaints'].includes(module.slug)) return String(row.code ?? '');
+          if (module.slug === 'points') return `${customerId}|${row.reason ?? ''}|${row.date ?? ''}|${row.points ?? ''}`;
+          if (module.slug === 'vouchers') return `${row.code ?? ''}|${customerId}|${row.status ?? ''}`;
+          if (module.slug === 'registrations' || module.slug === 'password-resets') return String(row.requestId ?? '');
+          if (module.slug === 'login-activity') return String(row.eventId ?? '');
+          return String(row.id ?? '');
+        };
+        const known = new Set(current.map(identity).filter(Boolean));
+        const missing = module.rows
+          .filter((row) => {
+            const rowIdentity = identity(row);
+            if (!rowIdentity || known.has(rowIdentity)) return false;
+            known.add(rowIdentity);
+            return true;
+          })
+          .map((row) => ({ ...row }));
+        if (missing.length) {
+          store[moduleKey] = [...current, ...missing];
+          changed = true;
+        }
+      });
+      if (changed) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+      window.localStorage.setItem(CUSTOMER_MOCK_MIGRATION_KEY, 'done');
+    }
+  } catch {
+    // Keep the saved demo store usable if browser storage is unavailable.
+  }
 }
 
 // Keep every seeded/client order searchable from the public order-tracking page.
@@ -1154,7 +1209,7 @@ export function useSofa2AdminRows(
       }
       if (k === key('customer', 'profiles') && previous && String(previous.name) !== String(row.name)) {
         const customerId = String(row.customerId ?? '');
-        ['dashboard', 'customer-orders', 'warranties', 'points', 'vouchers', 'complaints'].forEach((module) => {
+        ['dashboard', 'customer-orders', 'warranties', 'points', 'vouchers', 'complaints', 'addresses', 'wishlist', 'transactions'].forEach((module) => {
           const childKey = key('customer', module);
           store[childKey] = (store[childKey] ?? []).map((child) =>
             String(child.customerId ?? '') === customerId ? { ...child, customer: String(row.name ?? '') } : child

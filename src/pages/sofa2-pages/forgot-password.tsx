@@ -15,6 +15,7 @@ import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { createSofa2AdminRow } from 'src/sections/sofa2-admin/sofa2-admin-store';
 
 // ----------------------------------------------------------------------
 
@@ -22,6 +23,20 @@ const metadata = { title: 'Quên mật khẩu — LUXE Sofa' };
 
 export default function Page() {
   const [sent, setSent] = useState(false);
+
+  const submitResetRequest = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    createSofa2AdminRow('customer', 'password-resets', {
+      requestId: `PWD-${Date.now()}`,
+      email: String(data.get('email') ?? '').trim().toLowerCase(),
+      requestedAt: new Date().toISOString(),
+      processedBy: '',
+      note: 'Yêu cầu demo; không gửi email thật, không tạo/lưu token đặt lại.',
+      status: 'Tiếp nhận',
+    });
+    setSent(true);
+  };
 
   return (
     <>
@@ -51,9 +66,9 @@ export default function Page() {
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>Chúng tôi sẽ gửi email hướng dẫn đặt lại mật khẩu cho bạn.</Typography>
               </Stack>
 
-              <Stack spacing={2.5}>
-                <TextField fullWidth label="Email đăng ký" type="email" placeholder="anh.nguyen@email.com" />
-                <Button variant="contained" size="large" fullWidth startIcon={<Iconify icon="solar:letter-bold-duotone" />} onClick={() => setSent(true)}>
+              <Stack spacing={2.5} component={m.form} onSubmit={submitResetRequest}>
+                <TextField required name="email" fullWidth label="Email đăng ký" type="email" placeholder="anh.nguyen@email.com" />
+                <Button type="submit" variant="contained" size="large" fullWidth startIcon={<Iconify icon="solar:letter-bold-duotone" />} >
                   Gửi liên kết đặt lại
                 </Button>
               </Stack>
@@ -63,8 +78,8 @@ export default function Page() {
               <Box sx={{ width: 72, height: 72, display: 'flex', borderRadius: '50%', alignItems: 'center', justifyContent: 'center', bgcolor: 'success.main', color: 'common.white' }}>
                 <Iconify icon="solar:check-circle-bold-duotone" width={36} />
               </Box>
-              <Typography variant="h5">Email đã được gửi!</Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>Vui lòng kiểm tra hộp thư và làm theo hướng dẫn để đặt lại mật khẩu.</Typography>
+              <Typography variant="h5">Đã tiếp nhận yêu cầu</Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>Nếu tài khoản tồn tại, hệ thống thật sẽ gửi hướng dẫn qua email. Trong demo, yêu cầu chỉ được lưu cục bộ và chưa gửi email.</Typography>
               <Button component={RouterLink} href="/sofa2/login" variant="outlined" size="large" startIcon={<Iconify icon="solar:arrow-left-bold-duotone" />}>
                 Quay lại đăng nhập
               </Button>

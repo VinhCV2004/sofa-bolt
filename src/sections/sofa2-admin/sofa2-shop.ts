@@ -151,6 +151,12 @@ export const SOFA2_SHOP_GROUP: Sofa2AdminGroup = {
   ],
 };
 
+// Account, address book, orders, wishlist, transactions and warranty are administered
+// together under the dedicated customer-management group.
+SOFA2_SHOP_GROUP.modules = SOFA2_SHOP_GROUP.modules.filter(
+  (module) => !['accounts', 'profiles', 'addresses', 'my-orders', 'wishlist', 'transactions', 'warranties'].includes(module.slug)
+);
+
 // ----------------------------------------------------------------------
 
 export const SOFA2_SHOP_SCHEMAS: Record<string, Sofa2CmsSchema> = {
