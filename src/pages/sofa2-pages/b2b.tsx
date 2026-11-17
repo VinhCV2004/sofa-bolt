@@ -16,6 +16,7 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 
 // ----------------------------------------------------------------------
@@ -38,6 +39,10 @@ const PARTNER_TYPES = [
 
 export default function Page() {
   const theme = useTheme();
+  const { rows: contentBlocks } = useSofa2AdminRows('b2b', 'cooperation', { load: false });
+  const publishedBlocks = contentBlocks
+    .filter((block) => block.status === 'Đã xuất bản' && (block.heading || block.content))
+    .sort((a, b) => Number(a.order ?? 999) - Number(b.order ?? 999));
 
   return (
     <>
@@ -109,6 +114,34 @@ export default function Page() {
           ))}
         </Grid>
       </Sofa2Section>
+
+      {publishedBlocks.length > 0 && (
+        <Sofa2Section>
+          <Grid container spacing={3}>
+            {publishedBlocks.map((block) => (
+              <Grid key={String(block.slug ?? block.block)} xs={12} md={6}>
+                <Stack spacing={2} sx={{ p: 4, height: 1, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
+                  {block.image && (
+                    <Box component="img" src={String(block.image)} alt={String(block.heading ?? block.block ?? '')} sx={{ width: 1, maxHeight: 280, objectFit: 'cover', borderRadius: 1.5 }} />
+                  )}
+                  {block.icon && (
+                    <Box sx={{ width: 48, height: 48, display: 'flex', borderRadius: 1.5, alignItems: 'center', justifyContent: 'center', bgcolor: 'primary.main', color: 'common.white' }}>
+                      <Iconify icon={String(block.icon)} width={24} />
+                    </Box>
+                  )}
+                  <Typography variant="h5">{String(block.heading ?? block.block ?? '')}</Typography>
+                  <Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-line', lineHeight: 1.8 }}>{String(block.content ?? '')}</Typography>
+                  {block.ctaLabel && block.ctaLink && (
+                    <Button component={RouterLink} href={String(block.ctaLink)} variant="outlined" sx={{ alignSelf: 'flex-start' }}>
+                      {String(block.ctaLabel)}
+                    </Button>
+                  )}
+                </Stack>
+              </Grid>
+            ))}
+          </Grid>
+        </Sofa2Section>
+      )}
 
       {/* Registration CTA + links */}
       <Sofa2Section>

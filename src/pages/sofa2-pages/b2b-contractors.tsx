@@ -2,13 +2,12 @@ import { m } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
 import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 import Rating from '@mui/material/Rating';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Unstable_Grid2';
-import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
@@ -19,23 +18,24 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 
 // ----------------------------------------------------------------------
 
 const metadata = { title: 'Đối tác thi công — LUXE Sofa' };
 
-const CONTRACTORS = [
-  { name: 'Thi công Nội thất Hoàng Gia', specialty: 'Căn hộ & Biệt thự', projects: 3, rating: 4.8, region: 'Miền Nam' },
-  { name: 'BuildPro Construction', specialty: 'Khách sạn & Resort', projects: 2, rating: 4.6, region: 'Toàn quốc' },
-  { name: 'Vina Interior Team', specialty: 'Văn phòng & Showroom', projects: 1, rating: 4.4, region: 'Miền Bắc' },
-  { name: 'Decor Install Pro', specialty: 'Toàn quốc — lắp đặt', projects: 0, rating: 4.2, region: 'Toàn quốc' },
-  { name: 'Master Craft Team', specialty: 'Dự án cao cấp', projects: 2, rating: 4.9, region: 'Miền Nam' },
-  { name: 'Blue Interior Co.', specialty: 'Căn hộ & Biệt thự', projects: 1, rating: 4.5, region: 'Miền Nam' },
-];
-
 export default function Page() {
-  const theme = useTheme();
+  const { rows } = useSofa2AdminRows('b2b', 'contractors', { load: false });
+  const contractors = rows
+    .filter((row) => String(row.status ?? '') === 'Đang hợp tác')
+    .map((row) => ({
+      name: String(row.name ?? ''),
+      specialty: String(row.specialty ?? ''),
+      projects: Number(row.projects ?? 0),
+      rating: Number(String(row.rating ?? 0).split('/')[0]) || 0,
+      region: String(row.region ?? row.regions ?? ''),
+    }));
 
   return (
     <>
@@ -64,7 +64,7 @@ export default function Page() {
         </Stack>
 
         <Grid container spacing={3}>
-          {CONTRACTORS.map((c, index) => (
+          {contractors.map((c, index) => (
             <Grid key={c.name} xs={12} sm={6} md={4}>
               <Stack
                 component={m.div}

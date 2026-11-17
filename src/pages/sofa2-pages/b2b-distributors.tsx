@@ -2,13 +2,12 @@ import { m } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
 import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
-import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Unstable_Grid2';
-import { alpha, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
@@ -19,20 +18,12 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 
 // ----------------------------------------------------------------------
 
 const metadata = { title: 'Đại lý phân phối — LUXE Sofa' };
-
-const DEALERS = [
-  { name: 'Nội thất Việt', level: 'Cấp 1', region: 'Miền Bắc', city: 'Hà Nội', phone: '024 3xxx 123', address: '123 Nguyễn Trãi, Thanh Xuân, Hà Nội' },
-  { name: 'Decor Home HCM', level: 'Cấp 1', region: 'Miền Nam', city: 'TP.HCM', phone: '028 3xxx 456', address: '45 Lê Lợi, Q1, TP.HCM' },
-  { name: 'Living Space ĐN', level: 'Cấp 2', region: 'Miền Trung', city: 'Đà Nẵng', phone: '0236 3xxx 789', address: '78 Bạch Đằng, Hải Châu, Đà Nẵng' },
-  { name: 'Home Mart Hà Nội', level: 'Cấp 2', region: 'Miền Bắc', city: 'Hà Nội', phone: '024 3xxx 012', address: '200 Hoàng Quốc Việt, Cầu Giấy, Hà Nội' },
-  { name: 'Sofa Plus Cần Thơ', level: 'Cấp 2', region: 'Tây Nam Bộ', city: 'Cần Thơ', phone: '0292 3xxx 345', address: '15 Nguyễn Văn Cừ, Ninh Kiều, Cần Thơ' },
-  { name: 'Blue Interior', level: 'Cấp 3', region: 'Miền Nam', city: 'Bình Dương', phone: '0274 3xxx 678', address: '88 Đại lộ Bình Dương, Thuận An, Bình Dương' },
-];
 
 const levelColor: Record<string, 'error' | 'warning' | 'info' | 'default'> = {
   'Cấp 1': 'error',
@@ -42,6 +33,17 @@ const levelColor: Record<string, 'error' | 'warning' | 'info' | 'default'> = {
 
 export default function Page() {
   const theme = useTheme();
+  const { rows } = useSofa2AdminRows('b2b', 'distributors', { load: false });
+  const dealers = rows
+    .filter((row) => String(row.status ?? '') === 'Hoạt động')
+    .map((row) => ({
+      name: String(row.name ?? ''),
+      level: String(row.level ?? ''),
+      region: String(row.region ?? ''),
+      city: String(row.city ?? ''),
+      phone: String(row.phone ?? ''),
+      address: String(row.address ?? ''),
+    }));
 
   return (
     <>
@@ -62,7 +64,7 @@ export default function Page() {
             <Typography variant="overline" sx={{ color: 'text.disabled' }}>Mạng lưới</Typography>
           </Box>
           <Box component={m.div} variants={varFade({ distance: 24 }).inUp}>
-            <Typography variant="h2">{DEALERS.length} đại lý trên cả nước</Typography>
+            <Typography variant="h2">{dealers.length} đại lý trên cả nước</Typography>
           </Box>
           <Box component={m.div} variants={varFade({ distance: 24 }).inUp}>
             <Typography sx={{ color: 'text.secondary' }}>Phủ sóng 38 tỉnh/thành — từ Hà Nội đến Cần Thơ.</Typography>
@@ -70,7 +72,7 @@ export default function Page() {
         </Stack>
 
         <Grid container spacing={3}>
-          {DEALERS.map((d, index) => (
+          {dealers.map((d, index) => (
             <Grid key={d.name} xs={12} sm={6} md={4}>
               <Stack
                 component={m.div}
@@ -86,21 +88,31 @@ export default function Page() {
                   <Chip label={d.level} size="small" color={levelColor[d.level] ?? 'default'} variant="soft" />
                 </Stack>
                 <Typography variant="h6">{d.name}</Typography>
-                <Stack spacing={0.5}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Iconify icon="solar:map-point-bold-duotone" width={16} sx={{ color: 'text.disabled' }} />
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>{d.address}</Typography>
+                {(d.address || d.phone) && (
+                  <Stack spacing={0.5}>
+                    {d.address && (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="solar:map-point-bold-duotone" width={16} sx={{ color: 'text.disabled' }} />
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{d.address}</Typography>
+                      </Stack>
+                    )}
+                    {d.phone && (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Iconify icon="solar:phone-bold-duotone" width={16} sx={{ color: 'text.disabled' }} />
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{d.phone}</Typography>
+                      </Stack>
+                    )}
                   </Stack>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Iconify icon="solar:phone-bold-duotone" width={16} sx={{ color: 'text.disabled' }} />
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>{d.phone}</Typography>
-                  </Stack>
-                </Stack>
-                <Divider sx={{ borderStyle: 'dashed' }} />
-                <Stack direction="row" spacing={1}>
-                  <Chip label={d.region} size="small" variant="outlined" />
-                  <Chip label={d.city} size="small" variant="outlined" />
-                </Stack>
+                )}
+                {(d.region || d.city) && (
+                  <>
+                    <Divider sx={{ borderStyle: 'dashed' }} />
+                    <Stack direction="row" spacing={1}>
+                      {d.region && <Chip label={d.region} size="small" variant="outlined" />}
+                      {d.city && <Chip label={d.city} size="small" variant="outlined" />}
+                    </Stack>
+                  </>
+                )}
               </Stack>
             </Grid>
           ))}

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { m } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
@@ -12,13 +12,14 @@ import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
 
 import { varAlpha } from 'src/theme/styles';
+import { createSofa2MockQuote } from 'src/_mock/_sofa2-demo';
 
 import { Iconify } from 'src/components/iconify';
 import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { createSofa2MockQuote } from 'src/_mock/_sofa2-demo';
+import { createSofa2AdminRow } from 'src/sections/sofa2-admin/sofa2-admin-store';
 
 // ----------------------------------------------------------------------
 
@@ -67,8 +68,26 @@ export default function Page() {
         },
         'project'
       );
+      createSofa2AdminRow('b2b', 'project-quotes', {
+        code: quote.code,
+        project: form.project,
+        projectType: form.projectType,
+        client: form.contactName,
+        contactPerson: form.contactName,
+        phone: form.phone,
+        email: form.email,
+        location: form.address,
+        items: Number(form.items || 0),
+        productList: form.note,
+        note: form.note,
+        value: 0,
+        finalValue: 0,
+        validUntil: '',
+        created: new Date().toISOString().slice(0, 10),
+        status: 'Đã gửi',
+      });
       setSent(true);
-      setMessage(`Đã lưu yêu cầu ${quote.code} trên thiết bị demo. Đây chưa phải yêu cầu gửi tới nhân viên.`);
+      setMessage(`Đã tiếp nhận yêu cầu ${quote.code}; yêu cầu được lưu trong dữ liệu quản trị demo trên thiết bị này.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Không gửi được yêu cầu báo giá.');
     } finally {
@@ -109,7 +128,7 @@ export default function Page() {
                     {PROJECT_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
                   </TextField>
                 </Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Số lượng sofa" type="number" value={form.items} onChange={(event) => setField('items', event.target.value)} /></Grid>
+                <Grid xs={12} sm={6}><TextField required fullWidth label="Số lượng sofa" type="number" value={form.items} onChange={(event) => setField('items', event.target.value)} /></Grid>
                 <Grid xs={12} sm={6}>
                   <TextField fullWidth select label="Ngân sách" value={form.budget} onChange={(event) => setField('budget', event.target.value)}>
                     <MenuItem value="">Chọn ngân sách</MenuItem>

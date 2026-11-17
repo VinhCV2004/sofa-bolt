@@ -17,6 +17,7 @@ import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { createSofa2AdminRow } from 'src/sections/sofa2-admin/sofa2-admin-store';
 
 // ----------------------------------------------------------------------
 
@@ -81,22 +82,45 @@ export default function Page() {
         <Grid container spacing={{ xs: 4, md: 6 }} justifyContent="center">
           <Grid xs={12} md={8}>
             <Stack
-              component={m.div}
+              component={m.form}
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                const quantity = String(data.get('quantity') ?? '');
+                const unitPrice = String(data.get('unitPrice') ?? '');
+                createSofa2AdminRow('b2b', 'oem', {
+                  code: `OEM-${Date.now()}`,
+                  partner: String(data.get('partner') ?? 'Khác'),
+                  product: String(data.get('product') ?? ''),
+                  spec: String(data.get('spec') ?? ''),
+                  material: String(data.get('material') ?? ''),
+                  quantity,
+                  unitPrice,
+                  totalValue: String(Number(quantity || 0) * Number(unitPrice || 0)),
+                  deadline: String(data.get('deadline') ?? ''),
+                  note: String(data.get('delivery') ?? ''),
+                  status: 'Chờ duyệt',
+                });
+                setSent(true);
+              }}
               variants={varFade({ distance: 24 }).inUp}
               spacing={3}
               sx={{ p: { xs: 3, md: 5 }, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}
             >
               <Typography variant="h5">Thông số sản phẩm OEM</Typography>
               <Grid container spacing={2}>
-                <Grid xs={12}><TextField fullWidth label="Thông số sản phẩm (kích thước, form dáng)" multiline rows={2} /></Grid>
+                <Grid xs={12} sm={6}><TextField required name="partner" fullWidth label="Tên doanh nghiệp / thương hiệu" /></Grid>
+                <Grid xs={12} sm={6}><TextField required name="product" fullWidth label="Tên sản phẩm" /></Grid>
+                <Grid xs={12}><TextField name="spec" fullWidth label="Thông số sản phẩm (kích thước, form dáng)" multiline rows={2} /></Grid>
                 <Grid xs={12} sm={6}>
-                  <TextField fullWidth select label="Chất liệu" defaultValue="">
+                  <TextField name="material" fullWidth select label="Chất liệu" defaultValue="">
                     {MATERIALS.map((material) => <MenuItem key={material} value={material}>{material}</MenuItem>)}
                   </TextField>
                 </Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Số lượng" type="number" /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Giá mục tiêu (VNĐ/sp)" type="number" /></Grid>
-                <Grid xs={12} sm={6}><TextField fullWidth label="Tiến độ giao hàng" placeholder="VD: 45 ngày" /></Grid>
+                <Grid xs={12} sm={6}><TextField required name="quantity" fullWidth label="Số lượng" type="number" /></Grid>
+                <Grid xs={12} sm={6}><TextField required name="unitPrice" fullWidth label="Giá mục tiêu (VNĐ/sp)" type="number" /></Grid>
+                <Grid xs={12} sm={6}><TextField name="delivery" fullWidth label="Tiến độ giao hàng" placeholder="VD: 45 ngày" /></Grid>
+                <Grid xs={12} sm={6}><TextField required name="deadline" fullWidth label="Ngày cần giao hàng" type="date" InputLabelProps={{ shrink: true }} /></Grid>
                 <Grid xs={12}>
                   <Stack spacing={1}>
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>Tệp thiết kế (bản vẽ 3D, ảnh mẫu)</Typography>
@@ -107,7 +131,7 @@ export default function Page() {
                   </Stack>
                 </Grid>
               </Grid>
-              <Button variant="contained" size="large" startIcon={<Iconify icon="solar:hand-shake-bold-duotone" />} sx={{ width: 'fit-content' }} onClick={() => setSent(true)}>
+              <Button type="submit" variant="contained" size="large" startIcon={<Iconify icon="solar:hand-shake-bold-duotone" />} sx={{ width: 'fit-content' }}>
                 {sent ? 'Đã gửi yêu cầu' : 'Gửi yêu cầu OEM'}
               </Button>
             </Stack>

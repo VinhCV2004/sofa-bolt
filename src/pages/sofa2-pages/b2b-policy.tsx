@@ -24,7 +24,7 @@ import { Iconify } from 'src/components/iconify';
 import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
-import { getSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 import { isSofa2DealerPolicyVisible } from 'src/sections/sofa2-admin/sofa2-dealer';
 
@@ -40,19 +40,24 @@ const SECTIONS = [
 ];
 
 export default function Page() {
-  const policies = getSofa2AdminRows('dealer', 'price-policy').filter((row) => isSofa2DealerPolicyVisible(row));
+  const { rows: dealerPolicies } = useSofa2AdminRows('dealer', 'price-policy');
+  const { rows: b2bPolicies } = useSofa2AdminRows('b2b', 'policies', { load: false });
+  const policies = [
+    ...dealerPolicies.filter((row) => isSofa2DealerPolicyVisible(row)),
+    ...b2bPolicies.filter((row) => row.status === 'Đang chạy'),
+  ];
 
   const currency = (value: unknown) => {
     const amount = Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount);
   };
   const tierRows = policies.map((row) => ({
-    tier: String(row.level ?? 'Tất cả'),
-    discount: `${String(row.discount ?? 0)}%`,
+    tier: String(row.level ?? row.applies ?? 'Tất cả'),
+    discount: row.discount != null ? `${String(row.discount)}%` : String(row.value ?? '—'),
     minOrder: currency(row.minRevenue),
     color: '#8A6746',
-    name: String(row.name ?? ''),
-    terms: String(row.terms ?? ''),
+    name: String(row.name ?? row.title ?? ''),
+    terms: String(row.terms ?? row.description ?? row.conditions ?? ''),
   }));
 
   return (

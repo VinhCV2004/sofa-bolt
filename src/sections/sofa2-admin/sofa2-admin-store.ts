@@ -356,6 +356,15 @@ const emit = () => {
 export const getSofa2AdminRows = (groupSlug: string, moduleSlug: string) =>
   store[key(groupSlug, moduleSlug)] ?? [];
 
+/** Add a row to the shared browser demo store so admin and client views stay in sync. */
+export function createSofa2AdminRow(groupSlug: string, moduleSlug: string, row: AdminRow) {
+  const rowsKey = key(groupSlug, moduleSlug);
+  const next = [row, ...(store[rowsKey] ?? [])];
+  store[rowsKey] = next;
+  emit();
+  return row;
+}
+
 export async function loadSofa2SeoRows(moduleSlug: string, defaults: AdminRow[]) {
   const k = key('seo', moduleSlug);
   const rows = (store[k] ?? defaults).map((row) => ({ ...row }));
