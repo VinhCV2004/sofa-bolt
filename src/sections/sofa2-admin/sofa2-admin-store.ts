@@ -234,6 +234,49 @@ try {
 
 // Add newly introduced customer demo fixtures to existing browser stores once, without
 // replacing edited records or duplicating natural keys from the previous fixture set.
+const BLOG_CONTENT_MIGRATION_KEY = 'sofa2-blog-content-mock-v4';
+function migrateBlogMockContent() {
+  if (typeof window === 'undefined') return false;
+  try {
+    if (window.localStorage.getItem(BLOG_CONTENT_MIGRATION_KEY) === 'done') return false;
+    const blogDefaults = SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'cms')?.modules
+      .find((module) => module.slug === 'blog')?.rows ?? [];
+    const rowKey = key('cms', 'blog');
+    const categoryRows = store[key('cms', 'blog-categories')] ?? [];
+    const currentRows = store[rowKey] ?? [];
+    const existingIds = new Set(currentRows.map((row) => String(row.id ?? '')));
+    const existingSlugs = new Set(currentRows.map((row) => String(row.slug ?? '')));
+    const newArticleIds = new Set([
+      'cms-blog-company-2026', 'cms-blog-company-craft', 'cms-blog-promo-nov', 'cms-blog-promo-member',
+      'cms-blog-buying-size', 'cms-blog-trend-color', 'cms-blog-material-foam', 'cms-blog-feng-shui-sofa',
+      'cms-blog-cleaning-stain', 'cms-blog-care-leather', 'cms-blog-living-small',
+    ]);
+    const mergedRows = currentRows.map((row) => {
+      const seed = blogDefaults.find((item) => String(item.id ?? '') === String(row.id ?? '')
+        || String(item.slug ?? '') === String(row.slug ?? ''));
+      if (!seed) return row;
+      const category = categoryRows.find((item) =>
+        String(item.label ?? '').trim().toLocaleLowerCase() === String(row.category ?? '').trim().toLocaleLowerCase()
+      );
+      const categorySlug = String(row.categorySlug ?? category?.slug ?? (row.category === seed.category ? seed.categorySlug : ''));
+      return { ...seed, ...row, ...(categorySlug ? { categorySlug } : {}) };
+    });
+    const missingNewArticles = blogDefaults.filter((row) =>
+      (newArticleIds.has(String(row.id ?? '')) || String(row.id ?? '').startsWith('cms-blog-mock-2026-'))
+      && !existingIds.has(String(row.id ?? ''))
+      && !existingSlugs.has(String(row.slug ?? ''))
+    );
+    if (missingNewArticles.length) store[rowKey] = [...mergedRows, ...missingNewArticles];
+    else store[rowKey] = mergedRows;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    window.localStorage.setItem(BLOG_CONTENT_MIGRATION_KEY, 'done');
+    return true;
+  } catch {
+    return false;
+  }
+}
+const blogContentMigrated = migrateBlogMockContent();
+
 const CUSTOMER_MOCK_MIGRATION_KEY = 'sofa2-customer-mock-v2';
 if (typeof window !== 'undefined') {
   try {
@@ -494,7 +537,7 @@ const emit = () => {
   listeners.forEach((l) => l());
 };
 
-if (hrSampleRowsMigrated || recruitmentDataReconciled) emit();
+if (hrSampleRowsMigrated || recruitmentDataReconciled || blogContentMigrated) emit();
 
 /** Đọc nhanh dữ liệu một module (không cần hook) */
 export const getSofa2AdminRows = (groupSlug: string, moduleSlug: string) =>

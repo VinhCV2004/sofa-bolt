@@ -1,7 +1,7 @@
 import { m } from 'framer-motion';
-import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
+import { useState, useEffect, type FormEvent } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
@@ -10,6 +10,7 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Unstable_Grid2';
 import Container from '@mui/material/Container';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
@@ -19,12 +20,15 @@ import { varAlpha } from 'src/theme/styles';
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
-import { SOFA2_BLOG_POSTS } from 'src/sections/sofa2/sofa2-pages-data';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 import {
-  hasCmsBlogPost,
+  cmsBlogPostToUi,
+  useCmsBlogAuthors,
+  useCmsBlogComments,
   fetchBlogPostBySlug,
   type Sofa2CmsBlogPost,
+  fetchPublishedBlogPosts,
+  useCmsBlogSocialChannels,
 } from 'src/sections/sofa2/sofa2-cms-client';
 
 type UiPost = {
@@ -36,48 +40,43 @@ type UiPost = {
   content: string;
   image: string;
   author: string;
+  authorId: string;
   date: string;
   readTime: string;
   metaTitle: string;
   metaDescription: string;
 };
 
-const STATIC_POSTS: UiPost[] = SOFA2_BLOG_POSTS.map((p) => ({
-  id: p.id,
-  title: p.title,
-  slug: p.slug,
-  categoryLabel: p.categoryLabel,
-  excerpt: p.excerpt,
-  content: p.content,
-  image: p.image,
-  author: p.author,
-  date: p.date,
-  readTime: p.readTime,
-  metaTitle: p.title,
-  metaDescription: p.excerpt,
-}));
-
 export default function Page() {
   const { id } = useParams();
   const [post, setPost] = useState<UiPost | null>(null);
+  const [related, setRelated] = useState<UiPost[]>([]);
   const [notFound, setNotFound] = useState(false);
+  const [commentName, setCommentName] = useState('');
+  const [commentEmail, setCommentEmail] = useState('');
+  const [commentContent, setCommentContent] = useState('');
+  const [commentNotice, setCommentNotice] = useState('');
+  const [shareNotice, setShareNotice] = useState('');
+  const { authors } = useCmsBlogAuthors();
+  const { comments, createComment } = useCmsBlogComments(post?.slug ?? '');
+  const { channels } = useCmsBlogSocialChannels();
 
   useEffect(() => {
     let active = true;
     if (!id) return undefined;
-
-    const staticPost = STATIC_POSTS.find(
-      (item) => item.id === id || item.slug === id
-    );
-    const cmsOverridesStatic = hasCmsBlogPost(id);
-    setPost(cmsOverridesStatic ? null : staticPost ?? null);
+    setPost(null);
+    setRelated([]);
     setNotFound(false);
+    setCommentNotice('');
+    setShareNotice('');
 
-    let foundCms = false;
     fetchBlogPostBySlug(id)
       .then((cmsPost: Sofa2CmsBlogPost | null) => {
-        if (!active || !cmsPost) return;
-        foundCms = true;
+        if (!active) return;
+        if (!cmsPost) {
+          setNotFound(true);
+          return;
+        }
         setPost({
           id: cmsPost.slug || cmsPost.id,
           title: cmsPost.title,
@@ -87,17 +86,21 @@ export default function Page() {
           content: cmsPost.content,
           image: cmsPost.cover,
           author: cmsPost.author || 'LUXE Sofa',
+          authorId: cmsPost.authorId,
           date: cmsPost.publishedAt || '',
           readTime: `${Math.max(3, Math.ceil(cmsPost.content.length / 600))} phút`,
           metaTitle: cmsPost.metaTitle || cmsPost.title,
           metaDescription: cmsPost.metaDescription || cmsPost.excerpt,
         });
+        fetchPublishedBlogPosts().then((posts) => {
+          if (active) {
+            setRelated(posts.filter((item) => item.slug !== cmsPost.slug).slice(0, 3)
+              .map((item, index) => cmsBlogPostToUi(item, index) as UiPost));
+          }
+        });
       })
-      .catch(() => {})
-      .finally(() => {
-        if (active && (!staticPost || cmsOverridesStatic) && !foundCms) {
-          setNotFound(true);
-        }
+      .catch(() => {
+        if (active) setNotFound(true);
       });
 
     return () => {
@@ -126,7 +129,56 @@ export default function Page() {
     return null;
   }
 
-  const related = STATIC_POSTS.filter((item) => item.id !== post.id).slice(0, 3);
+  const authorProfile = authors.find((author) => author.id === post.authorId || author.name === post.author);
+  const handleCommentSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = commentName.trim();
+    const email = commentEmail.trim();
+    const content = commentContent.trim();
+    if (!name || !email || !content) return;
+    createComment({
+      id: `blog-comment-${Date.now().toString(36)}`,
+      postSlug: post.slug,
+      postTitle: post.title,
+      name,
+      email,
+      content,
+      status: 'Chờ duyệt',
+      createdAt: new Date().toISOString().slice(0, 10),
+      source: 'Website',
+      approvedBy: '',
+      reply: '',
+    });
+    setCommentName('');
+    setCommentEmail('');
+    setCommentContent('');
+    setCommentNotice('Đã nhận bình luận. Nội dung sẽ hiển thị sau khi được quản trị viên duyệt.');
+  };
+
+  const handleShare = async (channel: (typeof channels)[number]) => {
+    const pageUrl = window.location.href;
+    if (channel.action === 'copy') {
+      try {
+        await navigator.clipboard.writeText(pageUrl);
+        setShareNotice('Đã sao chép liên kết bài viết.');
+      } catch {
+        setShareNotice('Trình duyệt không cho phép sao chép liên kết.');
+      }
+      return;
+    }
+    const target = channel.urlTemplate
+      .replaceAll('{url}', encodeURIComponent(pageUrl))
+      .replaceAll('{title}', encodeURIComponent(post.title))
+      .replaceAll('{image}', encodeURIComponent(post.image));
+    try {
+      const shareUrl = new URL(target);
+      if (shareUrl.protocol !== 'https:') throw new Error('Invalid share URL');
+      window.open(shareUrl.toString(), '_blank', 'noopener,noreferrer');
+    } catch {
+      setShareNotice('Liên kết chia sẻ chưa được cấu hình hợp lệ.');
+    }
+  };
+
   const paragraphs = post.content
     ? post.content.split('\n').filter((p) => p.trim())
     : ['Nội dung bài viết đang được cập nhật.'];
@@ -148,7 +200,7 @@ export default function Page() {
       <Sofa2Section py={{ xs: 4, md: 5 }}>
         <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>{post.author.charAt(0)}</Avatar>
+            <Avatar src={authorProfile?.avatar || undefined} sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>{post.author.charAt(0)}</Avatar>
             <Typography variant="subtitle2">{post.author}</Typography>
           </Stack>
           <Typography variant="caption" sx={{ color: 'text.disabled' }}>· {post.date} · {post.readTime} đọc</Typography>
@@ -168,34 +220,60 @@ export default function Page() {
           <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ mt: 6, p: 4, borderRadius: 2, bgcolor: (t) => varAlpha(t.vars.palette.grey['500Channel'], 0.04) }}>
             <Divider />
             <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar sx={{ width: 56, height: 56, bgcolor: 'primary.main' }}>{post.author.charAt(0)}</Avatar>
-              <Stack>
+              <Avatar src={authorProfile?.avatar || undefined} sx={{ width: 56, height: 56, bgcolor: 'primary.main' }}>{post.author.charAt(0)}</Avatar>
+              <Stack spacing={0.75}>
                 <Typography variant="subtitle1">{post.author}</Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Chuyên gia nội thất tại LUXE Sofa</Typography>
+                <Typography variant="body2" sx={{ color: 'primary.main' }}>{authorProfile?.role || 'Biên tập viên LUXE Sofa'}</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>{authorProfile?.bio || 'Chia sẻ kiến thức và cảm hứng về sofa, nội thất cùng LUXE Sofa.'}</Typography>
+                <Stack direction="row" spacing={1}>
+                  {[
+                    { label: 'Facebook', href: authorProfile?.facebook },
+                    { label: 'Instagram', href: authorProfile?.instagram },
+                    { label: 'LinkedIn', href: authorProfile?.linkedin },
+                  ].filter((link) => link.href).map((link) => (
+                    <Button key={link.label} component="a" href={link.href} target="_blank" rel="noreferrer" size="small">{link.label}</Button>
+                  ))}
+                </Stack>
               </Stack>
             </Stack>
             <Divider />
           </Stack>
 
-          <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ mt: 6 }}>
-            <Typography variant="h5">Bình luận</Typography>
-            <Stack spacing={2} sx={{ p: 4, borderRadius: 2, bgcolor: (t) => varAlpha(t.vars.palette.grey['500Channel'], 0.04), textAlign: 'center' }}>
-              <Iconify icon="solar:chat-square-bold-duotone" width={40} sx={{ color: 'text.disabled', mx: 'auto' }} />
-              <Typography sx={{ color: 'text.secondary' }}>Hệ thống bình luận đang được cập nhật. Vui lòng quay lại sau.</Typography>
+          <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2.5} sx={{ mt: 6 }}>
+            <Typography variant="h5">Bình luận ({comments.length})</Typography>
+            {comments.length ? comments.map((comment) => (
+              <Stack key={comment.id} direction="row" spacing={2} sx={{ p: 2.5, borderRadius: 2, bgcolor: (t) => varAlpha(t.vars.palette.grey['500Channel'], 0.04) }}>
+                <Avatar sx={{ width: 40, height: 40 }}>{comment.name.charAt(0).toUpperCase()}</Avatar>
+                <Stack spacing={0.5}>
+                  <Stack direction="row" spacing={1.5} alignItems="baseline" flexWrap="wrap">
+                    <Typography variant="subtitle2">{comment.name}</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.disabled' }}>{comment.createdAt}</Typography>
+                  </Stack>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.7 }}>{comment.content}</Typography>
+                  {comment.reply && <Typography variant="body2" sx={{ pl: 2, borderLeft: 2, borderColor: 'primary.main', color: 'text.secondary' }}>LUXE Sofa: {comment.reply}</Typography>}
+                </Stack>
+              </Stack>
+            )) : <Typography variant="body2" sx={{ color: 'text.secondary' }}>Chưa có bình luận được duyệt. Hãy là người đầu tiên chia sẻ ý kiến.</Typography>}
+            <Divider />
+            <Typography variant="h6">Để lại bình luận</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Bình luận sẽ được kiểm duyệt trước khi hiển thị công khai. Email của bạn không được đăng lên trang.</Typography>
+            <Stack component="form" onSubmit={handleCommentSubmit} spacing={2}>
+              <TextField label="Tên của bạn" value={commentName} onChange={(event) => setCommentName(event.target.value)} required inputProps={{ maxLength: 80 }} />
+              <TextField label="Email" type="email" value={commentEmail} onChange={(event) => setCommentEmail(event.target.value)} required />
+              <TextField label="Nội dung bình luận" value={commentContent} onChange={(event) => setCommentContent(event.target.value)} required multiline minRows={4} inputProps={{ maxLength: 1200 }} />
+              <Button type="submit" variant="contained" sx={{ alignSelf: 'flex-start' }}>Gửi bình luận</Button>
+              {commentNotice && <Typography role="status" variant="body2" sx={{ color: 'success.main' }}>{commentNotice}</Typography>}
             </Stack>
           </Stack>
 
-          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 4 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 4 }}>
             <Typography variant="subtitle2">Chia sẻ:</Typography>
-            {[
-              { icon: 'eva:facebook-fill', label: 'Facebook', color: '#1877F2' },
-              { icon: 'logos:youtube-icon', label: 'YouTube', color: '#FF0000' },
-              { icon: 'skill-icons:instagram', label: 'Instagram', color: '#E4405F' },
-            ].map((s) => (
-              <Button key={s.label} variant="outlined" size="small" startIcon={<Iconify icon={s.icon} />} sx={{ color: s.color, borderColor: (t) => varAlpha(t.vars.palette.grey['500Channel'], 0.24) }}>
-                {s.label}
+            {channels.map((channel) => (
+              <Button key={channel.id} variant="outlined" size="small" onClick={() => handleShare(channel).catch(() => setShareNotice('Không thể chia sẻ bài viết.'))} startIcon={<Iconify icon={channel.icon} />}>
+                {channel.label}
               </Button>
             ))}
+            {shareNotice && <Typography role="status" variant="caption" sx={{ color: 'text.secondary' }}>{shareNotice}</Typography>}
           </Stack>
         </Container>
       </Sofa2Section>

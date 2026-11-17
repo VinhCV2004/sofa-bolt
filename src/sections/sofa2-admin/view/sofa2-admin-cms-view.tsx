@@ -68,9 +68,9 @@ const SURFACE = '#2A2A2A';
 
 const statusColor = (value: string) => {
   const v = String(value).toLowerCase();
-  if (/(xuất bản|đang chạy|tốt)/.test(v)) return 'success';
+  if (/(xuất bản|đang chạy|tốt|đã duyệt)/.test(v)) return 'success';
   if (/(nháp|chờ|cần cải thiện)/.test(v)) return 'warning';
-  if (/(ẩn|hết hạn|thiếu)/.test(v)) return 'error';
+  if (/(ẩn|hết hạn|thiếu|từ chối|spam)/.test(v)) return 'error';
   return 'default';
 };
 
@@ -104,6 +104,13 @@ const canonicalCmsSlug = (moduleSlug: string, value: unknown, title: unknown) =>
     .replace(/^\/?sofa2\//i, '')
     .replace(/^\/+|\/+$/g, '');
   return `/sofa2/pages/${sofa2Slugify(bare || String(title ?? ''))}`;
+};
+
+const canonicalBlogCategorySlug = (value: unknown, label: unknown) => {
+  const bare = String(value ?? '').trim()
+    .replace(/^\/?sofa2\/blog\/category\//i, '')
+    .replace(/^\/+|\/+$/g, '');
+  return sofa2Slugify(bare || String(label ?? ''));
 };
 
 const toDateInput = (value: unknown) => {
@@ -198,6 +205,19 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   });
   const { rows: accessRoles } = useSofa2AdminRows('access', 'roles', {
     load: group.slug === 'access' && module.slug === 'users',
+  });
+  const { rows: blogCategoryRows } = useSofa2AdminRows('cms', 'blog-categories', {
+    load: group.slug === 'cms' && module.slug === 'blog',
+  });
+  const { rows: blogAuthorRows } = useSofa2AdminRows('cms', 'blog-authors', {
+    load: group.slug === 'cms' && module.slug === 'blog',
+  });
+  const loadRelatedBlogPosts = group.slug === 'cms' && ['blog-categories', 'blog-authors', 'blog-comments'].includes(module.slug);
+  const { rows: blogPostsRows, updateRow: updateBlogPostRow } = useSofa2AdminRows('cms', 'blog', {
+    load: loadRelatedBlogPosts,
+  });
+  const { deleteRows: deleteBlogCommentRows } = useSofa2AdminRows('cms', 'blog-comments', {
+    load: group.slug === 'cms' && module.slug === 'blog',
   });
   const { rows: catalogProducts } = useSofa2AdminRows('catalog', 'products', {
     load: group.slug === 'catalog' && module.slug === 'categories',
@@ -345,7 +365,17 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
               }
             : field
         )
-      : schema.fields;
+      : group.slug === 'cms' && module.slug === 'blog'
+        ? schema.fields.map((field) => {
+            if (field.key === 'category') return { ...field, options: blogCategoryRows.filter((row) => String(row.status) === 'Đã xuất bản').map((row) => String(row.label ?? '')) };
+            if (field.key === 'author') return { ...field, options: blogAuthorRows.filter((row) => String(row.status) === 'Đã xuất bản').map((row) => String(row.name ?? '')) };
+            return field;
+          })
+        : group.slug === 'cms' && module.slug === 'blog-comments'
+          ? schema.fields.map((field) => field.key === 'postTitle'
+              ? { ...field, options: blogPostsRows.map((row) => String(row.title ?? '')) }
+              : field)
+          : schema.fields;
 
   const publishLabel = schema.publishLabel ?? 'Xuất bản';
   const defaultDraft = schema.defaultStatus ?? (statusOptions.includes('Bản nháp') ? 'Bản nháp' : statusOptions[1] ?? 'Bản nháp');
@@ -424,12 +454,58 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       const willAutoSlug =
         group.slug === 'cms' &&
         field.key === 'slug' &&
-        ['blog', 'static-pages'].includes(module.slug) &&
-        !!String(form.values[titleKey] ?? '').trim();
-      if (field.required && !value && !willAutoSlug) next[field.key] = 'Trường bắt buộc';
+        ['blog', 'static-pages', 'blog-categories', 'blog-authors'].includes(module.slug) &&
+        !!String(form.values[titleKey] ?? form.values.label ?? form.values.name ?? '').trim();
+      const willAutoChannel = group.slug === 'cms' && module.slug === 'blog-social'
+        && field.key === 'channel' && !!String(form.values.label ?? '').trim();
+      if (field.required && !value && !willAutoSlug && !willAutoChannel) next[field.key] = 'Trường bắt buộc';
       else if (field.maxLength && value.length > field.maxLength)
         next[field.key] = `Tối đa ${field.maxLength} ký tự (hiện ${value.length})`;
     });
+    if (group.slug === 'cms' && ['blog', 'blog-categories'].includes(module.slug)) {
+      const slug = module.slug === 'blog'
+        ? canonicalCmsSlug('blog', form.values.slug, form.values[titleKey])
+        : canonicalBlogCategorySlug(form.values.slug, form.values.label);
+      if (!slug) next.slug = 'Vui lòng nhập đường dẫn hợp lệ.';
+      if (slug && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.slug ?? '') === slug)) {
+        next.slug = module.slug === 'blog' ? 'Đường dẫn bài viết đã tồn tại.' : 'Đường dẫn chuyên mục đã tồn tại.';
+      }
+      if (module.slug === 'blog-categories') {
+        const label = String(form.values.label ?? '').trim().toLocaleLowerCase();
+        if (label && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+          && String(row.label ?? '').trim().toLocaleLowerCase() === label)) next.label = 'Tên chuyên mục đã tồn tại.';
+      }
+      if (module.slug === 'blog') {
+        const category = blogCategoryRows.find((row) => String(row.label ?? '') === String(form.values.category ?? '') && String(row.status) === 'Đã xuất bản');
+        if (!category) next.category = 'Chọn chuyên mục đang được xuất bản.';
+        const author = blogAuthorRows.find((row) => String(row.name ?? '') === String(form.values.author ?? '') && String(row.status) === 'Đã xuất bản');
+        if (!author) next.author = 'Chọn tác giả đang được hiển thị.';
+      }
+    }
+    if (group.slug === 'cms' && module.slug === 'blog-authors') {
+      const slug = sofa2Slugify(String(form.values.slug || form.values.name));
+      if (!slug) next.slug = 'Vui lòng nhập tên hoặc slug hợp lệ.';
+      if (slug && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && sofa2Slugify(String(row.slug ?? row.name ?? '')) === slug)) next.slug = 'Slug tác giả đã tồn tại.';
+      const name = String(form.values.name ?? '').trim().toLocaleLowerCase();
+      if (name && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.name ?? '').trim().toLocaleLowerCase() === name)) next.name = 'Tên tác giả đã tồn tại.';
+    }
+    if (group.slug === 'cms' && module.slug === 'blog-comments') {
+      const post = blogPostsRows.find((row) => String(row.title ?? '') === String(form.values.postTitle ?? ''));
+      if (!post || (form.mode === 'create' && String(post.status) !== 'Đã xuất bản')) next.postTitle = 'Chọn bài viết đang xuất bản.';
+      const email = String(form.values.email ?? '').trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Email chưa đúng định dạng.';
+      if (String(form.values.status) === 'Đã duyệt' && !String(form.values.content ?? '').trim()) next.content = 'Bình luận trống không thể duyệt.';
+    }
+    if (group.slug === 'cms' && module.slug === 'blog-social') {
+      const channel = sofa2Slugify(String(form.values.channel || form.values.label || ''));
+      if (!channel) next.channel = 'Mã kênh chỉ gồm chữ thường, số và dấu gạch ngang.';
+      if (channel && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && sofa2Slugify(String(row.channel ?? '')) === channel)) next.channel = 'Mã kênh đã tồn tại.';
+      if (String(form.values.action) === 'share' && !String(form.values.urlTemplate ?? '').trim()) next.urlTemplate = 'Nhập URL chia sẻ hoặc chọn hành động sao chép.';
+    }
     if (group.slug === 'cms' && module.slug === 'promotions') {
       const code = String(form.values.code ?? '').trim();
       if (code && !/^[A-Z0-9-]+$/.test(code)) next.code = 'Mã chỉ gồm chữ in hoa, số và dấu gạch ngang.';
@@ -1198,6 +1274,34 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     if (group.slug === 'cms' && ['blog', 'static-pages'].includes(module.slug)) {
       clean.slug = canonicalCmsSlug(module.slug, clean.slug, clean[titleKey]);
     }
+    if (group.slug === 'cms' && module.slug === 'blog-categories') {
+      clean.slug = canonicalBlogCategorySlug(clean.slug, clean.label);
+    }
+    if (group.slug === 'cms' && module.slug === 'blog') {
+      const category = blogCategoryRows.find((row) => String(row.label ?? '') === String(clean.category ?? ''));
+      const author = blogAuthorRows.find((row) => String(row.name ?? '') === String(clean.author ?? ''));
+      clean.categorySlug = String(category?.slug ?? '');
+      clean.authorId = String(author?.id ?? '');
+      if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
+    }
+    if (group.slug === 'cms' && module.slug === 'blog-authors') {
+      clean.slug = sofa2Slugify(String(clean.slug || clean.name || ''));
+      if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
+    }
+    if (group.slug === 'cms' && module.slug === 'blog-comments') {
+      const post = blogPostsRows.find((row) => String(row.title ?? '') === String(clean.postTitle ?? ''));
+      clean.postSlug = String(post?.slug ?? '');
+      clean.postTitle = String(post?.title ?? clean.postTitle ?? '');
+      if (String(clean.status) === 'Đã duyệt') clean.approvedBy = String(clean.approvedBy || 'Ban biên tập');
+      else clean.approvedBy = '';
+    }
+    if (group.slug === 'cms' && module.slug === 'blog-social') {
+      clean.channel = sofa2Slugify(String(clean.channel || clean.label || ''));
+      clean.enabled = isPortalEnabled(clean.enabled) ? 'Có' : 'Không';
+    }
+    if (group.slug === 'cms' && ['blog', 'blog-categories', 'blog-authors', 'blog-comments', 'blog-social'].includes(module.slug) && form.mode === 'create' && !clean.id) {
+      clean.id = `cms-${module.slug}-${Date.now().toString(36)}`;
+    }
     if (group.slug === 'cms' && module.slug === 'seo') {
       clean.page = `/${String(clean.page ?? '').trim().replace(/^\/+/, '').replace(/\/+$/, '')}`;
       clean.length = String(clean.title ?? '').length;
@@ -1370,6 +1474,25 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     }
 
     const previousRow = form.mode === 'edit' ? rows[form.index] : undefined;
+    if (group.slug === 'cms' && module.slug === 'blog-categories' && previousRow
+      && (String(previousRow.slug ?? '') !== String(clean.slug ?? '')
+        || String(previousRow.label ?? '') !== String(clean.label ?? ''))) {
+      getSofa2AdminRows('cms', 'blog').forEach((post, index) => {
+        if (String(post.categorySlug ?? '') === String(previousRow.slug ?? '')
+          || (!post.categorySlug && String(post.category ?? '') === String(previousRow.label ?? ''))) {
+          updateBlogPostRow(index, { ...post, category: String(clean.label ?? ''), categorySlug: String(clean.slug ?? '') });
+        }
+      });
+    }
+    if (group.slug === 'cms' && module.slug === 'blog-authors' && previousRow
+      && String(previousRow.name ?? '') !== String(clean.name ?? '')) {
+      getSofa2AdminRows('cms', 'blog').forEach((post, index) => {
+        if (String(post.authorId ?? '') === String(previousRow.id ?? '')
+          || String(post.author ?? '') === String(previousRow.name ?? '')) {
+          updateBlogPostRow(index, { ...post, author: String(clean.name ?? ''), authorId: String(clean.id ?? previousRow.id ?? '') });
+        }
+      });
+    }
     if (form.mode === 'create') {
       createRow(clean);
     } else {
@@ -1528,6 +1651,20 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   };
 
   const catalogDeleteBlockReason = (row: AdminRow) => {
+    if (group.slug === 'cms' && module.slug === 'blog-authors') {
+      const linkedPosts = getSofa2AdminRows('cms', 'blog').filter((post) =>
+        String(post.authorId ?? '') === String(row.id ?? '')
+        || String(post.author ?? '').trim() === String(row.name ?? '').trim()
+      ).length;
+      if (linkedPosts) return `Tác giả đang được ${linkedPosts} bài viết sử dụng; hãy chuyển bài viết sang tác giả khác trước khi xoá.`;
+    }
+    if (group.slug === 'cms' && module.slug === 'blog-categories') {
+      const linkedPosts = getSofa2AdminRows('cms', 'blog').filter((post) =>
+        String(post.categorySlug ?? '') === String(row.slug ?? '')
+        || (!post.categorySlug && String(post.category ?? '').trim() === String(row.label ?? '').trim())
+      ).length;
+      if (linkedPosts) return `Chuyên mục đang được ${linkedPosts} bài viết tham chiếu; hãy chuyển bài viết sang chuyên mục khác trước khi xoá.`;
+    }
     if (group.slug === 'hr' && ['recruitment', 'job-detail', 'recruitment-tracking'].includes(module.slug)) {
       const jobId = String(row.jobId ?? '');
       const hasApplications = ['submit-cv', 'applicant-profile'].some((moduleName) =>
@@ -1628,10 +1765,21 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         setConfirm({ open: false, index: null });
         return;
       }
+      let removedLinkedComments = 0;
+      if (group.slug === 'cms' && module.slug === 'blog') {
+        const postSlug = String(rows[confirm.index]?.slug ?? '');
+        const comments = getSofa2AdminRows('cms', 'blog-comments');
+        const commentIndexes = comments.map((comment, index) =>
+          String(comment.postSlug ?? '') === postSlug ? index : -1
+        ).filter((index) => index >= 0);
+        removedLinkedComments = commentIndexes.length;
+        if (commentIndexes.length) deleteBlogCommentRows(commentIndexes);
+      }
       deleteRow(confirm.index);
       setSelected([]);
       const synced = await syncDealerModule();
-      setToast(synced ? `Đã xoá ${entity}.` : 'Đã xoá dữ liệu trong trình duyệt demo.');
+      const message = `Đã xoá ${entity}${removedLinkedComments ? ` cùng ${removedLinkedComments} bình luận liên quan` : ''}.`;
+      setToast(synced ? message : 'Đã xoá dữ liệu trong trình duyệt demo.');
     }
     setConfirm({ open: false, index: null });
   };
@@ -1654,15 +1802,25 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       return;
     }
     const deletedCount = removable.length;
+    let removedLinkedComments = 0;
+    if (group.slug === 'cms' && module.slug === 'blog') {
+      const postSlugs = new Set(removable.map((index) => String(rows[index]?.slug ?? '')));
+      const comments = getSofa2AdminRows('cms', 'blog-comments');
+      const commentIndexes = comments.map((comment, index) =>
+        postSlugs.has(String(comment.postSlug ?? '')) ? index : -1
+      ).filter((index) => index >= 0);
+      removedLinkedComments = commentIndexes.length;
+      if (commentIndexes.length) deleteBlogCommentRows(commentIndexes);
+    }
     deleteRows(removable);
     setSelected([]);
     setBulkConfirm(false);
     const synced = await syncDealerModule();
     setToast(
       skipped
-        ? `Đã xoá ${deletedCount} ${entity}; bỏ qua ${skipped} bản ghi đang được liên kết.`
+        ? `Đã xoá ${deletedCount} ${entity}${removedLinkedComments ? ` cùng ${removedLinkedComments} bình luận liên quan` : ''}; bỏ qua ${skipped} bản ghi đang được liên kết.`
         : synced
-          ? `Đã xoá ${deletedCount} ${entity}.`
+          ? `Đã xoá ${deletedCount} ${entity}${removedLinkedComments ? ` cùng ${removedLinkedComments} bình luận liên quan` : ''}.`
           : 'Đã xoá dữ liệu trong trình duyệt demo.'
     );
   };
