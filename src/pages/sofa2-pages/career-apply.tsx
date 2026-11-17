@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+
 import { m } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams } from 'react-router-dom';
 
 import Stack from '@mui/material/Stack';
+import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Grid from '@mui/material/Unstable_Grid2';
 import Container from '@mui/material/Container';
-import Alert from '@mui/material/Alert';
 import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
@@ -18,10 +19,11 @@ import { RouterLink } from 'src/routes/components';
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
-import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
-import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { isSofa2JobOpen } from 'src/sections/sofa2/sofa2-recruitment';
+import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
+import { saveSofa2HrCv } from 'src/sections/sofa2-admin/sofa2-hr-files';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
+import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 
 // ----------------------------------------------------------------------
 
@@ -33,6 +35,8 @@ export default function Page() {
   const { rows: applications } = useSofa2AdminRows('hr', 'submit-cv');
   const openJobs = jobs.filter(isSofa2JobOpen);
   const [applicationId, setApplicationId] = useState('');
+  const [selectedCv, setSelectedCv] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [fileError, setFileError] = useState('');
   const [formError, setFormError] = useState('');
   const [form, setForm] = useState({
@@ -62,8 +66,9 @@ export default function Page() {
     setFormError('');
     setForm((prev) => ({ ...prev, [field]: value }));
   };
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isSubmitting) return;
     if ((!selectedJob && !isGeneralApplication) || !form.name.trim() || !form.email.trim() || !form.phone.trim() || fileError) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       setFormError('Vui lòng kiểm tra lại địa chỉ email.');
@@ -96,26 +101,35 @@ export default function Page() {
     const reference = `APP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const submittedAt = new Date();
     const submittedDate = `${submittedAt.getFullYear()}-${String(submittedAt.getMonth() + 1).padStart(2, '0')}-${String(submittedAt.getDate()).padStart(2, '0')}`;
-    createRow({
-      applicationId: reference,
-      jobId,
-      applicant: form.name.trim(),
-      email: form.email.trim().toLowerCase(),
-      phone: form.phone.trim(),
-      job: selectedJob ? String(selectedJob.title) : 'Ứng tuyển vị trí phù hợp',
-      source: 'Website',
-      cvUrl: form.cvUrl.trim(),
-      cvFileName: form.cvFileName,
-      coverLetter: form.coverLetter.trim(),
-      expectedSalary: form.expectedSalary,
-      availableDate: form.availableDate,
-      submittedDate,
-      screeningResult: 'Chưa sàng lọc',
-      screenedBy: '',
-      note: '',
-      status: 'Mới',
-    });
-    setApplicationId(reference);
+    setIsSubmitting(true);
+    try {
+      if (selectedCv) await saveSofa2HrCv(reference, selectedCv);
+      createRow({
+        applicationId: reference,
+        jobId,
+        applicant: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        job: selectedJob ? String(selectedJob.title) : 'Ứng tuyển vị trí phù hợp',
+        source: 'Website',
+        cvUrl: form.cvUrl.trim(),
+        cvFileId: selectedCv ? reference : '',
+        cvFileName: selectedCv?.name ?? form.cvFileName,
+        coverLetter: form.coverLetter.trim(),
+        expectedSalary: form.expectedSalary,
+        availableDate: form.availableDate,
+        submittedDate,
+        screeningResult: 'Chưa sàng lọc',
+        screenedBy: '',
+        note: '',
+        status: 'Mới',
+      });
+      setApplicationId(reference);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Không thể lưu tệp CV. Vui lòng thử lại hoặc gửi đường dẫn CV.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -206,21 +220,29 @@ export default function Page() {
                       hidden
                       accept=".pdf,.doc,.docx"
                       onChange={(event) => {
-                        const file = event.target.files?.[0];
-                          if (file && !/\.(pdf|doc|docx)$/i.test(file.name)) {
-                            setFileError('Chỉ nhận tệp PDF, DOC hoặc DOCX.');
-                            return;
-                          }
-                          if (file && file.size > 5 * 1024 * 1024) {
-                          setFileError('Tệp CV phải nhỏ hơn 5MB.');
+                        const file = event.target.files?.[0] ?? null;
+                        if (file && !/\.(pdf|doc|docx)$/i.test(file.name)) {
+                          setSelectedCv(null);
+                          handleChange('cvFileName', '');
+                          setFileError('Chỉ nhận tệp PDF, DOC hoặc DOCX.');
+                          event.currentTarget.value = '';
                           return;
                         }
+                        if (file && file.size > 5 * 1024 * 1024) {
+                          setSelectedCv(null);
+                          handleChange('cvFileName', '');
+                          setFileError('Tệp CV phải nhỏ hơn 5MB.');
+                          event.currentTarget.value = '';
+                          return;
+                        }
+                        setSelectedCv(file);
                         setFileError('');
                         handleChange('cvFileName', file?.name ?? '');
                       }}
                     />
                   </Button>
-                  <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.disabled' }}>Hỗ trợ PDF, DOC, DOCX; tối đa 5MB. Bản demo lưu tên tệp; để HR mở CV, hãy thêm đường dẫn bên dưới.</Typography>
+                  {selectedCv && <Button size="small" color="inherit" onClick={() => { setSelectedCv(null); handleChange('cvFileName', ''); }}>Bỏ tệp đã chọn</Button>}
+                  <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.disabled' }}>Tệp PDF, DOC hoặc DOCX tối đa 5MB được lưu cục bộ trên trình duyệt này; đường dẫn CV có thể dùng để chia sẻ giữa thiết bị.</Typography>
                 </Grid>
                 {fileError && <Grid xs={12}><Alert severity="error">{fileError}</Alert></Grid>}
                 {formError && <Grid xs={12}><Alert severity="error">{formError}</Alert></Grid>}
@@ -228,8 +250,8 @@ export default function Page() {
                   <TextField fullWidth label="Link CV / portfolio (khuyến nghị)" placeholder="https://..." value={form.cvUrl} onChange={(e) => handleChange('cvUrl', e.target.value)} />
                 </Grid>
               </Grid>
-              <Button type="submit" variant="contained" size="large" sx={{ width: 'fit-content' }} startIcon={<Iconify icon="solar:letter-bold-duotone" />}>
-                Gửi hồ sơ
+              <Button type="submit" disabled={isSubmitting} variant="contained" size="large" sx={{ width: 'fit-content' }} startIcon={<Iconify icon="solar:letter-bold-duotone" />}>
+                {isSubmitting ? 'Đang gửi hồ sơ…' : 'Gửi hồ sơ'}
               </Button>
             </Stack>
           )}

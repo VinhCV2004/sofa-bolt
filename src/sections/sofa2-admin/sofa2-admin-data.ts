@@ -5534,34 +5534,34 @@ const HR_RECRUITMENT_SEEDS: Record<string, string | number>[] = [
   {
     jobId: 'JOB-1001', legacyId: '1', title: 'Nhân viên kinh doanh sofa', department: 'Kinh doanh', level: 'Nhân viên',
     type: 'Toàn thời gian', location: 'TP.HCM', quantity: 6, salaryMin: 12000000, salaryMax: 18000000,
-    deadline: '2026-10-31', postedDate: '2026-10-01', views: 486, applicants: 124, hired: 4, owner: 'Thu Hà',
+    deadline: '2026-10-31', postedDate: '2026-10-01', closedDate: '2026-10-31', views: 486, applicants: 2, hired: 1, owner: 'Thu Hà',
     description: 'Tư vấn khách hàng tại showroom, phân tích nhu cầu và đề xuất sản phẩm phù hợp.',
     requirements: 'Tối thiểu 1 năm kinh nghiệm bán hàng nội thất\nGiao tiếp tốt, chủ động chăm sóc khách hàng\nSẵn sàng làm việc theo ca tại showroom',
     benefits: 'Lương cơ bản và hoa hồng theo doanh số\nĐược đào tạo kiến thức sản phẩm\nThưởng hiệu quả hàng tháng',
-    skills: 'Tư vấn bán hàng, CRM, giao tiếp', experience: '1 năm', education: 'Cao đẳng', status: 'Đang tuyển',
+    skills: 'Tư vấn bán hàng, CRM, giao tiếp', experience: '1 năm', education: 'Cao đẳng', status: 'Đã đóng',
   },
   {
     jobId: 'JOB-1002', legacyId: '2', title: 'Trưởng phòng Marketing', department: 'Marketing', level: 'Trưởng phòng',
     type: 'Toàn thời gian', location: 'TP.HCM', quantity: 1, salaryMin: 35000000, salaryMax: 50000000,
-    deadline: '2026-10-20', postedDate: '2026-09-28', views: 322, applicants: 38, hired: 0, owner: 'Minh Anh',
+    deadline: '2026-10-20', postedDate: '2026-09-28', closedDate: '2026-10-20', views: 322, applicants: 1, hired: 0, owner: 'Minh Anh',
     description: 'Xây dựng chiến lược marketing đa kênh, tăng nhận diện thương hiệu và hiệu quả chuyển đổi.',
     requirements: 'Tối thiểu 5 năm kinh nghiệm marketing\nCó kinh nghiệm quản lý đội nhóm và ngân sách\nƯu tiên từng làm trong ngành nội thất hoặc bán lẻ',
     benefits: 'Thưởng theo kết quả kinh doanh\nNgân sách đào tạo chuyên môn\nBảo hiểm sức khỏe mở rộng',
-    skills: 'Chiến lược, performance marketing, quản lý', experience: '5 năm', education: 'Đại học', status: 'Đang tuyển',
+    skills: 'Chiến lược, performance marketing, quản lý', experience: '5 năm', education: 'Đại học', status: 'Đã đóng',
   },
   {
     jobId: 'JOB-1003', legacyId: '3', title: 'Thiết kế nội thất 3D', department: 'Thiết kế', level: 'Chuyên viên',
     type: 'Toàn thời gian', location: 'Hà Nội', quantity: 3, salaryMin: 15000000, salaryMax: 25000000,
-    deadline: '2026-10-25', postedDate: '2026-10-02', views: 574, applicants: 86, hired: 1, owner: 'Quốc Bảo',
+    deadline: '2026-10-25', postedDate: '2026-10-02', closedDate: '2026-10-25', views: 574, applicants: 1, hired: 0, owner: 'Quốc Bảo',
     description: 'Thiết kế phối cảnh 3D và bản vẽ bố trí sofa theo không gian, phong cách của khách hàng.',
     requirements: 'Thành thạo 3ds Max hoặc SketchUp và phần mềm dựng hình\nCó portfolio thiết kế nội thất\nCẩn thận, tiếp nhận phản hồi tốt',
     benefits: 'Thưởng dự án và phụ cấp phần mềm\nMôi trường sáng tạo, có lộ trình chuyên môn\nTham gia bảo hiểm đầy đủ',
-    skills: '3ds Max, SketchUp, Photoshop', experience: '2 năm', education: 'Đại học', status: 'Đang tuyển',
+    skills: '3ds Max, SketchUp, Photoshop', experience: '2 năm', education: 'Đại học', status: 'Đã đóng',
   },
   {
     jobId: 'JOB-1004', legacyId: '4', title: 'Nhân viên CSKH', department: 'CSKH', level: 'Nhân viên',
     type: 'Toàn thời gian', location: 'TP.HCM', quantity: 8, salaryMin: 9000000, salaryMax: 14000000,
-    deadline: '2026-11-15', postedDate: '2026-10-03', views: 618, applicants: 212, hired: 3, owner: 'Đức Anh',
+    deadline: '2026-11-15', postedDate: '2026-10-03', views: 618, applicants: 2, hired: 0, owner: 'Đức Anh',
     description: 'Hỗ trợ khách hàng trước và sau mua, phối hợp xử lý yêu cầu bảo hành và giao hàng.',
     requirements: 'Giọng nói rõ ràng, thái độ dịch vụ tốt\nSử dụng thành thạo máy tính và công cụ văn phòng\nCó thể làm việc theo lịch phân ca',
     benefits: 'Đào tạo sản phẩm và quy trình chăm sóc\nThưởng chất lượng dịch vụ\nCó cơ hội phát triển lên trưởng nhóm',
@@ -5570,25 +5570,25 @@ const HR_RECRUITMENT_SEEDS: Record<string, string | number>[] = [
   {
     jobId: 'JOB-1005', legacyId: '5', title: 'Thủ kho', department: 'Kho vận', level: 'Nhân viên',
     type: 'Toàn thời gian', location: 'Bình Dương', quantity: 2, salaryMin: 10000000, salaryMax: 15000000,
-    deadline: '2026-10-18', postedDate: '2026-09-28', views: 246, applicants: 42, hired: 0, owner: 'Hoàng Long',
+    deadline: '2026-10-18', postedDate: '2026-09-28', closedDate: '2026-10-18', views: 246, applicants: 1, hired: 0, owner: 'Hoàng Long',
     description: 'Tiếp nhận, sắp xếp, kiểm kê và bàn giao nguyên vật liệu, thành phẩm sofa.',
     requirements: 'Sức khỏe tốt, trung thực và có trách nhiệm\nBiết sử dụng Excel hoặc phần mềm kho là lợi thế\nSẵn sàng làm việc tại kho Bình Dương',
     benefits: 'Phụ cấp đi lại và cơm ca\nThưởng theo năng suất kho\nĐược trang bị bảo hộ lao động',
-    skills: 'Kiểm kê, Excel, quản lý kho', experience: '1 năm', education: 'THPT', status: 'Đang tuyển',
+    skills: 'Kiểm kê, Excel, quản lý kho', experience: '1 năm', education: 'THPT', status: 'Đã đóng',
   },
   {
     jobId: 'JOB-1006', legacyId: '6', title: 'Biên tập nội dung', department: 'Nội dung', level: 'Nhân viên',
     type: 'Toàn thời gian', location: 'Remote', quantity: 2, salaryMin: 12000000, salaryMax: 18000000,
-    deadline: '2026-10-22', postedDate: '2026-10-04', views: 384, applicants: 68, hired: 0, owner: 'Minh Anh',
+    deadline: '2026-10-22', postedDate: '2026-10-04', closedDate: '2026-10-22', views: 384, applicants: 1, hired: 0, owner: 'Minh Anh',
     description: 'Sáng tạo nội dung cho website, mạng xã hội và các chiến dịch về không gian sống.',
     requirements: 'Viết tiếng Việt tốt, có tư duy kể chuyện\nCó portfolio bài viết hoặc nội dung số\nChủ động phối hợp với thiết kế và marketing',
     benefits: 'Làm việc linh hoạt từ xa\nThưởng theo hiệu quả nội dung\nĐược trải nghiệm sản phẩm và showroom',
-    skills: 'Content, SEO, social media', experience: '2 năm', education: 'Đại học', status: 'Đang tuyển',
+    skills: 'Content, SEO, social media', experience: '2 năm', education: 'Đại học', status: 'Đã đóng',
   },
   {
     jobId: 'JOB-1007', legacyId: '7', title: 'Kế toán trưởng', department: 'Kế toán', level: 'Trưởng phòng',
     type: 'Toàn thời gian', location: 'TP.HCM', quantity: 1, salaryMin: 25000000, salaryMax: 35000000,
-    deadline: '2026-10-15', postedDate: '2026-09-15', views: 196, applicants: 24, hired: 0, owner: 'Thu Hà',
+    deadline: '2026-10-15', postedDate: '2026-09-15', views: 196, applicants: 0, hired: 0, owner: 'Thu Hà',
     description: 'Tổ chức công tác kế toán, báo cáo tài chính và kiểm soát tuân thủ thuế.',
     requirements: 'Có chứng chỉ kế toán trưởng\nTối thiểu 7 năm kinh nghiệm, 2 năm quản lý\nAm hiểu chuẩn mực kế toán và thuế hiện hành',
     benefits: 'Lương cạnh tranh theo năng lực\nThưởng cuối năm và bảo hiểm sức khỏe\nQuyền chủ động xây dựng quy trình',
@@ -5597,16 +5597,16 @@ const HR_RECRUITMENT_SEEDS: Record<string, string | number>[] = [
   {
     jobId: 'JOB-1008', legacyId: '8', title: 'Thực tập sinh Marketing', department: 'Marketing', level: 'Thực tập sinh',
     type: 'Thực tập', location: 'TP.HCM', quantity: 4, salaryMin: 4000000, salaryMax: 6000000,
-    deadline: '2026-10-30', postedDate: '2026-10-01', views: 408, applicants: 96, hired: 2, owner: 'Đức Anh',
+    deadline: '2026-10-30', postedDate: '2026-10-01', closedDate: '2026-10-30', views: 408, applicants: 1, hired: 0, owner: 'Đức Anh',
     description: 'Hỗ trợ triển khai nội dung, sự kiện tại showroom và theo dõi hiệu quả chiến dịch.',
     requirements: 'Sinh viên năm cuối hoặc mới tốt nghiệp ngành marketing\nHam học hỏi, chủ động và có trách nhiệm\nBiết Canva hoặc công cụ social là lợi thế',
     benefits: 'Có phụ cấp thực tập và xác nhận thực tập\nĐược mentor trực tiếp\nCơ hội trở thành nhân viên chính thức',
-    skills: 'Canva, social media, research', experience: 'Không yêu cầu', education: 'Đại học', status: 'Đang tuyển',
+    skills: 'Canva, social media, research', experience: 'Không yêu cầu', education: 'Đại học', status: 'Đã đóng',
   },
   {
     jobId: 'JOB-1009', legacyId: '9', title: 'Quản lý showroom', department: 'Kinh doanh', level: 'Trưởng phòng',
     type: 'Toàn thời gian', location: 'Đà Nẵng', quantity: 1, salaryMin: 30000000, salaryMax: 42000000,
-    deadline: '2026-10-10', postedDate: '2026-09-10', views: 151, applicants: 18, hired: 1, owner: 'Quốc Bảo',
+    deadline: '2026-10-10', postedDate: '2026-09-10', closedDate: '2026-10-10', views: 151, applicants: 0, hired: 0, owner: 'Quốc Bảo',
     description: 'Điều hành hoạt động showroom, đảm bảo chất lượng tư vấn và doanh số đội ngũ.',
     requirements: 'Tối thiểu 4 năm kinh nghiệm bán lẻ, 2 năm quản lý\nCó kỹ năng huấn luyện và xử lý phản hồi khách hàng\nƯu tiên ứng viên tại Đà Nẵng',
     benefits: 'Thưởng doanh số showroom\nQuyền chủ động xây dựng đội ngũ\nPhụ cấp điện thoại và công tác',
@@ -5615,7 +5615,7 @@ const HR_RECRUITMENT_SEEDS: Record<string, string | number>[] = [
   {
     jobId: 'JOB-1010', legacyId: '10', title: 'Nhân viên sản xuất sofa', department: 'Sản xuất', level: 'Nhân viên',
     type: 'Toàn thời gian', location: 'Bình Dương', quantity: 10, salaryMin: 10000000, salaryMax: 16000000,
-    deadline: '2026-11-30', postedDate: '2026-10-01', views: 512, applicants: 134, hired: 1, owner: 'Hoàng Long',
+    deadline: '2026-11-30', postedDate: '2026-10-01', views: 512, applicants: 1, hired: 0, owner: 'Hoàng Long',
     description: 'Tham gia lắp ráp khung, cắt may và hoàn thiện sản phẩm sofa tại xưởng.',
     requirements: 'Sức khỏe tốt, tỉ mỉ và tuân thủ an toàn lao động\nCó kinh nghiệm may bọc hoặc mộc là lợi thế\nCó thể làm việc theo ca sản xuất',
     benefits: 'Được đào tạo tay nghề\nPhụ cấp chuyên cần và cơm ca\nThưởng năng suất, tham gia BHXH đầy đủ',
@@ -5623,10 +5623,10 @@ const HR_RECRUITMENT_SEEDS: Record<string, string | number>[] = [
   },
 ].map((row, index) => ({
   ...row,
-  screeningPassed: [46, 14, 38, 91, 15, 27, 8, 41, 7, 58][index],
-  interviewing: [18, 4, 12, 24, 6, 8, 2, 16, 3, 20][index],
-  offered: [5, 1, 3, 4, 1, 1, 0, 3, 1, 2][index],
-  rejected: [22, 8, 15, 45, 12, 18, 10, 20, 4, 30][index],
+  screeningPassed: [2, 1, 1, 1, 0, 0, 0, 1, 0, 1][index],
+  interviewing: [1, 1, 0, 0, 0, 0, 0, 0, 0, 1][index],
+  offered: [1, 0, 0, 0, 0, 0, 0, 1, 0, 0][index],
+  rejected: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0][index],
   daysOpen: [15, 18, 14, 12, 10, 12, 31, 15, 28, 15][index],
   cost: [12000000, 8000000, 10000000, 14000000, 4000000, 6000000, 9000000, 5000000, 3000000, 11000000][index],
   source: ['TopCV', 'LinkedIn', 'Website', 'Facebook', 'Giới thiệu', 'Website', 'VietnamWorks', 'Facebook', 'Giới thiệu', 'TopCV'][index],
@@ -5636,9 +5636,117 @@ const HR_RECRUITMENT_SEEDS: Record<string, string | number>[] = [
   ageRange: '22–40',
   gender: 'Không yêu cầu',
   languages: index % 3 === 0 ? 'Tiếng Anh giao tiếp' : 'Không yêu cầu',
-  closedDate: row.status === 'Đã đóng' || row.status === 'Đã đủ người' ? '2026-10-31' : '',
+  closedDate: row.status === 'Đã đóng' || row.status === 'Đã đủ người' ? String(row.closedDate || row.deadline || '2026-10-31') : '',
   note: `Vị trí demo ${row.jobId}; số liệu tuyển dụng minh hoạ, không đồng bộ với hệ thống tuyển dụng thật.`,
 }));
+
+const HR_EXTRA_APPLICANT_NAMES = [
+  'Phan Khánh Linh', 'Nguyễn Thành Đạt', 'Trần Mỹ Duyên', 'Võ Minh Khang', 'Đỗ Ngọc Mai',
+  'Bùi Anh Tuấn', 'Lý Thảo Nhi', 'Phạm Gia Bảo', 'Hồ Thanh Tâm', 'Dương Quang Huy',
+  'Nguyễn Phương Uyên', 'Trịnh Quốc Bảo', 'Mai Nhật Vy', 'Cao Hoàng Phúc', 'Tạ Bích Ngọc',
+  'Vũ Đức Tài', 'Đinh Hải Yến', 'Lâm Tuấn Kiệt', 'Phan Minh Châu', 'Nguyễn Hà My',
+  'Trần Đăng Khoa', 'Võ Thanh Trúc', 'Đặng Quốc Anh', 'Bùi Thùy Dương', 'Lê Gia Hân',
+  'Hoàng Đức Minh', 'Phạm Thùy Linh', 'Đoàn Tuấn Anh', 'Ngô Minh Thư', 'Nguyễn Duy Long',
+];
+const HR_APPLICATION_STATUSES = ['Mới', 'Đang sàng lọc', 'Phỏng vấn', 'Thử việc', 'Trúng tuyển', 'Không đạt', 'Tự rút'];
+const HR_EXTRA_APPLICATIONS: Record<string, string | number>[] = HR_EXTRA_APPLICANT_NAMES.map((applicant, index) => {
+  const job = HR_RECRUITMENT_SEEDS[(index * 3 + Math.floor(index / 5)) % HR_RECRUITMENT_SEEDS.length];
+  const jobId = String(job.jobId);
+  const jobDeadline = String(job.deadline);
+  const deadlineDate = new Date(`${jobDeadline}T00:00:00`);
+  const year = deadlineDate.getFullYear();
+  const month = String(deadlineDate.getMonth() + 1).padStart(2, '0');
+  const lastDay = deadlineDate.getDate();
+  const day = String(1 + ((index * 7) % lastDay)).padStart(2, '0');
+  const submittedDate = `${year}-${month}-${day}`;
+  const applicationId = `APP-2026-${String(index + 11).padStart(4, '0')}`;
+  const status = HR_APPLICATION_STATUSES[index % HR_APPLICATION_STATUSES.length];
+  const screeningResult = status === 'Mới' ? 'Chưa sàng lọc'
+    : ['Phỏng vấn', 'Thử việc', 'Trúng tuyển'].includes(status) ? 'Qua'
+      : status === 'Không đạt' ? 'Loại' : index % 2 ? 'Qua' : 'Chưa quyết';
+  const salaryMin = Number(job.salaryMin ?? 0);
+  const salaryMax = Number(job.salaryMax ?? 0);
+  const expectedSalary = salaryMin
+    ? Math.min(salaryMax || salaryMin, salaryMin + (index % 4) * 500000)
+    : 12000000 + (index % 5) * 1000000;
+  const cvUrl = index % 3 === 0 ? `https://example.com/demo-cv/${applicationId}.pdf` : '';
+  return {
+    applicationId,
+    jobId,
+    applicant,
+    email: `ungvien${String(index + 11).padStart(2, '0')}@example.test`,
+    phone: `09${String(20000000 + index * 317).slice(-8)}`,
+    job: String(job.title),
+    source: ['Website', 'TopCV', 'VietnamWorks', 'LinkedIn', 'Facebook', 'Giới thiệu'][index % 6],
+    submittedDate,
+    screeningResult,
+    screenedBy: status === 'Mới' ? '' : ['Minh Anh', 'Đức Anh', 'Thu Hà', 'Hoàng Long'][index % 4],
+    cvFileName: cvUrl ? `${applicationId}-CV-demo.pdf` : '',
+    cvFileId: '',
+    cvUrl,
+    coverLetter: `Tôi ứng tuyển vị trí ${String(job.title)}, có kinh nghiệm và kỹ năng phù hợp; mong được trao đổi thêm với LUXE Sofa.`,
+    expectedSalary,
+    availableDate: `2026-11-${String(20 + (index % 10)).padStart(2, '0')}`,
+    note: status === 'Mới' ? 'Chờ HR kiểm tra hồ sơ.'
+      : status === 'Tự rút' ? 'Ứng viên chủ động xin rút hồ sơ.'
+        : 'Hồ sơ mẫu phục vụ kiểm thử quy trình tuyển dụng.',
+    status,
+  };
+});
+
+const HR_EXTRA_APPLICANT_PROFILES: Record<string, string | number>[] = HR_EXTRA_APPLICATIONS.map((application, index) => {
+  const status = String(application.status);
+  const hasInterview = ['Phỏng vấn', 'Thử việc', 'Trúng tuyển'].includes(status);
+  const interviewDate = new Date(`${String(application.submittedDate)}T00:00:00`);
+  interviewDate.setDate(interviewDate.getDate() + 3 + (index % 4));
+  const interviewDateIso = interviewDate.toISOString().slice(0, 10);
+  const hasOffer = ['Thử việc', 'Trúng tuyển'].includes(status);
+  const city = ['TP.HCM', 'Hà Nội', 'Đà Nẵng', 'Bình Dương', 'Cần Thơ'][index % 5];
+  return {
+    applicationId: application.applicationId,
+    jobId: application.jobId,
+    name: application.applicant,
+    email: application.email,
+    phone: application.phone,
+    gender: index % 2 ? 'Nam' : 'Nữ',
+    birthday: `${1988 + (index % 15)}-${String(1 + (index % 12)).padStart(2, '0')}-15`,
+    city,
+    address: `${20 + index} Nguyễn Huệ, ${city}`,
+    education: ['Cao đẳng', 'Đại học', 'Thạc sĩ', 'Trung cấp'][index % 4],
+    school: ['Đại học Kinh tế TP.HCM', 'Đại học Kiến trúc Hà Nội', 'Đại học Đà Nẵng', 'Cao đẳng Công nghệ Thủ Đức'][index % 4],
+    major: ['Quản trị kinh doanh', 'Thiết kế nội thất', 'Marketing', 'Kế toán', 'Logistics'][index % 5],
+    experience: index % 9,
+    currentJob: index % 3 ? 'Chuyên viên' : 'Đang tìm cơ hội mới',
+    currentSalary: 9000000 + (index % 8) * 1500000,
+    expectedSalary: application.expectedSalary,
+    skills: ['Tư vấn bán hàng, CRM', 'SketchUp, AutoCAD, 3ds Max', 'Excel, chăm sóc khách hàng', 'SEO, nội dung số', 'Kiểm kê, quản lý kho'][index % 5],
+    languages: index % 3 ? 'Tiếng Anh giao tiếp' : 'Không yêu cầu',
+    cvUrl: application.cvUrl,
+    cvFileName: application.cvFileName,
+    cvFileId: application.cvFileId,
+    portfolioUrl: index % 5 === 1 ? `https://example.com/portfolio/${application.applicationId}` : '',
+    workHistory: `${index % 9} năm kinh nghiệm liên quan; thông tin minh hoạ cho bản demo.`,
+    coverLetter: application.coverLetter,
+    availableDate: application.availableDate,
+    appliedJob: application.job,
+    appliedDate: application.submittedDate,
+    source: application.source,
+    interviewRound: status === 'Thử việc' ? 'Thử việc'
+      : status === 'Trúng tuyển' ? 'Phỏng vấn cuối'
+        : hasInterview ? (index % 2 ? 'Phỏng vấn HR' : 'Phỏng vấn chuyên môn') : 'Sàng lọc CV',
+    interviewDate: hasInterview ? interviewDateIso : '',
+    interviewer: hasInterview ? ['Minh Anh', 'Đức Anh', 'Thu Hà', 'Hoàng Long'][index % 4] : '',
+    interviewScore: hasInterview ? 6 + (index % 5) : 0,
+    interviewNote: hasInterview ? 'Giao tiếp tốt; cần đối chiếu kinh nghiệm và mục tiêu công việc.' : 'Đang cập nhật sau vòng sàng lọc.',
+    offerSent: hasOffer ? 'Có' : 'Không',
+    offerDate: hasOffer ? interviewDateIso : '',
+    offerSalary: hasOffer ? application.expectedSalary : 0,
+    onboardDate: status === 'Trúng tuyển' ? '2026-11-20' : '',
+    note: `Hồ sơ mẫu ${application.applicationId}; không chứa dữ liệu ứng viên thật.`,
+    screeningResult: application.screeningResult,
+    status,
+  };
+});
 
 const HR_GROUP: Sofa2AdminGroup = {
   slug: 'hr',
@@ -5719,7 +5827,7 @@ const HR_GROUP: Sofa2AdminGroup = {
         { key: 'cvUrl', label: 'CV / Portfolio' },
         STATUS_COL,
       ],
-      [
+      [...[
         { applicationId: 'APP-2026-0001', jobId: 'JOB-1001', applicant: 'Nguyễn Thị Lan', email: 'lan@example.com', phone: '0901000001', job: 'Nhân viên kinh doanh sofa', source: 'TopCV', submittedDate: '2026-10-08', screeningResult: 'Qua', status: 'Phỏng vấn' },
         { applicationId: 'APP-2026-0002', jobId: 'JOB-1003', applicant: 'Trần Hoàng Nam', email: 'nam@example.com', phone: '0901000002', job: 'Thiết kế nội thất 3D', source: 'Website', submittedDate: '2026-10-07', screeningResult: 'Qua', status: 'Đang sàng lọc' },
         { applicationId: 'APP-2026-0003', jobId: 'JOB-1004', applicant: 'Lê Thị Mỹ Dung', email: 'dung@example.com', phone: '0901000003', job: 'Nhân viên CSKH', source: 'Facebook', submittedDate: '2026-10-07', screeningResult: 'Chưa quyết', status: 'Mới' },
@@ -5739,7 +5847,7 @@ const HR_GROUP: Sofa2AdminGroup = {
         screenedBy: ['Minh Anh', 'Đức Anh', 'Thu Hà', 'Hoàng Long'][index % 4],
         note: index % 4 === 0 ? 'Đã kiểm tra hồ sơ mẫu.' : 'Chờ cập nhật sau vòng tuyển dụng tiếp theo.',
         ...row,
-      })),
+      })), ...HR_EXTRA_APPLICATIONS],
       ['Sàng lọc', 'Tải CV']
     ),
     mod(
@@ -5759,6 +5867,7 @@ const HR_GROUP: Sofa2AdminGroup = {
         { key: 'email', label: 'Email' },
         { key: 'phone', label: 'Điện thoại' },
         { key: 'appliedJob', label: 'Vị trí' },
+        { key: 'cvFileName', label: 'Tệp CV' },
         { key: 'cvUrl', label: 'CV / Portfolio' },
         { key: 'experience', label: 'KN (năm)', type: 'number' },
         { key: 'education', label: 'Học vấn' },
@@ -5766,7 +5875,7 @@ const HR_GROUP: Sofa2AdminGroup = {
         { key: 'interviewScore', label: 'Điểm PV', type: 'number' },
         STATUS_COL,
       ],
-      [
+      [...[
         { applicationId: 'APP-2026-0001', jobId: 'JOB-1001', name: 'Nguyễn Thị Lan', email: 'lan@example.com', phone: '0901000001', appliedJob: 'Nhân viên kinh doanh sofa', experience: 3, education: 'Đại học', interviewRound: 'Phỏng vấn chuyên môn', interviewScore: 8, status: 'Phỏng vấn' },
         { applicationId: 'APP-2026-0002', jobId: 'JOB-1003', name: 'Trần Hoàng Nam', email: 'nam@example.com', phone: '0901000002', appliedJob: 'Thiết kế nội thất 3D', experience: 2, education: 'Đại học', interviewRound: 'Phỏng vấn HR', interviewScore: 7, status: 'Đang sàng lọc' },
         { applicationId: 'APP-2026-0004', jobId: 'JOB-1002', name: 'Phạm Quốc Hùng', email: 'hung@example.com', phone: '0901000004', appliedJob: 'Trưởng phòng Marketing', experience: 7, education: 'Thạc sĩ', interviewRound: 'Phỏng vấn cuối', interviewScore: 9, status: 'Phỏng vấn' },
@@ -5799,7 +5908,7 @@ const HR_GROUP: Sofa2AdminGroup = {
         availableDate: '2026-11-01',
         note: `Hồ sơ demo ${row.applicationId}; thông tin liên hệ và CV là dữ liệu giả lập.`,
         ...row,
-      })),
+      })), ...HR_EXTRA_APPLICANT_PROFILES],
       ['Mở hồ sơ', 'Gửi offer']
     ),
     mod(

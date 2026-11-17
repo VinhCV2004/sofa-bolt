@@ -43,6 +43,7 @@ import { Iconify } from 'src/components/iconify';
 import { isSofa2JobOpen } from 'src/sections/sofa2/sofa2-recruitment';
 
 import { isSofa2SupportHref } from '../sofa2-support';
+import { downloadSofa2HrCv } from '../sofa2-hr-files';
 import { Sofa2AdminLayout } from './sofa2-admin-layout';
 import { Sofa2AdminSeoGenerator } from './sofa2-admin-seo-generator';
 import { Sofa2AdminDealerInsights } from './sofa2-admin-dealer-insights';
@@ -684,20 +685,24 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           if (metric < 0) next[key] = 'Giá trị không thể âm.';
           if (key !== 'cost' && !Number.isInteger(metric)) next[key] = 'Giá trị cần là số nguyên.';
         });
+        const applicants = Number(form.values.applicants ?? 0);
         if (Number(form.values.hired) > quantity) next.hired = 'Số đã tuyển không thể vượt chỉ tiêu.';
+        ['screeningPassed', 'interviewing', 'offered', 'hired', 'rejected'].forEach((key) => {
+          if (Number(form.values[key] ?? 0) > applicants) {
+            next[key] = 'Chỉ số giai đoạn không thể vượt tổng số hồ sơ.';
+          }
+        });
         const contactEmail = String(form.values.contactEmail ?? '').trim();
         if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) next.contactEmail = 'Email liên hệ không hợp lệ.';
         const contactPhone = String(form.values.contactPhone ?? '').replace(/\D/g, '');
         if (contactPhone && (contactPhone.length < 9 || contactPhone.length > 15)) next.contactPhone = 'Số liên hệ cần có từ 9 đến 15 chữ số.';
         const deadline = toDateInput(form.values.deadline);
-        const previous = form.mode === 'edit' ? rows[form.index] : undefined;
-        const becomingOpen = String(form.values.status) === 'Đang tuyển'
-          && (!previous || String(previous.status) !== 'Đang tuyển' || deadline !== toDateInput(previous.deadline));
-        if (becomingOpen && !String(form.values.description ?? '').trim()) next.description = 'Cần có mô tả công việc trước khi đăng tuyển.';
-        if (becomingOpen && !String(form.values.requirements ?? '').trim()) next.requirements = 'Cần nêu yêu cầu ứng tuyển trước khi đăng tuyển.';
-        if (becomingOpen && !deadline) next.deadline = 'Cần chọn hạn nộp trước khi mở vị trí.';
-        else if (becomingOpen && deadline < new Date().toISOString().slice(0, 10)) {
-          next.deadline = 'Không thể mở vị trí có hạn nộp đã qua.';
+        const isOpen = String(form.values.status) === 'Đang tuyển';
+        if (isOpen && !String(form.values.description ?? '').trim()) next.description = 'Cần có mô tả công việc trước khi đăng tuyển.';
+        if (isOpen && !String(form.values.requirements ?? '').trim()) next.requirements = 'Cần nêu yêu cầu ứng tuyển trước khi đăng tuyển.';
+        if (isOpen && !deadline) next.deadline = 'Cần chọn hạn nộp trước khi mở vị trí.';
+        else if (isOpen && deadline < new Date().toISOString().slice(0, 10)) {
+          next.deadline = 'Không thể để trạng thái Đang tuyển khi hạn nộp đã qua.';
         }
       }
 
@@ -2253,6 +2258,11 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
             Nội dung hỗ trợ, ticket và chat đang dùng localStorage trên trình duyệt này để đồng bộ với trang khách cùng thiết bị. Đây là demo: chưa có API, xác thực/phân quyền phía máy chủ, sao lưu hay đồng bộ nhiều thiết bị; người có quyền truy cập trình duyệt có thể xem hoặc sửa dữ liệu. Không nhập thông tin khách hàng thật hoặc dữ liệu nhạy cảm.
           </Alert>
         )}
+        {group.slug === 'hr' && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Tin tuyển dụng và hồ sơ/metadata CV lưu trong localStorage; tệp PDF/DOC/DOCX đính kèm lưu trong IndexedDB của trình duyệt này để HR tải xuống cùng thiết bị. Đây chỉ là demo cục bộ, chưa có máy chủ lưu CV an toàn, xác thực/quyền truy cập thật, đồng bộ nhiều thiết bị hay quy trình bảo vệ dữ liệu ứng viên; không nhập hồ sơ thật hoặc thông tin cá nhân nhạy cảm.
+          </Alert>
+        )}
         {group.slug === 'customer' && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             Hồ sơ, đơn hàng, điểm, voucher và khiếu nại được lưu trong localStorage và dùng chung với portal Sofa2 trên cùng trình duyệt. Tài khoản đăng nhập hiện là demo; chưa có xác thực, phân quyền dữ liệu theo khách hàng hoặc lưu trữ an toàn phía máy chủ. Không dùng dữ liệu khách thật.
@@ -2585,6 +2595,17 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
                                 >
                                   Mở CV / Portfolio
                                 </Typography>
+                              ) : col.key === 'cvFileName' && row.cvFileId ? (
+                                <Button
+                                  size="small"
+                                  variant="text"
+                                  title={String(value)}
+                                  onClick={() => downloadSofa2HrCv(String(row.cvFileId)).catch((error: unknown) => {
+                                    setToast(error instanceof Error ? error.message : 'Không tải được tệp CV.');
+                                  })}
+                                >
+                                  Tải CV
+                                </Button>
                               ) : (
                                 <Typography
                                   variant="body2"
