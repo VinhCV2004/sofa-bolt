@@ -439,11 +439,37 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       };
       if (module.slug === 'tickets') uniqueValue('code', 'Mã ticket đã tồn tại.');
       if (module.slug === 'faq') uniqueValue('question', 'Câu hỏi này đã tồn tại.');
+      if (module.slug === 'contact-inquiries') uniqueValue('inquiryId', 'Mã liên hệ đã tồn tại.');
+      if (module.slug === 'contact-info') uniqueValue('label', 'Loại thông tin liên hệ đã tồn tại.');
+      if (module.slug === 'contact-socials') uniqueValue('title', 'Tên mạng xã hội đã tồn tại.');
 
-      if (module.slug === 'channels') {
-        if (!isSofa2SupportHref(form.values.href)) {
+      if (['channels', 'contact-info', 'contact-socials'].includes(module.slug)) {
+        const href = String(form.values.href ?? '').trim();
+        if (!isSofa2SupportHref(href)) {
           next.href = 'Chỉ hỗ trợ tel:, mailto:, http(s), đường dẫn nội bộ /... hoặc #chat.';
         }
+        if (module.slug === 'contact-socials' && href && !/^https?:\/\//i.test(href)) {
+          next.href = 'Liên kết mạng xã hội phải bắt đầu bằng https:// hoặc http://.';
+        }
+      }
+      if (module.slug === 'contact-info') {
+        const label = String(form.values.label ?? '').trim().toLowerCase();
+        const value = String(form.values.value ?? '').trim();
+        const href = String(form.values.href ?? '').trim();
+        if (label.includes('email') && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          next.value = 'Vui lòng nhập email liên hệ hợp lệ.';
+        }
+        if (label.includes('hotline') && String(value).replace(/\D/g, '').length < 9) {
+          next.value = 'Hotline cần có ít nhất 9 chữ số.';
+        }
+        if (href.startsWith('mailto:') && !isSofa2SupportHref(href)) next.href = 'Địa chỉ mailto không hợp lệ.';
+      }
+      if (module.slug === 'contact-inquiries') {
+        const email = String(form.values.email ?? '').trim();
+        const phone = String(form.values.phone ?? '').replace(/\D/g, '');
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Email không hợp lệ.';
+        if (phone && (phone.length < 9 || phone.length > 15)) next.phone = 'Số điện thoại cần có từ 9 đến 15 chữ số.';
+        if (!email && !phone) next.phone = 'Cần có ít nhất email hoặc số điện thoại để phản hồi.';
       }
 
       ['order', 'views'].forEach((key) => {

@@ -1,11 +1,9 @@
 // SOFA2 ADMIN — Module Hỗ trợ khách hàng
-// 10 trang: FAQ, Trung tâm trợ giúp, Chat trực tuyến, Ticket hỗ trợ, Hướng dẫn mua hàng,
-// Hướng dẫn thanh toán, Chính sách giao hàng, Chính sách bảo hành, Chính sách đổi trả, Kênh liên hệ.
-// Trang khách /sofa2/support đọc trực tiếp dữ liệu (FAQ, bài hướng dẫn/chính sách, kênh liên hệ)
-// và ghi ticket mới vào trang "Ticket hỗ trợ".
+// Bao phủ FAQ, bài hướng dẫn, chat/ticket và trang Liên hệ (thông tin, mạng xã hội, hộp thư).
+// Client /sofa2/support và /sofa2/contact đọc cùng kho dữ liệu; biểu mẫu ghi nhận về admin.
 // ----------------------------------------------------------------------
 
-import { SOFA2_FAQS } from 'src/sections/sofa2/sofa2-pages-data';
+import { SOFA2_FAQS, SOFA2_SHOWROOMS } from 'src/sections/sofa2/sofa2-pages-data';
 
 import type { Sofa2CmsField, Sofa2CmsSchema, Sofa2CmsFieldType } from './sofa2-cms';
 import type { Sofa2AdminGroup, Sofa2AdminColumn, Sofa2AdminModule } from './sofa2-admin-data';
@@ -24,14 +22,15 @@ const schema = (
   statusOptions: string[],
   fields: Sofa2CmsField[],
   clientPath = '/sofa2/support',
-  statusToggle = true
+  statusToggle = true,
+  defaultStatus = statusOptions[1] ?? statusOptions[0]
 ): Sofa2CmsSchema => ({
   clientPath,
   entity,
   titleKey,
   statusKey: 'status',
   statusOptions,
-  defaultStatus: statusOptions[1] ?? statusOptions[0],
+  defaultStatus,
   publishLabel: statusOptions[0],
   statusToggle,
   fields: [
@@ -69,8 +68,8 @@ export const isSofa2SupportHref = (value: unknown) => {
   const href = String(value ?? '').trim();
   if (!href || href === '#chat') return true;
   if (href.startsWith('/') && !href.startsWith('//')) return true;
-  if (/^tel:[+\\d\\s().-]+$/i.test(href)) return true;
-  if (/^mailto:[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/i.test(href)) return true;
+  if (/^tel:[+\d\s().-]+$/i.test(href)) return true;
+  if (/^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(href)) return true;
   try {
     return ['http:', 'https:'].includes(new URL(href).protocol);
   } catch {
@@ -103,6 +102,46 @@ const article = (title: string, order: number, body: string, updated = '10/10/20
   updated,
   status: 'Đã xuất bản',
 });
+
+const CONTACT_INQUIRY_STATUSES = ['Mới tiếp nhận', 'Đang xử lý', 'Chờ khách phản hồi', 'Đã phản hồi', 'Đã đóng', 'Spam'];
+const contactTimestamp = (daysAgo: number, hour: number, minute: number) => {
+  const date = new Date(Date.UTC(2026, 10, 15 - daysAgo));
+  return `${date.toISOString().slice(0, 10)}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+07:00`;
+};
+const CONTACT_INQUIRY_ROWS = [
+  { inquiryId: 'CT-261115-001', name: 'Nguyễn Minh Anh', email: 'minhanh@example.test', phone: '0901234567', subject: 'Tư vấn sofa góc cho căn hộ', message: 'Phòng khách rộng khoảng 4 x 5m, mong được tư vấn kích thước và chất liệu.', receivedAt: '2026-11-15T09:24:00+07:00', source: 'Trang Liên hệ', assignedTo: AGENTS[0], reply: '', repliedAt: '', internalNote: '', status: 'Mới tiếp nhận' },
+  { inquiryId: 'CT-261114-002', name: 'Trần Hải Nam', email: '', phone: '0912345678', subject: 'Đặt lịch xem sofa tại showroom', message: 'Tôi muốn ghé showroom Hà Nội chiều thứ Bảy.', receivedAt: '2026-11-14T15:10:00+07:00', source: 'Trang Liên hệ', assignedTo: AGENTS[3], reply: 'Đã gọi xác nhận khung giờ 15:00.', repliedAt: '2026-11-14T16:00:00+07:00', internalNote: 'Khách quan tâm dòng Oslo.', status: 'Đã phản hồi' },
+  { inquiryId: 'CT-261113-003', name: 'Lê Thu Hà', email: 'thuha@example.test', phone: '0987654321', subject: 'Báo giá sofa theo kích thước', message: 'Xin báo giá mẫu sofa băng dài 2,4m, bọc vải màu kem.', receivedAt: '2026-11-13T11:35:00+07:00', source: 'Trang Liên hệ', assignedTo: AGENTS[0], reply: '', repliedAt: '', internalNote: 'Cần gửi báo giá trước cuối ngày.', status: 'Đang xử lý' },
+  { inquiryId: 'CT-261112-004', name: 'Phạm Quốc Huy', email: 'quochuy@example.test', phone: '', subject: 'Hợp tác dự án căn hộ', message: 'Đề nghị bộ phận dự án liên hệ để trao đổi số lượng và tiến độ.', receivedAt: '2026-11-12T08:42:00+07:00', source: 'Trang Liên hệ', assignedTo: AGENTS[3], reply: 'Đã chuyển thông tin cho bộ phận dự án.', repliedAt: '2026-11-12T10:05:00+07:00', internalNote: '', status: 'Chờ khách phản hồi' },
+  { inquiryId: 'CT-261110-005', name: 'Võ Ngọc Hân', email: 'han@example.test', phone: '0934567890', subject: 'Chính sách bảo hành khung gỗ', message: 'Muốn biết thời hạn và cách đăng ký bảo hành.', receivedAt: '2026-11-10T14:22:00+07:00', source: 'Trang Hỗ trợ', assignedTo: AGENTS[1], reply: 'Đã gửi liên kết chính sách và hướng dẫn tra cứu phiếu.', repliedAt: '2026-11-10T15:10:00+07:00', internalNote: '', status: 'Đã đóng' },
+  { inquiryId: 'CT-261109-006', name: 'Khách truy cập', email: '', phone: '', subject: 'Tin nhắn thử nghiệm', message: 'Bản ghi mẫu đã được đánh dấu spam.', receivedAt: '2026-11-09T18:00:00+07:00', source: 'Trang Liên hệ', assignedTo: AGENTS[3], reply: '', repliedAt: '', internalNote: 'Không có thông tin liên hệ hợp lệ.', status: 'Spam' },
+  ...Array.from({ length: 24 }, (_, index) => {
+    const status = CONTACT_INQUIRY_STATUSES[index % CONTACT_INQUIRY_STATUSES.length];
+    const daysAgo = index + 1;
+    const hasReply = ['Chờ khách phản hồi', 'Đã phản hồi', 'Đã đóng'].includes(status);
+    const isSpam = status === 'Spam';
+    const receivedAt = contactTimestamp(daysAgo, 8 + (index % 10), (index * 7) % 60);
+    const name = ['Đỗ Phương Anh', 'Ngô Đức Thắng', 'Trương Bảo Ngọc', 'Lý Gia Phúc', 'Mai Thanh Vy', 'Cao Minh Châu', 'Tạ Minh Trang', 'Vũ Hoàng Nam'][index % 8];
+    const email = isSpam || index % 3 === 0 ? '' : `lienhe${String(index + 1).padStart(2, '0')}@example.test`;
+    const phone = isSpam || (index % 3 === 1) ? '' : `09${String(87654321 - index * 7919).slice(0, 8)}`;
+    return {
+      inquiryId: `CT-${receivedAt.slice(2, 4)}${receivedAt.slice(5, 7)}${receivedAt.slice(8, 10)}-${String(index + 1).padStart(3, '0')}`,
+      name: isSpam ? 'Khách truy cập' : name,
+      email,
+      phone,
+      subject: ['Tư vấn chất liệu sofa', 'Xin báo giá sản phẩm', 'Đặt lịch showroom', 'Hỏi phí giao hàng', 'Tra cứu bảo hành', 'Hợp tác dự án'][index % 6],
+      message: isSpam ? 'Nội dung quảng cáo không liên quan.' : 'Khách gửi yêu cầu tư vấn; cần xác nhận thông tin và liên hệ lại.',
+      receivedAt,
+      source: ['Trang Liên hệ', 'Trang Hỗ trợ', 'Trang Sản phẩm', 'Trang Showroom'][index % 4],
+      assignedTo: AGENTS[index % AGENTS.length],
+      reply: hasReply ? 'Đã liên hệ khách và gửi hướng dẫn phù hợp.' : '',
+      repliedAt: hasReply ? contactTimestamp(daysAgo, 19 + (index % 4), (index * 11) % 60) : '',
+      internalNote: isSpam ? 'Đánh dấu spam; không phản hồi.' : index % 4 === 0 ? 'Ưu tiên gọi lại trong giờ hành chính.' : '',
+      status,
+    };
+  }),
+];
+const contactStatusCount = (status: string) => CONTACT_INQUIRY_ROWS.filter((row) => row.status === status).length;
 
 // ----------------------------------------------------------------------
 
@@ -203,7 +242,42 @@ export const SOFA2_SUPPORT_GROUP: Sofa2AdminGroup = {
         article('Sản phẩm thiết kế riêng', 2, 'Không áp dụng đổi trả, trừ khi lỗi do nhà sản xuất.'),
         article('Hoàn tiền', 3, 'Hoàn tiền trong 5–7 ngày làm việc theo phương thức thanh toán ban đầu.'),
       ]),
-    mod('channels', 'Kênh liên hệ', 'Hotline, email, chat… hiển thị ở đầu trang Hỗ trợ.', 'solar:phone-calling-bold-duotone',
+    mod('contact-inquiries', 'Tin nhắn liên hệ', 'Tiếp nhận và xử lý biểu mẫu từ trang Liên hệ; phân công, phản hồi, lưu lịch sử.', 'solar:letter-unread-bold-duotone',
+      [
+        { label: 'Tổng mẫu', value: String(CONTACT_INQUIRY_ROWS.length) },
+        { label: 'Mới tiếp nhận', value: String(contactStatusCount('Mới tiếp nhận')) },
+        { label: 'Đang xử lý', value: String(contactStatusCount('Đang xử lý')) },
+        { label: 'Chờ khách phản hồi', value: String(contactStatusCount('Chờ khách phản hồi')) },
+        { label: 'Đã phản hồi', value: String(contactStatusCount('Đã phản hồi')) },
+        { label: 'Đã đóng / spam', value: String(contactStatusCount('Đã đóng') + contactStatusCount('Spam')) },
+      ],
+      [{ key: 'inquiryId', label: 'Mã liên hệ' }, { key: 'name', label: 'Người gửi' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Điện thoại' }, { key: 'subject', label: 'Chủ đề' }, { key: 'receivedAt', label: 'Tiếp nhận' }, { key: 'source', label: 'Nguồn' }, { key: 'assignedTo', label: 'Phụ trách' }, S],
+      CONTACT_INQUIRY_ROWS),
+    mod('contact-info', 'Địa điểm & giờ làm việc', 'Quản lý địa chỉ, giờ mở cửa từng showroom và liên kết bản đồ trên /sofa2/contact; hotline/email lấy từ Kênh liên hệ.', 'solar:map-point-wave-bold-duotone',
+      [
+        { label: 'Showroom đang hiển thị', value: String(SOFA2_SHOWROOMS.length) },
+        { label: 'Đã cấu hình bản đồ', value: String(SOFA2_SHOWROOMS.length) },
+      ],
+      [{ key: 'label', label: 'Loại thông tin' }, { key: 'value', label: 'Nội dung' }, { key: 'sub', label: 'Mô tả' }, { key: 'order', label: 'Thứ tự', type: 'number' }, S],
+      SOFA2_SHOWROOMS.map((showroom, index) => ({
+        label: `Địa chỉ showroom ${showroom.name.replace('LUXE Sofa ', '')}`,
+        value: showroom.address,
+        sub: `${showroom.name} · ${showroom.phone} · Mở cửa ${showroom.hours}`,
+        icon: 'solar:map-point-bold-duotone',
+        href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showroom.address)}`,
+        order: index + 1,
+        status: 'Đang hiển thị',
+      }))),
+    mod('contact-socials', 'Mạng xã hội Liên hệ', 'Quản lý liên kết Facebook, Instagram, YouTube, Zalo hiển thị cuối trang Liên hệ.', 'solar:share-bold-duotone',
+      [{ label: 'Đang bật', value: '4' }, { label: 'Kênh mạng xã hội', value: '4' }],
+      [{ key: 'title', label: 'Mạng xã hội' }, { key: 'href', label: 'Liên kết' }, { key: 'order', label: 'Thứ tự', type: 'number' }, S],
+      [
+        { title: 'Facebook', href: 'https://www.facebook.com/luxesofa.vn', icon: 'solar:facebook-bold-duotone', order: 1, status: 'Đang hiển thị' },
+        { title: 'Instagram', href: 'https://www.instagram.com/luxesofa.vn/', icon: 'solar:instagram-bold-duotone', order: 2, status: 'Đang hiển thị' },
+        { title: 'YouTube', href: 'https://www.youtube.com/@luxesofa', icon: 'solar:youtube-bold-duotone', order: 3, status: 'Đang hiển thị' },
+        { title: 'Zalo', href: 'https://zalo.me/0900686868', icon: 'solar:chat-bold-duotone', order: 4, status: 'Đang hiển thị' },
+      ]),
+    mod('channels', 'Kênh liên hệ', 'Hotline và email dùng chung giữa trang Hỗ trợ và Liên hệ; chat/Zalo hiển thị ở trang Hỗ trợ.', 'solar:phone-calling-bold-duotone',
       [{ label: 'Kênh bật', value: '3' }],
       [{ key: 'title', label: 'Kênh' }, { key: 'value', label: 'Thông tin' }, { key: 'order', label: 'Thứ tự', type: 'number' }, S],
       [
@@ -263,6 +337,34 @@ export const SOFA2_SUPPORT_SCHEMAS: Record<string, Sofa2CmsSchema> = {
     f('created', 'Ngày tạo', 'text', 'display'),
   ], '/sofa2/support#ticket', false),
   ...Object.fromEntries(ARTICLE_SLUGS.map((s) => [s, articleSchema('mục')])),
+  'contact-inquiries': schema('tin nhắn liên hệ', 'subject', ['Mới tiếp nhận', 'Đang xử lý', 'Chờ khách phản hồi', 'Đã phản hồi', 'Đã đóng', 'Spam'], [
+    f('inquiryId', 'Mã liên hệ', 'text', 'content', { required: true, maxLength: 40 }),
+    f('name', 'Họ tên người gửi', 'text', 'content', { required: true, maxLength: 80 }),
+    f('email', 'Email', 'text', 'content'),
+    f('phone', 'Điện thoại', 'text', 'content'),
+    f('subject', 'Chủ đề', 'text', 'content', { required: true, maxLength: 120 }),
+    f('message', 'Nội dung', 'textarea', 'content', { required: true, multiline: 5 }),
+    f('receivedAt', 'Thời gian tiếp nhận', 'text', 'display'),
+    f('source', 'Nguồn gửi', 'text', 'display'),
+    f('assignedTo', 'Người phụ trách', 'select', 'display', { options: AGENTS }),
+    f('reply', 'Nội dung phản hồi', 'textarea', 'display', { multiline: 4 }),
+    f('repliedAt', 'Thời gian phản hồi', 'text', 'display'),
+    f('internalNote', 'Ghi chú nội bộ', 'textarea', 'display', { multiline: 3 }),
+  ], '/sofa2/contact#contact-form', false, 'Mới tiếp nhận'),
+  'contact-info': schema('thông tin liên hệ', 'label', ['Đang hiển thị', 'Tạm ẩn'], [
+    f('label', 'Loại thông tin', 'text', 'content', { required: true, maxLength: 40 }),
+    f('value', 'Nội dung hiển thị', 'text', 'content', { required: true, maxLength: 180 }),
+    f('sub', 'Mô tả ngắn', 'text', 'content', { maxLength: 120 }),
+    f('icon', 'Biểu tượng Iconify', 'text', 'display'),
+    f('href', 'Liên kết (tel:, mailto:, URL)', 'text', 'display'),
+    f('order', 'Thứ tự hiển thị', 'number', 'display'),
+  ], '/sofa2/contact', true),
+  'contact-socials': schema('liên kết mạng xã hội', 'title', ['Đang hiển thị', 'Tạm ẩn'], [
+    f('title', 'Tên mạng xã hội', 'text', 'content', { required: true, maxLength: 40 }),
+    f('href', 'URL mạng xã hội', 'url', 'content', { required: true }),
+    f('icon', 'Biểu tượng Iconify', 'text', 'display'),
+    f('order', 'Thứ tự hiển thị', 'number', 'display'),
+  ], '/sofa2/contact', true),
   channels: schema('kênh', 'title', ['Đang bật', 'Tạm tắt'], [
     f('title', 'Tên kênh', 'text', 'content', { required: true }),
     f('value', 'Thông tin hiển thị', 'text', 'content', { required: true }),
