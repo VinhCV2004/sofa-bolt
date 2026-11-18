@@ -53,6 +53,7 @@ export default function Page() {
   const { blocks: cmsBlocks } = useCmsPageBlocks('contact');
   const { seo } = useCmsSeo('/sofa2/contact');
   const contactInfoStore = useSofa2AdminRows('support', 'contact-info');
+  const managedShowroomsStore = useSofa2AdminRows('cms', 'showrooms');
   const contactChannelsStore = useSofa2AdminRows('support', 'channels');
   const contactSocialStore = useSofa2AdminRows('support', 'contact-socials');
   const contactInquiryStore = useSofa2AdminRows('support', 'contact-inquiries');
@@ -64,8 +65,20 @@ export default function Page() {
       return row.status === 'Đang bật' && (href.startsWith('tel:') || href.startsWith('mailto:')) && isSofa2SupportHref(href);
     })
     .map((row) => ({ ...row, label: String(row.title ?? ''), order: Number(row.order ?? 0) }));
-  const contactCards: AdminRow[] = contactInfoStore.rows.length || contactChannelsStore.rows.length
-    ? [...activeContactChannels, ...activeContactInfo].sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0))
+  const managedShowroomCards: AdminRow[] = managedShowroomsStore.rows
+    .filter((row) => String(row.status) === 'Đã xuất bản')
+    .map((row, index) => ({
+      label: `Địa chỉ · ${String(row.name ?? '')}`,
+      value: String(row.address ?? ''),
+      sub: `${String(row.phone ?? '')} · Mở cửa ${String(row.hours ?? '')}`,
+      href: String(row.directionsUrl ?? ''),
+      icon: 'solar:map-point-bold-duotone',
+      order: 10 + Number(row.order ?? index),
+      status: 'Đang hiển thị',
+    }));
+  const displayLocationRows = managedShowroomCards.length ? managedShowroomCards : activeContactInfo;
+  const contactCards: AdminRow[] = contactInfoStore.rows.length || contactChannelsStore.rows.length || managedShowroomCards.length
+    ? [...activeContactChannels, ...displayLocationRows].sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0))
     : INFO.map((item, order) => ({ ...item, label: item.label, order }));
   const activeSocials = contactSocialStore.rows
     .filter((row) => row.status === 'Đang hiển thị' && String(row.href ?? '').trim() && isSofa2SupportHref(row.href))

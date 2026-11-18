@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useMemo, useState, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
-import Alert from '@mui/material/Alert';
 import Tab from '@mui/material/Tab';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
 import Tabs from '@mui/material/Tabs';
+import Alert from '@mui/material/Alert';
 import Table from '@mui/material/Table';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
@@ -14,8 +14,8 @@ import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
-import MenuItem from '@mui/material/MenuItem';
 import { alpha } from '@mui/material/styles';
+import MenuItem from '@mui/material/MenuItem';
 import Checkbox from '@mui/material/Checkbox';
 import Snackbar from '@mui/material/Snackbar';
 import TableRow from '@mui/material/TableRow';
@@ -32,38 +32,40 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TableContainer from '@mui/material/TableContainer';
 import InputAdornment from '@mui/material/InputAdornment';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import TablePagination from '@mui/material/TablePagination';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
-import { Chart, useChart } from 'src/components/chart';
-import { Iconify } from 'src/components/iconify';
 import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
-import { useSofa2CatalogProducts, useSofa2CatalogCategories } from 'src/sections/sofa2/sofa2-catalog-client';
-import { SOFA2_PROJECTS } from 'src/sections/sofa2/sofa2-pages-data';
 
+import { Iconify } from 'src/components/iconify';
+import { Chart, useChart } from 'src/components/chart';
+
+import { SOFA2_PROJECTS } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2CatalogProducts, useSofa2CatalogCategories } from 'src/sections/sofa2/sofa2-catalog-client';
+
+import { type Sofa2SeoSchema } from '../sofa2-seo';
 import { Sofa2AdminLayout } from './sofa2-admin-layout';
-import {
-  auditSeoPage,
-  SeoScoreChip,
-  SeoGeneratedFile,
-  SeoPageAssistant,
-  SchemaJsonAssistant,
-  createJsonLdTemplate,
-  validateJsonLd,
-} from './sofa2-seo-tools';
+import { SOFA2_SITE_ORIGIN } from '../sofa2-seo-generator';
+import { sofa2Today, type Sofa2CmsField } from '../sofa2-cms';
 import {
   type AdminRow,
   loadSofa2SeoRows,
   useSofa2AdminRows,
 } from '../sofa2-admin-store';
-import { sofa2Today, type Sofa2CmsField } from '../sofa2-cms';
-import { type Sofa2SeoSchema } from '../sofa2-seo';
-import { SOFA2_SITE_ORIGIN } from '../sofa2-seo-generator';
 import {
   hasSofa2AdminPermission,
   type Sofa2AdminAccessSession,
 } from '../sofa2-access-control';
 import { SOFA2_ADMIN_GROUPS, type Sofa2AdminGroup, type Sofa2AdminModule } from '../sofa2-admin-data';
+import {
+  auditSeoPage,
+  SeoScoreChip,
+  validateJsonLd,
+  SeoGeneratedFile,
+  SeoPageAssistant,
+  SchemaJsonAssistant,
+  createJsonLdTemplate,
+} from './sofa2-seo-tools';
 
 // ----------------------------------------------------------------------
 
@@ -99,104 +101,71 @@ type Props = { group: Sofa2AdminGroup; module: Sofa2AdminModule; schema: Sofa2Se
 
 // ----------------------------------------------------------------------
 
-function SeoChart({ schema, rows }: { schema: Sofa2SeoSchema; rows: AdminRow[] }) {
-  const { chartType, chartTitle, chartSubtitle, chartCategories, chartSeries, chartLabels, chartDonutData } = schema;
+function SeoDonutChart({ schema, rows }: { schema: Sofa2SeoSchema; rows: AdminRow[] }) {
+  const { chartTitle, chartSubtitle, chartLabels, chartDonutData } = schema;
+  const counts = rows.reduce<Record<string, number>>((result, row) => {
+    const label = `${String(row.rule || 'Allow')} — ${String(row.agent || '*')}`;
+    result[label] = (result[label] ?? 0) + 1;
+    return result;
+  }, {});
+  const labels = rows.length ? Object.keys(counts) : chartLabels ?? [];
+  const values = rows.length ? Object.values(counts) : chartDonutData ?? [];
+  const options = useChart({
+    colors: PALETTE,
+    labels,
+    stroke: { width: 0 },
+    legend: { position: 'bottom', horizontalAlign: 'center' },
+    tooltip: { y: { formatter: (val: number) => `${val} quy tắc` } },
+  });
+  return <Card><CardHeader title={chartTitle} subheader={chartSubtitle} /><Chart type="donut" series={values} options={options} height={340} sx={{ px: 2, pb: 2 }} /></Card>;
+}
 
-  if (chartType === 'donut') {
-    const counts = rows.reduce<Record<string, number>>((result, row) => {
-      const label = `${String(row.rule || 'Allow')} — ${String(row.agent || '*')}`;
-      result[label] = (result[label] ?? 0) + 1;
-      return result;
-    }, {});
-    const labels = rows.length ? Object.keys(counts) : chartLabels ?? [];
-    const values = rows.length ? Object.values(counts) : chartDonutData ?? [];
-    const donutOptions = useChart({
-      colors: PALETTE,
-      labels,
-      stroke: { width: 0 },
-      legend: { position: 'bottom', horizontalAlign: 'center' },
-      tooltip: { y: { formatter: (val: number) => `${val} quy tắc` } },
-    });
-    return (
-      <Card>
-        <CardHeader title={chartTitle} subheader={chartSubtitle} />
-        <Chart
-          type="donut"
-          series={values}
-          options={donutOptions}
-          height={340}
-          sx={{ px: 2, pb: 2 }}
-        />
-      </Card>
-    );
-  }
-
-  if (chartType === 'horizontal-bar') {
-    const categories =
-      schema.kind === 'page' && rows.length
-        ? rows.slice(0, 8).map((row) => String(row.keyword || row.url || 'Trang'))
-        : schema.kind === 'schema' && rows.length
-          ? rows.map((row) => String(row.type || 'Schema'))
-          : chartCategories ?? [];
-    const series =
-      schema.kind === 'page' && rows.length
-        ? [{ name: 'Thứ hạng Google', data: rows.slice(0, 8).map((row) => Number(row.position) || 0) }]
-        : schema.kind === 'schema' && rows.length
-          ? [{ name: 'URL áp dụng', data: rows.map((row) => Number(row.urls) || 0) }]
-          : chartSeries ?? [];
-    const hbarOptions = useChart({
-      colors: [PALETTE[0]],
-      xaxis: { categories },
-      plotOptions: { bar: { horizontal: true, barHeight: '55%', borderRadius: 4 } },
-      legend: { show: false },
-    });
-    return (
-      <Card>
-        <CardHeader title={chartTitle} subheader={chartSubtitle} />
-        <Chart
-          type="bar"
-          series={series}
-          options={hbarOptions}
-          height={340}
-          sx={{ px: 2, pb: 2 }}
-        />
-      </Card>
-    );
-  }
-
-  // bar (mặc định)
-  const categories =
-    schema.kind === 'sitemap' && rows.length
-      ? rows.map((row) => String(row.file || 'Sitemap'))
+function SeoHorizontalBarChart({ schema, rows }: { schema: Sofa2SeoSchema; rows: AdminRow[] }) {
+  const { chartTitle, chartSubtitle, chartCategories, chartSeries } = schema;
+  const categories = schema.kind === 'page' && rows.length
+    ? rows.slice(0, 8).map((row) => String(row.keyword || row.url || 'Trang'))
+    : schema.kind === 'schema' && rows.length
+      ? rows.map((row) => String(row.type || 'Schema'))
       : chartCategories ?? [];
-  const series =
-    schema.kind === 'sitemap' && rows.length
-      ? [
-          { name: 'Trang được quản lý', data: rows.map((row) => Number(row.urls) || 0) },
-          { name: 'Đưa vào sitemap', data: rows.map((row) => Number(row.indexed) || 0) },
-        ]
+  const series = schema.kind === 'page' && rows.length
+    ? [{ name: 'Thứ hạng Google', data: rows.slice(0, 8).map((row) => Number(row.position) || 0) }]
+    : schema.kind === 'schema' && rows.length
+      ? [{ name: 'URL áp dụng', data: rows.map((row) => Number(row.urls) || 0) }]
       : chartSeries ?? [];
-  const barOptions = useChart({
+  const options = useChart({
+    colors: [PALETTE[0]],
+    xaxis: { categories },
+    plotOptions: { bar: { horizontal: true, barHeight: '55%', borderRadius: 4 } },
+    legend: { show: false },
+  });
+  return <Card><CardHeader title={chartTitle} subheader={chartSubtitle} /><Chart type="bar" series={series} options={options} height={340} sx={{ px: 2, pb: 2 }} /></Card>;
+}
+
+function SeoBarChart({ schema, rows }: { schema: Sofa2SeoSchema; rows: AdminRow[] }) {
+  const { chartTitle, chartSubtitle, chartCategories, chartSeries } = schema;
+  const categories = schema.kind === 'sitemap' && rows.length
+    ? rows.map((row) => String(row.file || 'Sitemap'))
+    : chartCategories ?? [];
+  const series = schema.kind === 'sitemap' && rows.length
+    ? [
+        { name: 'Trang được quản lý', data: rows.map((row) => Number(row.urls) || 0) },
+        { name: 'Đưa vào sitemap', data: rows.map((row) => Number(row.indexed) || 0) },
+      ]
+    : chartSeries ?? [];
+  const options = useChart({
     colors: [PALETTE[0], PALETTE[1]],
     xaxis: { categories },
     plotOptions: { bar: { columnWidth: '45%', borderRadius: 4 } },
     legend: { show: series.length > 1, position: 'top' },
   });
-
-  return (
-    <Card>
-      <CardHeader title={chartTitle} subheader={chartSubtitle} />
-      <Chart
-        type="bar"
-        series={series}
-        options={barOptions}
-        height={340}
-        sx={{ px: 2, pb: 2 }}
-      />
-    </Card>
-  );
+  return <Card><CardHeader title={chartTitle} subheader={chartSubtitle} /><Chart type="bar" series={series} options={options} height={340} sx={{ px: 2, pb: 2 }} /></Card>;
 }
 
+function SeoChart({ schema, rows }: { schema: Sofa2SeoSchema; rows: AdminRow[] }) {
+  if (schema.chartType === 'donut') return <SeoDonutChart schema={schema} rows={rows} />;
+  if (schema.chartType === 'horizontal-bar') return <SeoHorizontalBarChart schema={schema} rows={rows} />;
+  return <SeoBarChart schema={schema} rows={rows} />;
+}
 // ----------------------------------------------------------------------
 
 export function Sofa2AdminSeoView({ group, module, schema }: Props) {
@@ -217,6 +186,7 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
   const collectionRows = useSofa2AdminRows('seo', 'collection', { load: false }).rows;
   const projectRows = useSofa2AdminRows('seo', 'project', { load: false }).rows;
   const showroomRows = useSofa2AdminRows('seo', 'showroom', { load: false }).rows;
+  const { rows: managedShowrooms } = useSofa2AdminRows('cms', 'showrooms', { load: module.slug === 'sitemap' });
   const blogRows = useSofa2AdminRows('seo', 'blog', { load: false }).rows;
   const brandRows = useSofa2AdminRows('seo', 'brand', { load: false }).rows;
   const { products: liveProducts } = useSofa2CatalogProducts();
@@ -304,6 +274,23 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
       ...(projectRows.find((row) => String(row.url) === url) ?? {}),
     };
   }), [projectRows]);
+  const liveShowroomSeoRows = useMemo(() => managedShowrooms
+    .filter((showroom) => String(showroom.status) === 'Đã xuất bản')
+    .map((showroom) => {
+      const url = `/sofa2/showrooms/${showroom.id}`;
+      const seoRow = showroomRows.find((row) => String(row.url) === url);
+      return {
+        url,
+        title: String(showroom.metaTitle || `${showroom.name} - LUXE Sofa`),
+        description: String(showroom.metaDescription || showroom.description || ''),
+        canonical: `${SOFA2_SITE_ORIGIN}${url}`,
+        published: 'Có',
+        inSitemap: String(showroom.indexable ?? 'Có'),
+        ...(seoRow ?? {}),
+        indexable: !['không', 'false', '0'].includes(String(showroom.indexable ?? 'Có').toLowerCase())
+          && !['không', 'false', '0'].includes(String(seoRow?.indexable ?? 'Có').toLowerCase()) ? 'Có' : 'Không',
+      };
+    }), [managedShowrooms, showroomRows]);
   const generatedSchemas = useMemo(() => [
     ...liveProducts.filter((product) => product.indexable && !['không', 'false', '0'].includes(String(productRows.find((row) => String(row.url) === `/sofa2/products/${product.id}`)?.indexable ?? 'Có').toLowerCase()) && !['không', 'false', '0'].includes(String(productRows.find((row) => String(row.url) === `/sofa2/products/${product.id}`)?.published ?? 'Có').toLowerCase())).map((product) => ({
       '@type': 'Product',
@@ -361,7 +348,7 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
     { file: 'sitemap-products.xml', rows: liveProductSeoRows },
     { file: 'sitemap-collections.xml', rows: collectionRows },
     { file: 'sitemap-projects.xml', rows: liveProjectSeoRows },
-    { file: 'sitemap-showrooms.xml', rows: showroomRows },
+    { file: 'sitemap-showrooms.xml', rows: liveShowroomSeoRows },
     { file: 'sitemap-blog.xml', rows: blogRows },
   ];
   const enabledSitemapFiles =
@@ -788,7 +775,7 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
 
   const renderField = (field: Sofa2CmsField) => {
     const value = form.values[field.key] ?? '';
-    const error = errors[field.key];
+    const fieldError = errors[field.key];
 
     if (field.type === 'switch') {
       return (
@@ -797,7 +784,7 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
           control={
             <Switch
               checked={String(value) === 'Có'}
-            disabled={loading || saving || !!error}
+              disabled={loading || saving || !!fieldError}
               onChange={(e) => setValue(field.key, e.target.checked ? 'Có' : 'Không')}
             />
           }
@@ -816,11 +803,11 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
         type={field.type === 'number' ? 'number' : 'text'}
         label={field.label}
         value={value}
-        disabled={loading || saving || !!error}
-        error={!!error}
+        disabled={loading || saving || !!fieldError}
+        error={!!fieldError}
         placeholder={field.placeholder}
         helperText={
-          error ??
+          fieldError ??
           (field.maxLength
             ? `${String(value).length}/${field.maxLength} ký tự${field.helper ? ` — ${field.helper}` : ''}`
             : field.helper)
