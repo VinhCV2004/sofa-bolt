@@ -131,12 +131,21 @@ try {
   if (saved) {
     const savedRows = JSON.parse(saved) as Store;
     Object.entries(savedRows).forEach(([storeKey, rows]) => {
-      store[storeKey] = storeKey.startsWith('cms/')
-        ? (rows ?? []).map((row, index) => ({
-            ...row,
-            id: String(row.id ?? `cms-${storeKey.slice(4)}-${index + 1}`),
-          }))
-        : rows;
+      if (['cms/projects', 'cms/collections'].includes(storeKey)) {
+        const moduleDefaults = store[storeKey] ?? [];
+        store[storeKey] = (rows ?? []).map((row, index) => ({
+          ...(moduleDefaults.find((seed) => String(seed.id ?? '') === String(row.id ?? '')) ?? {}),
+          ...row,
+          id: String(row.id ?? `cms-${storeKey.slice(4)}-${index + 1}`),
+        }));
+      } else {
+        store[storeKey] = storeKey.startsWith('cms/')
+          ? (rows ?? []).map((row, index) => ({
+              ...row,
+              id: String(row.id ?? `cms-${storeKey.slice(4)}-${index + 1}`),
+            }))
+          : rows;
+      }
     });
   } else {
     const addressesKey = key('shopping', 'addresses');

@@ -41,6 +41,7 @@ import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
 import { Iconify } from 'src/components/iconify';
 
 import { isSofa2JobOpen } from 'src/sections/sofa2/sofa2-recruitment';
+import { SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
 
 import { isSofa2SupportHref } from '../sofa2-support';
 import { downloadSofa2HrCv } from '../sofa2-hr-files';
@@ -538,6 +539,64 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         && sofa2Slugify(String(row.slug ?? row.title ?? '')) === slug)) next.slug = 'Slug đã tồn tại trong nhóm dịch vụ này.';
       const ctaLink = String(form.values.ctaLink ?? '').trim();
       if (ctaLink && !/^\/sofa2(?:\/|$)/.test(ctaLink)) next.ctaLink = 'Liên kết phải là đường dẫn nội bộ bắt đầu bằng /sofa2.';
+    }
+    if (group.slug === 'cms' && module.slug === 'collections') {
+      const slug = sofa2Slugify(String(form.values.slug || form.values.name || ''));
+      const name = String(form.values.name ?? '').trim().toLocaleLowerCase();
+      if (!slug) next.slug = 'Nhập slug hoặc tên bộ sưu tập hợp lệ.';
+      if (slug && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && sofa2Slugify(String(row.slug ?? row.name ?? '')) === slug)) next.slug = 'Slug bộ sưu tập đã tồn tại.';
+      if (name && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.name ?? '').trim().toLocaleLowerCase() === name)) next.name = 'Tên bộ sưu tập đã tồn tại.';
+      const productIds = String(form.values.productIds ?? '').split(/\r?\n/).map((id) => id.trim()).filter(Boolean);
+      const knownProductIds = new Set(SOFA2_CLIENT_PRODUCTS.map((product) => String(product.id)));
+      if (!productIds.length) next.productIds = 'Chọn ít nhất một sản phẩm cho bộ sưu tập.';
+      if (new Set(productIds).size !== productIds.length) next.productIds = 'Không thể lặp lại cùng một ID sản phẩm.';
+      const invalidProductIds = productIds.filter((id) => !knownProductIds.has(id));
+      if (invalidProductIds.length) next.productIds = `Không tìm thấy ID sản phẩm Sofa2: ${invalidProductIds.join(', ')}.`;
+      const startDate = String(form.values.startDate ?? '');
+      const endDate = String(form.values.endDate ?? '');
+      if (startDate && endDate && startDate > endDate) next.endDate = 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.';
+      const ctaLink = String(form.values.ctaLink ?? '').trim();
+      if (ctaLink && !/^\/sofa2(?:\/|$)/.test(ctaLink)) next.ctaLink = 'Liên kết phải là đường dẫn nội bộ bắt đầu bằng /sofa2.';
+    }
+    if (group.slug === 'cms' && module.slug === 'projects') {
+      const name = String(form.values.name ?? '').trim().toLocaleLowerCase();
+      if (name && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.name ?? '').trim().toLocaleLowerCase() === name)) next.name = 'Tên dự án đã tồn tại.';
+      const year = Number(form.values.year);
+      const currentYear = new Date().getFullYear();
+      if (!Number.isInteger(year) || year < 2000 || year > currentYear + 5) next.year = `Nhập năm từ 2000 đến ${currentYear + 5}.`;
+      const gallery = String(form.values.gallery ?? '').split(/\r?\n/).map((line) => line.split('|')[0].trim()).filter(Boolean);
+      if (!gallery.length) next.gallery = 'Thêm ít nhất một ảnh vào thư viện.';
+      else if (gallery.some((url) => !/^https?:\/\//i.test(url))) next.gallery = 'Mỗi dòng phải có URL ảnh bắt đầu bằng https:// hoặc http://; có thể thêm chú thích sau dấu |.';
+      const usedProductNames = String(form.values.productsUsed ?? '').split(/\r?\n/).map((productName) => productName.trim()).filter(Boolean);
+      const knownProductNames = new Set(SOFA2_CLIENT_PRODUCTS.map((product) => product.name.trim().toLocaleLowerCase()));
+      const unknownProducts = usedProductNames.filter((productName) => !knownProductNames.has(productName.toLocaleLowerCase()));
+      if (unknownProducts.length) next.productsUsed = `Không tìm thấy trong danh mục Sofa2: ${unknownProducts.join(', ')}.`;
+      const videoUrl = String(form.values.videoUrl ?? '').trim();
+      if (videoUrl) {
+        let supportedVideo = false;
+        try {
+          const parsed = new URL(videoUrl);
+          const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+          const youtube = ['youtube.com', 'youtube-nocookie.com'].includes(host)
+            && Boolean(parsed.searchParams.get('v') || /^\/(?:embed|shorts)\/[^/]+/.test(parsed.pathname));
+          const shortYoutube = host === 'youtu.be' && Boolean(parsed.pathname.split('/').filter(Boolean)[0]);
+          const vimeo = host === 'vimeo.com' && /^\/\d+\/?$/.test(parsed.pathname);
+          const videoFile = /^https?:$/.test(parsed.protocol) && /\.(mp4|webm)$/i.test(parsed.pathname);
+          supportedVideo = /^https?:$/.test(parsed.protocol) && (youtube || shortYoutube || vimeo || videoFile);
+        } catch {
+          supportedVideo = false;
+        }
+        if (!supportedVideo) next.videoUrl = 'Chỉ chấp nhận liên kết YouTube, Vimeo hoặc file MP4/WebM qua HTTPS/HTTP.';
+      }
+      if (isPortalEnabled(form.values.showReview)) {
+        if (!String(form.values.reviewQuote ?? '').trim()) next.reviewQuote = 'Nhập nội dung đánh giá hoặc tắt hiển thị đánh giá.';
+        if (!String(form.values.reviewName ?? '').trim()) next.reviewName = 'Nhập tên người đánh giá.';
+        const rating = Number(form.values.reviewRating);
+        if (!Number.isFinite(rating) || rating < 1 || rating > 5) next.reviewRating = 'Điểm đánh giá phải từ 1 đến 5 sao.';
+      }
     }
     if (group.slug === 'cms' && module.slug === 'showrooms') {
       const slug = sofa2Slugify(String(form.values.slug || form.values.name || ''));
@@ -1358,6 +1417,40 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       clean.slug = sofa2Slugify(String(clean.slug || clean.title || ''));
       if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
     }
+    if (group.slug === 'cms' && module.slug === 'collections') {
+      clean.slug = sofa2Slugify(String(clean.slug || clean.name || ''));
+      clean.productIds = [...new Set(String(clean.productIds ?? '').split(/\r?\n/).map((id) => id.trim()).filter(Boolean))].join('\n');
+      clean.count = String(clean.productIds).split('\n').filter(Boolean).length;
+      clean.featured = isPortalEnabled(clean.featured) ? 'Có' : 'Không';
+      clean.indexable = isPortalEnabled(clean.indexable) ? 'Có' : 'Không';
+      clean.order = Number(clean.order) || 0;
+      clean.ctaLink = String(clean.ctaLink || '/sofa2/products').trim();
+      if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
+    }
+    if (group.slug === 'cms' && module.slug === 'projects') {
+      const categoryTypes: Record<string, string> = {
+        'Dự án căn hộ': 'can-ho',
+        'Dự án biệt thự': 'biet-thu',
+        'Dự án khách sạn': 'khach-san',
+        'Dự án resort': 'resort',
+        'Dự án văn phòng': 'van-phong',
+        'Dự án showroom': 'showroom',
+      };
+      clean.type = categoryTypes[String(clean.typeLabel ?? '')] ?? String(clean.type ?? 'can-ho');
+      clean.year = Number(clean.year);
+      clean.gallery = String(clean.gallery ?? '').split(/\r?\n/).map((line) => {
+        const [url, ...caption] = line.split('|');
+        return `${url.trim()}${caption.length ? ` | ${caption.join('|').trim()}` : ''}`;
+      }).filter((line) => line !== '').join('\n');
+      clean.videoUrl = String(clean.videoUrl ?? '').trim();
+      clean.videoCaption = String(clean.videoCaption ?? '').trim();
+      clean.showReview = isPortalEnabled(clean.showReview) ? 'Có' : 'Không';
+      clean.reviewRating = Number(clean.reviewRating) || 0;
+      clean.featured = isPortalEnabled(clean.featured) ? 'Có' : 'Không';
+      clean.indexable = isPortalEnabled(clean.indexable) ? 'Có' : 'Không';
+      clean.order = Number(clean.order) || 0;
+      if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
+    }
     if (group.slug === 'cms' && module.slug === 'showrooms') {
       clean.slug = sofa2Slugify(String(clean.slug || clean.name || ''));
       clean.code = String(clean.code ?? '').trim().toLocaleUpperCase();
@@ -1395,7 +1488,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       clean.channel = sofa2Slugify(String(clean.channel || clean.label || ''));
       clean.enabled = isPortalEnabled(clean.enabled) ? 'Có' : 'Không';
     }
-    if (group.slug === 'cms' && ['blog', 'blog-categories', 'blog-authors', 'blog-comments', 'blog-social', 'service-catalog', 'showrooms', 'showroom-bookings'].includes(module.slug) && form.mode === 'create' && !clean.id) {
+    if (group.slug === 'cms' && ['blog', 'blog-categories', 'blog-authors', 'blog-comments', 'blog-social', 'service-catalog', 'collections', 'projects', 'showrooms', 'showroom-bookings'].includes(module.slug) && form.mode === 'create' && !clean.id) {
       clean.id = `cms-${module.slug}-${Date.now().toString(36)}`;
     }
     if (group.slug === 'cms' && module.slug === 'seo') {
