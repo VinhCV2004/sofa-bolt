@@ -635,6 +635,101 @@ const COLLECTION_INTROS: Record<string, string> = {
   bestseller: 'Những mẫu sofa được yêu thích nhờ trải nghiệm sử dụng thoải mái, thiết kế linh hoạt và giá trị sử dụng lâu dài. Xem đánh giá, thông số và lựa chọn chất liệu cho từng mẫu.',
 };
 
+type CmsCollectionExtraInput = {
+  id: string;
+  name: string;
+  slug: string;
+  collectionType: string;
+  description: string;
+  intro: string;
+  image: string;
+  imageAlt: string;
+  productIds: string[];
+  order: number;
+  author: string;
+  featured?: string;
+  seasonLabel?: string;
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  updated?: string;
+};
+
+const makeCmsCollectionSeed = (collection: CmsCollectionExtraInput): Record<string, string | number> => {
+  const status = collection.status ?? 'Đã xuất bản';
+  const productIds = [...new Set(collection.productIds)];
+  return {
+    ...collection,
+    productIds: productIds.join('\n'),
+    count: productIds.length,
+    seasonLabel: collection.seasonLabel ?? '',
+    startDate: collection.startDate ?? '',
+    endDate: collection.endDate ?? '',
+    featured: collection.featured ?? 'Không',
+    ctaLabel: 'Khám phá sản phẩm',
+    ctaLink: '/sofa2/products',
+    status,
+    updated: collection.updated ?? '2026-11-15',
+    metaTitle: `${collection.name} | LUXE Sofa`.slice(0, 60),
+    metaDescription: `${collection.description} Xem các mẫu sofa LUXE Sofa được tuyển chọn.`.slice(0, 160),
+    ogImage: collection.image,
+    indexable: status === 'Đã xuất bản' ? 'Có' : 'Không',
+  };
+};
+
+const CMS_EXTRA_COLLECTION_SEEDS: Record<string, string | number>[] = [
+  makeCmsCollectionSeed({
+    id: 'scandinavian-2026', name: 'Scandinavian Living 2026', slug: 'scandinavian-living-2026',
+    collectionType: 'Tuyển chọn',
+    description: 'Sofa Bắc Âu với đường nét thanh thoát, tông màu sáng và vật liệu tự nhiên cho không gian sống thư thái.',
+    intro: 'Tuyển chọn Oslo, Copenhagen và Reykjavik cho phòng khách cần cảm giác nhẹ nhàng. Mỗi thiết kế chú trọng tỷ lệ gọn, gỗ tự nhiên và màu vải trung tính dễ phối.',
+    image: SOFA2_PAGE_IMAGES.product1, imageAlt: 'Sofa phong cách Scandinavian trong phòng khách sáng',
+    productIds: ['1', '3', '10', '14'], order: 6, author: 'Minh Anh', featured: 'Có',
+  }),
+  makeCmsCollectionSeed({
+    id: 'family-living-2026', name: 'Không gian gia đình', slug: 'khong-gian-gia-dinh',
+    collectionType: 'Tuyển chọn',
+    description: 'Các mẫu sofa rộng rãi, bền bỉ và dễ chăm sóc cho sinh hoạt thường ngày của gia đình.',
+    intro: 'Tập hợp sofa góc, sofa văng và thiết kế tích hợp tiện ích để đáp ứng nhu cầu quây quần, thư giãn và tiếp khách trong cùng một không gian.',
+    image: SOFA2_PAGE_IMAGES.product2, imageAlt: 'Sofa gia đình với chỗ ngồi rộng rãi',
+    productIds: ['2', '5', '8', '12'], order: 7, author: 'Thu Hà',
+  }),
+  makeCmsCollectionSeed({
+    id: 'compact-apartment-2026', name: 'Căn hộ tối ưu diện tích', slug: 'can-ho-toi-uu-dien-tich',
+    collectionType: 'Tuyển chọn',
+    description: 'Sofa gọn, đa năng và linh hoạt cho căn hộ studio, căn hộ nhỏ và phòng khách đô thị.',
+    intro: 'Các thiết kế có kích thước vừa phải, lối đi thông thoáng và công năng linh hoạt giúp tận dụng tốt diện tích mà vẫn giữ được điểm nhấn cho phòng khách.',
+    image: SOFA2_PAGE_IMAGES.product3, imageAlt: 'Sofa nhỏ gọn cho căn hộ hiện đại',
+    productIds: ['3', '4', '6', '10', '16'], order: 8, author: 'Quốc Bảo',
+  }),
+  makeCmsCollectionSeed({
+    id: 'hospitality-lounge', name: 'Hospitality & Lounge', slug: 'hospitality-lounge',
+    collectionType: 'Luxury',
+    description: 'Giải pháp sofa cho khách sạn, resort, lounge và khu vực đón tiếp có tần suất sử dụng cao.',
+    intro: 'Tuyển chọn các mẫu sofa phục vụ lưu trú và tiếp khách, tập trung vào độ bền kết cấu, sự thoải mái, khả năng vệ sinh và tính đồng bộ thiết kế.',
+    image: SOFA2_PAGE_IMAGES.product5, imageAlt: 'Sofa lounge cao cấp cho không gian khách sạn',
+    productIds: ['5', '7', '9', '13', '15'], order: 9, author: 'Hoàng Long', featured: 'Có',
+  }),
+  makeCmsCollectionSeed({
+    id: 'office-lounge-2026', name: 'Office Lounge 2026', slug: 'office-lounge-2026',
+    collectionType: 'Tuyển chọn',
+    description: 'Sofa lounge và sofa tiếp khách dành cho văn phòng, phòng họp và khu vực cộng tác.',
+    intro: 'Bộ sưu tập ưu tiên sự thoải mái trong thời gian sử dụng dài, kiểu dáng chuyên nghiệp và cách bố trí linh hoạt cho không gian làm việc hiện đại.',
+    image: SOFA2_PAGE_IMAGES.product6, imageAlt: 'Sofa lounge trong văn phòng hiện đại',
+    productIds: ['7', '9', '12', '16'], order: 10, author: 'Minh Anh',
+  }),
+  makeCmsCollectionSeed({
+    id: 'spring-summer-2027', name: 'Xuân Hè 2027', slug: 'xuan-he-2027',
+    collectionType: 'Theo mùa',
+    description: 'Bản nháp chiến dịch Xuân Hè 2027 với bảng màu sáng và chất liệu phù hợp không gian mở.',
+    intro: 'Đang chờ duyệt sản phẩm, hình ảnh chiến dịch và lịch truyền thông trước khi xuất bản.',
+    image: SOFA2_PAGE_IMAGES.product7, imageAlt: 'Ảnh xem trước chiến dịch Xuân Hè 2027',
+    productIds: ['3', '6', '8', '13'], order: 21, author: 'Thu Hà',
+    seasonLabel: 'Xuân Hè 2027', startDate: '2027-03-01', endDate: '2027-08-31',
+    status: 'Bản nháp', updated: '2026-11-15',
+  }),
+];
+
 const CMS_COLLECTION_SEEDS: Record<string, string | number>[] = [
   ...SOFA2_COLLECTIONS.map((collection, index) => {
     const collectionType = ['Mới', 'Nổi bật', 'Theo mùa', 'Luxury', 'Bestseller'][index] ?? 'Tuyển chọn';
@@ -669,6 +764,7 @@ const CMS_COLLECTION_SEEDS: Record<string, string | number>[] = [
       indexable: 'Có',
     };
   }),
+  ...CMS_EXTRA_COLLECTION_SEEDS.slice(0, 5),
   {
     id: 'autumn-2026', name: 'Bộ sưu tập Thu Đông 2026', slug: 'thu-dong-2026', collectionType: 'Theo mùa',
     description: 'Bản nháp tuyển chọn sofa tông ấm và chất liệu dệt cho mùa Thu Đông 2026.',
@@ -677,7 +773,7 @@ const CMS_COLLECTION_SEEDS: Record<string, string | number>[] = [
     productIds: '1\n5\n9\n11', count: 4, seasonLabel: 'Thu Đông 2026',
     startDate: '2026-09-01', endDate: '2027-02-28', featured: 'Không',
     ctaLabel: 'Khám phá sản phẩm', ctaLink: '/sofa2/products',
-    order: 6, status: 'Bản nháp', updated: '2026-11-15', author: 'Thu Hà',
+    order: 20, status: 'Bản nháp', updated: '2026-11-15', author: 'Thu Hà',
     metaTitle: 'Bộ sưu tập Thu Đông 2026 | LUXE Sofa',
     metaDescription: 'Bản nháp bộ sưu tập sofa theo mùa Thu Đông 2026.',
     ogImage: SOFA2_PAGE_IMAGES.product5, indexable: 'Không',
@@ -690,11 +786,12 @@ const CMS_COLLECTION_SEEDS: Record<string, string | number>[] = [
     productIds: '3\n6\n13', count: 3, seasonLabel: 'Hè 2026',
     startDate: '2026-03-01', endDate: '2026-08-31', featured: 'Không',
     ctaLabel: 'Xem sản phẩm', ctaLink: '/sofa2/products',
-    order: 7, status: 'Tạm ẩn', updated: '2026-09-01', author: 'Quốc Bảo',
+    order: 22, status: 'Tạm ẩn', updated: '2026-09-01', author: 'Quốc Bảo',
     metaTitle: 'Bộ sưu tập Hè 2026 | LUXE Sofa',
     metaDescription: 'Bản lưu trữ bộ sưu tập sofa mùa Hè 2026.',
     ogImage: SOFA2_PAGE_IMAGES.product7, indexable: 'Không',
   },
+  ...CMS_EXTRA_COLLECTION_SEEDS.slice(5),
 ];
 
 const CMS_PROJECT_SEEDS: Record<string, string | number>[] = [
