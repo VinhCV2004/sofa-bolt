@@ -454,7 +454,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       const willAutoSlug =
         group.slug === 'cms' &&
         field.key === 'slug' &&
-        ['blog', 'static-pages', 'blog-categories', 'blog-authors'].includes(module.slug) &&
+        ['blog', 'static-pages', 'blog-categories', 'blog-authors', 'service-catalog'].includes(module.slug) &&
         !!String(form.values[titleKey] ?? form.values.label ?? form.values.name ?? '').trim();
       const willAutoChannel = group.slug === 'cms' && module.slug === 'blog-social'
         && field.key === 'channel' && !!String(form.values.label ?? '').trim();
@@ -505,6 +505,16 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       if (channel && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
         && sofa2Slugify(String(row.channel ?? '')) === channel)) next.channel = 'Mã kênh đã tồn tại.';
       if (String(form.values.action) === 'share' && !String(form.values.urlTemplate ?? '').trim()) next.urlTemplate = 'Nhập URL chia sẻ hoặc chọn hành động sao chép.';
+    }
+    if (group.slug === 'cms' && module.slug === 'service-catalog') {
+      const slug = sofa2Slugify(String(form.values.slug || form.values.title || ''));
+      const groupName = String(form.values.serviceGroup ?? '');
+      if (!slug) next.slug = 'Vui lòng nhập tên hoặc slug hợp lệ.';
+      if (slug && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.serviceGroup ?? '') === groupName
+        && sofa2Slugify(String(row.slug ?? row.title ?? '')) === slug)) next.slug = 'Slug đã tồn tại trong nhóm dịch vụ này.';
+      const ctaLink = String(form.values.ctaLink ?? '').trim();
+      if (ctaLink && !/^\/sofa2(?:\/|$)/.test(ctaLink)) next.ctaLink = 'Liên kết phải là đường dẫn nội bộ bắt đầu bằng /sofa2.';
     }
     if (group.slug === 'cms' && module.slug === 'promotions') {
       const code = String(form.values.code ?? '').trim();
@@ -1277,6 +1287,10 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     if (group.slug === 'cms' && module.slug === 'blog-categories') {
       clean.slug = canonicalBlogCategorySlug(clean.slug, clean.label);
     }
+    if (group.slug === 'cms' && module.slug === 'service-catalog') {
+      clean.slug = sofa2Slugify(String(clean.slug || clean.title || ''));
+      if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
+    }
     if (group.slug === 'cms' && module.slug === 'blog') {
       const category = blogCategoryRows.find((row) => String(row.label ?? '') === String(clean.category ?? ''));
       const author = blogAuthorRows.find((row) => String(row.name ?? '') === String(clean.author ?? ''));
@@ -1299,7 +1313,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       clean.channel = sofa2Slugify(String(clean.channel || clean.label || ''));
       clean.enabled = isPortalEnabled(clean.enabled) ? 'Có' : 'Không';
     }
-    if (group.slug === 'cms' && ['blog', 'blog-categories', 'blog-authors', 'blog-comments', 'blog-social'].includes(module.slug) && form.mode === 'create' && !clean.id) {
+    if (group.slug === 'cms' && ['blog', 'blog-categories', 'blog-authors', 'blog-comments', 'blog-social', 'service-catalog'].includes(module.slug) && form.mode === 'create' && !clean.id) {
       clean.id = `cms-${module.slug}-${Date.now().toString(36)}`;
     }
     if (group.slug === 'cms' && module.slug === 'seo') {

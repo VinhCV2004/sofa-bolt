@@ -16,6 +16,7 @@ import { Iconify } from 'src/components/iconify';
 import { varFade } from 'src/components/animate';
 
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 
 // ----------------------------------------------------------------------
@@ -24,28 +25,19 @@ const metadata = { title: 'Dịch vụ nội thất - LUXE Sofa' };
 
 const CATEGORIES = [
   {
+    key: 'Thiết kế nội thất',
     title: 'Thiết kế nội thất',
     overline: 'Design',
     icon: 'solar:pen-new-round-bold-duotone',
-    description: 'Giải pháp thiết kế nội thất trọn gói, từ ý tưởng đến bản vẽ thi công.',
-    subs: [
-      { title: 'Thiết kế custom', desc: 'Sofa thiết kế riêng theo không gian và phong cách của bạn.' },
-      { title: 'Diễn họa 3D', desc: 'Hình ảnh 3D chân thực trước khi sản xuất.' },
-      { title: 'Tư vấn nội thất', desc: 'Đội ngũ chuyên gia tư vấn 1:1 miễn phí.' },
-    ],
+    description: 'Giải pháp thiết kế trọn gói, từ ý tưởng và tư vấn bố trí đến bản vẽ thi công.',
     href: '/sofa2/services/design',
   },
   {
+    key: 'Dịch vụ sản xuất',
     title: 'Dịch vụ sản xuất',
     overline: 'Production',
     icon: 'solar:hammer-bold-duotone',
-    description: 'Xưởng sản xuất quy mô lớn với nghệ nhân lành nghề và máy móc hiện đại.',
-    subs: [
-      { title: 'Gia công', desc: 'Gia công sofa theo yêu cầu với độ chính xác cao.' },
-      { title: 'OEM', desc: 'Sản xuất theo thương hiệu của đối tác.' },
-      { title: 'ODM', desc: 'Thiết kế và sản xuất sản phẩm độc quyền.' },
-      { title: 'Dự án', desc: 'Cung cấp sofa cho dự án căn hộ, khách sạn, resort.' },
-    ],
+    description: 'Năng lực gia công, OEM, ODM và cung ứng sofa cho dự án.',
     href: '/sofa2/services/production',
   },
 ];
@@ -59,6 +51,13 @@ const PROCESS = [
 
 export default function Page() {
   const theme = useTheme();
+  const { rows } = useSofa2AdminRows('cms', 'service-catalog');
+  const categories = CATEGORIES.map((category) => ({
+    ...category,
+    subs: rows
+      .filter((row) => String(row.serviceGroup) === category.key && String(row.status) === 'Đã xuất bản')
+      .sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0)),
+  }));
 
   return (
     <>
@@ -83,7 +82,7 @@ export default function Page() {
           </Typography>
         </Stack>
         <Grid container spacing={4}>
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <Grid key={cat.title} xs={12} md={6}>
               <Stack
                 component={m.div}
@@ -101,11 +100,12 @@ export default function Page() {
                 </Stack>
                 <Stack spacing={1.5}>
                   {cat.subs.map((sub) => (
-                    <Stack key={sub.title} direction="row" spacing={1.5} alignItems="flex-start">
+                    <Stack key={sub.id} direction="row" spacing={1.5} alignItems="flex-start">
                       <Iconify icon="eva:checkmark-circle-2-fill" sx={{ color: 'primary.main', mt: 0.25 }} width={20} />
                       <Box>
                         <Typography variant="subtitle2">{sub.title}</Typography>
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{sub.desc}</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{sub.description}</Typography>
+                        <Button component={RouterLink} href={`${cat.href}/${sub.slug}`} size="small" sx={{ mt: 0.5, px: 0 }} endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}>Xem chi tiết</Button>
                       </Box>
                     </Stack>
                   ))}
