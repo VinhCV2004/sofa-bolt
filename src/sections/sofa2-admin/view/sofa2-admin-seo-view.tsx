@@ -40,7 +40,6 @@ import { getSofa2DemoAdminSession } from 'src/_mock/_sofa2-demo';
 import { Iconify } from 'src/components/iconify';
 import { Chart, useChart } from 'src/components/chart';
 
-import { SOFA2_PROJECTS } from 'src/sections/sofa2/sofa2-pages-data';
 import { useSofa2CatalogProducts, useSofa2CatalogCategories } from 'src/sections/sofa2/sofa2-catalog-client';
 
 import { type Sofa2SeoSchema } from '../sofa2-seo';
@@ -185,6 +184,7 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
   const productRows = useSofa2AdminRows('seo', 'product', { load: false }).rows;
   const collectionRows = useSofa2AdminRows('seo', 'collection', { load: false }).rows;
   const projectRows = useSofa2AdminRows('seo', 'project', { load: false }).rows;
+  const managedProjectRows = useSofa2AdminRows('cms', 'projects', { load: false }).rows;
   const showroomRows = useSofa2AdminRows('seo', 'showroom', { load: false }).rows;
   const { rows: managedShowrooms } = useSofa2AdminRows('cms', 'showrooms', { load: module.slug === 'sitemap' });
   const blogRows = useSofa2AdminRows('seo', 'blog', { load: false }).rows;
@@ -261,19 +261,23 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
       indexable: category.indexable !== false && !['không', 'false', '0'].includes(String(seoRow?.indexable ?? 'Có').toLowerCase()) ? 'Có' : 'Không',
     };
   }), [liveCategories, categoryRows]);
-  const liveProjectSeoRows = useMemo(() => SOFA2_PROJECTS.map((project) => {
-    const url = `/sofa2/projects/${project.id}`;
-    return {
-      url,
-      title: `${project.name} - LUXE Sofa`,
-      description: project.description,
-      canonical: `${SOFA2_SITE_ORIGIN}${url}`,
-      indexable: 'Có',
-      published: 'Có',
-      inSitemap: 'Có',
-      ...(projectRows.find((row) => String(row.url) === url) ?? {}),
-    };
-  }), [projectRows]);
+  const liveProjectSeoRows = useMemo(() => managedProjectRows
+    .filter((project) => String(project.status) === 'Đã xuất bản')
+    .map((project) => {
+      const url = `/sofa2/projects/${project.id}`;
+      const seoRow = projectRows.find((row) => String(row.url) === url);
+      return {
+        url,
+        title: String(project.metaTitle || `${project.name} - LUXE Sofa`),
+        description: String(project.metaDescription || project.description || ''),
+        canonical: `${SOFA2_SITE_ORIGIN}${url}`,
+        published: 'Có',
+        inSitemap: String(project.indexable ?? 'Có'),
+        ...(seoRow ?? {}),
+        indexable: !['không', 'false', '0'].includes(String(project.indexable ?? 'Có').toLowerCase())
+          && !['không', 'false', '0'].includes(String(seoRow?.indexable ?? 'Có').toLowerCase()) ? 'Có' : 'Không',
+      };
+    }), [managedProjectRows, projectRows]);
   const liveShowroomSeoRows = useMemo(() => managedShowrooms
     .filter((showroom) => String(showroom.status) === 'Đã xuất bản')
     .map((showroom) => {
@@ -326,9 +330,11 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
       url: `${SOFA2_SITE_ORIGIN}/sofa2/products/category/${category.slug}`,
       isPartOf: { '@type': 'WebSite', name: 'LUXE Sofa', url: `${SOFA2_SITE_ORIGIN}/sofa2` },
     })),
-    ...SOFA2_PROJECTS.filter((project) => {
+    ...managedProjectRows.filter((project) => {
       const row = projectRows.find((item) => String(item.url) === `/sofa2/projects/${project.id}`);
-      return !['không', 'false', '0'].includes(String(row?.indexable ?? 'Có').toLowerCase())
+      return String(project.status) === 'Đã xuất bản'
+        && !['không', 'false', '0'].includes(String(project.indexable ?? 'Có').toLowerCase())
+        && !['không', 'false', '0'].includes(String(row?.indexable ?? 'Có').toLowerCase())
         && !['không', 'false', '0'].includes(String(row?.published ?? 'Có').toLowerCase());
     }).map((project) => ({
       '@type': 'CreativeWork',
@@ -340,8 +346,16 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
       dateCreated: project.year,
       locationCreated: { '@type': 'Place', name: project.location },
       creator: { '@type': 'Organization', name: 'LUXE Sofa' },
+      ...(String(project.showReview) === 'Có' && String(project.reviewQuote ?? '').trim() && Number(project.reviewRating) > 0 ? {
+        review: {
+          '@type': 'Review',
+          reviewBody: project.reviewQuote,
+          author: { '@type': 'Person', name: project.reviewName || 'Khách hàng dự án' },
+          reviewRating: { '@type': 'Rating', ratingValue: project.reviewRating, bestRating: 5 },
+        },
+      } : {}),
     })),
-  ], [liveProducts, liveCategories, productRows, categoryRows, projectRows]);
+  ], [liveProducts, liveCategories, productRows, categoryRows, projectRows, managedProjectRows]);
   const sitemapPageModules = [
     { file: 'sitemap-pages.xml', rows: brandRows },
     { file: 'sitemap-categories.xml', rows: liveCategorySeoRows },

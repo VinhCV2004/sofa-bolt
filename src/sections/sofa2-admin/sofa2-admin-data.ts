@@ -1,4 +1,4 @@
-import { SOFA2_BLOG_POSTS, SOFA2_PAGE_IMAGES, SOFA2_PRODUCT_CATEGORIES, SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
+import { SOFA2_PROJECTS, SOFA2_BLOG_POSTS, SOFA2_PAGE_IMAGES, SOFA2_PRODUCT_CATEGORIES, SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
 
 import { SOFA2_SHOP_GROUP } from './sofa2-shop';
 import { SOFA2_SUPPORT_GROUP } from './sofa2-support';
@@ -619,6 +619,237 @@ const CMS_SERVICE_CATALOG_SEEDS: Record<string, string | number>[] = [
   },
 ];
 
+const CMS_PROJECT_SEEDS: Record<string, string | number>[] = [
+  ...SOFA2_PROJECTS.map((project, index) => ({
+    ...project,
+    gallery: [
+      `${project.image} | Toàn cảnh ${project.name}`,
+      `${SOFA2_PAGE_IMAGES[`project${((index + 1) % 6) + 1}` as keyof typeof SOFA2_PAGE_IMAGES]} | Không gian và cách bố trí nội thất`,
+      `${SOFA2_PAGE_IMAGES[`project${((index + 2) % 6) + 1}` as keyof typeof SOFA2_PAGE_IMAGES]} | Chi tiết sản phẩm và vật liệu hoàn thiện`,
+    ].join('\n'),
+    scope: ['120 căn hộ cao cấp', '15 biệt thự nghỉ dưỡng', 'Sảnh và phòng VIP', 'Khu nghỉ dưỡng 5 sao', 'Khu tiếp khách và lounge', 'Khu vực lounge tiếp khách'][index],
+    productsUsed: ['Sofa Oslo 3 Chỗ\nSofa Copenhagen', 'Sofa London Chesterfield\nSofa Rome Modular', 'Sofa Munich 2 Chỗ\nSofa Berlin Góc', 'Sofa Sydney Outdoor\nSofa Copenhagen', 'Sofa Frankfurt Recliner\nSofa Oslo 3 Chỗ', 'Sofa Berlin Góc\nSofa Tokyo Đơn'][index],
+    videoUrl: '',
+    videoCaption: '',
+    showReview: 'Có',
+    reviewQuote: [
+      'Đội ngũ tư vấn giúp chúng tôi chọn cấu hình vừa vặn với từng căn hộ, chất lượng hoàn thiện rất chỉn chu.',
+      'Sofa được thiết kế phù hợp với phong cách nghỉ dưỡng, tiến độ lắp đặt rõ ràng và chuyên nghiệp.',
+      'Khu vực sảnh và phòng VIP được đồng bộ đẹp mắt; trải nghiệm làm việc với đội dự án rất thuận tiện.',
+      'Chất liệu ngoài trời phù hợp khí hậu biển, tổng thể không gian nghỉ dưỡng ấm cúng và sang trọng.',
+      'Các mẫu lounge vừa đẹp vừa tiện dụng cho khu tiếp khách, đội ngũ hỗ trợ phản hồi nhanh.',
+      'Thiết kế hiện đại, phối màu phù hợp nhận diện thương hiệu và tạo cảm giác thoải mái cho khách tham quan.',
+    ][index],
+    reviewName: ['Lê Hoàng Nam', 'Trần Thu Hương', 'Nguyễn Quốc Bảo', 'Phạm Minh Châu', 'Đỗ Thanh Tùng', 'Vũ Thảo Linh'][index],
+    reviewRole: ['Đại diện ban quản lý căn hộ', 'Quản lý vận hành biệt thự', 'Đại diện bộ phận lưu trú', 'Quản lý resort', 'Quản lý văn phòng', 'Quản lý showroom'][index],
+    reviewRating: [5, 5, 4.8, 5, 4.9, 5][index],
+    reviewDate: '2026-10-20',
+    reviewAvatar: '',
+    completionStatus: 'Đã hoàn thành',
+    featured: index < 3 ? 'Có' : 'Không',
+    order: index + 1,
+    status: 'Đã xuất bản',
+    updated: '2026-11-15',
+    author: ['Nguyễn Minh Anh', 'Trần Hoàng Long', 'Lê Thu Hà', 'Phạm Quốc Bảo', 'Nguyễn Minh Anh', 'Trần Hoàng Long'][index],
+    metaTitle: `${project.name} - Dự án nội thất LUXE Sofa`.slice(0, 60),
+    metaDescription: `${project.description} Khám phá giải pháp sofa LUXE Sofa tại ${project.location}.`.slice(0, 160),
+    ogImage: project.image,
+    indexable: 'Có',
+  })),
+  {
+    id: 'project-draft-lumiere-riverside', name: 'Căn hộ mẫu Lumière Riverside', type: 'can-ho', typeLabel: 'Dự án căn hộ',
+    location: 'TP. Thủ Đức, TP.HCM', year: 2026,
+    description: 'Hồ sơ dự án căn hộ mẫu đang được đội ngũ thiết kế hoàn thiện hình ảnh và thông tin bàn giao trước khi công bố.',
+    image: SOFA2_PAGE_IMAGES.project1,
+    gallery: `${SOFA2_PAGE_IMAGES.project1}\n${SOFA2_PAGE_IMAGES.project2}`, scope: '12 căn hộ mẫu',
+    productsUsed: 'Sofa Oslo 3 Chỗ\nSofa Copenhagen',
+    videoUrl: 'https://www.youtube.com/watch?v=ScMzIvxBSi4',
+    videoCaption: 'Video mẫu kiểm thử — thay bằng tư liệu dự án thực tế trước khi xuất bản.',
+    showReview: 'Không',
+    reviewQuote: '', reviewName: '', reviewRole: '', reviewRating: 0, reviewDate: '', reviewAvatar: '',
+    completionStatus: 'Đang triển khai', featured: 'Không',
+    order: 20, status: 'Bản nháp', updated: '2026-11-15', author: 'Nguyễn Minh Anh',
+    metaTitle: 'Căn hộ mẫu Lumière Riverside | LUXE Sofa',
+    metaDescription: 'Dự án căn hộ mẫu Lumière Riverside đang được chuẩn bị nội dung.',
+    ogImage: SOFA2_PAGE_IMAGES.project1, indexable: 'Không',
+  },
+];
+
+
+type CmsProjectSeedInput = {
+  id: string;
+  name: string;
+  type: string;
+  typeLabel: string;
+  location: string;
+  year: number;
+  description: string;
+  image: string;
+  scope: string;
+  productsUsed: string;
+  reviewQuote: string;
+  reviewName: string;
+  reviewRole: string;
+  reviewRating: number;
+  reviewDate: string;
+  order: number;
+  author: string;
+  featured?: string;
+  status?: string;
+  completionStatus?: string;
+};
+
+const makeCmsProjectSeed = (project: CmsProjectSeedInput): Record<string, string | number> => {
+  const projectImagePool = [
+    SOFA2_PAGE_IMAGES.project1, SOFA2_PAGE_IMAGES.project2, SOFA2_PAGE_IMAGES.project3,
+    SOFA2_PAGE_IMAGES.project4, SOFA2_PAGE_IMAGES.project5, SOFA2_PAGE_IMAGES.project6,
+  ];
+  const secondImage = projectImagePool[project.order % projectImagePool.length];
+  const thirdImage = projectImagePool[(project.order + 2) % projectImagePool.length];
+  const isPublished = (project.status ?? 'Đã xuất bản') === 'Đã xuất bản';
+  return {
+    ...project,
+    gallery: [
+      `${project.image} | Toàn cảnh ${project.name}`,
+      `${secondImage} | Không gian và cách bố trí nội thất`,
+      `${thirdImage} | Chi tiết vật liệu, màu sắc và hoàn thiện`,
+    ].join('\n'),
+    videoUrl: '',
+    videoCaption: '',
+    showReview: project.reviewQuote.trim() ? 'Có' : 'Không',
+    reviewAvatar: '',
+    completionStatus: project.completionStatus ?? 'Đã hoàn thành',
+    featured: project.featured ?? (project.order <= 10 ? 'Có' : 'Không'),
+    status: project.status ?? 'Đã xuất bản',
+    updated: '2026-11-15',
+    metaTitle: `${project.name} - Dự án nội thất LUXE Sofa`.slice(0, 60),
+    metaDescription: `${project.description} Xem giải pháp sofa LUXE Sofa tại ${project.location}.`.slice(0, 160),
+    ogImage: project.image,
+    indexable: isPublished ? 'Có' : 'Không',
+  };
+};
+
+const CMS_EXTRA_PROJECT_SEEDS: Record<string, string | number>[] = [
+  makeCmsProjectSeed({
+    id: '7', name: 'Căn hộ The Metropole Thủ Thiêm', type: 'can-ho', typeLabel: 'Dự án căn hộ',
+    location: 'TP. Thủ Đức, TP.HCM', year: 2025,
+    description: 'Hoàn thiện giải pháp sofa cho 84 căn hộ cao cấp, ưu tiên bố cục gọn, vật liệu dễ vệ sinh và bảng màu trung tính phù hợp tầm nhìn sông Sài Gòn.',
+    image: SOFA2_PAGE_IMAGES.project1, scope: '84 căn hộ cao cấp', productsUsed: 'Sofa Oslo 3 Chỗ\nSofa Copenhagen',
+    reviewQuote: 'Các lựa chọn kích thước và màu vải được tư vấn sát với mặt bằng từng căn; khâu giao lắp diễn ra gọn gàng.',
+    reviewName: 'Ngô Thanh Hà', reviewRole: 'Đại diện ban quản lý dự án', reviewRating: 4.9, reviewDate: '2025-12-18',
+    order: 7, author: 'Nguyễn Minh Anh',
+  }),
+  makeCmsProjectSeed({
+    id: '8', name: 'Khu căn hộ Sunwah Pearl', type: 'can-ho', typeLabel: 'Dự án căn hộ',
+    location: 'Bình Thạnh, TP.HCM', year: 2024,
+    description: 'Cung cấp sofa phòng khách cho 46 căn hộ bàn giao mới, đồng bộ chiều sâu ghế, chất liệu bọc và tông màu theo thiết kế căn hộ mẫu.',
+    image: SOFA2_PAGE_IMAGES.project2, scope: '46 căn hộ bàn giao mới', productsUsed: 'Sofa Berlin Góc\nSofa Oslo 3 Chỗ',
+    reviewQuote: 'Sản phẩm hoàn thiện đúng cấu hình đã duyệt và đội lắp đặt phối hợp tốt với ban quản lý tòa nhà.',
+    reviewName: 'Phạm Quốc Huy', reviewRole: 'Đại diện chủ đầu tư', reviewRating: 4.8, reviewDate: '2024-11-06',
+    order: 8, author: 'Trần Hoàng Long',
+  }),
+  makeCmsProjectSeed({
+    id: '9', name: 'Biệt thự Ecopark Grand', type: 'biet-thu', typeLabel: 'Dự án biệt thự',
+    location: 'Văn Giang, Hưng Yên', year: 2025,
+    description: 'Thiết kế sofa theo yêu cầu cho 12 căn biệt thự, kết hợp da tông ấm và cấu hình modular để phù hợp phòng khách thông tầng.',
+    image: SOFA2_PAGE_IMAGES.project3, scope: '12 căn biệt thự thông tầng', productsUsed: 'Sofa London Chesterfield\nSofa Rome Modular',
+    reviewQuote: 'Đội ngũ bám sát bản vẽ và điều chỉnh kích thước thực tế trước khi sản xuất, giúp các bộ sofa vừa khít không gian.',
+    reviewName: 'Đặng Minh Khôi', reviewRole: 'Tư vấn thiết kế nội thất', reviewRating: 5, reviewDate: '2025-08-22',
+    order: 9, author: 'Lê Thu Hà',
+  }),
+  makeCmsProjectSeed({
+    id: '10', name: 'Biệt thự Pine Hill Đà Lạt', type: 'biet-thu', typeLabel: 'Dự án biệt thự',
+    location: 'Đà Lạt, Lâm Đồng', year: 2024,
+    description: 'Bố trí sofa cho 8 căn biệt thự nghỉ dưỡng, cân bằng giữa trải nghiệm thư giãn, độ bền sử dụng thường xuyên và phong cách gỗ ấm.',
+    image: SOFA2_PAGE_IMAGES.project4, scope: '8 căn biệt thự nghỉ dưỡng', productsUsed: 'Sofa Copenhagen\nSofa Tokyo Đơn',
+    reviewQuote: 'Mẫu sofa có tỷ lệ đẹp và dễ phối với chất liệu gỗ địa phương; dịch vụ chăm sóc sau bàn giao chu đáo.',
+    reviewName: 'Nguyễn Bảo Trân', reviewRole: 'Quản lý vận hành', reviewRating: 4.7, reviewDate: '2024-06-14',
+    order: 10, author: 'Phạm Quốc Bảo',
+  }),
+  makeCmsProjectSeed({
+    id: '11', name: 'Khách sạn InterContinental Saigon', type: 'khach-san', typeLabel: 'Dự án khách sạn',
+    location: 'Quận 1, TP.HCM', year: 2025,
+    description: 'Sản xuất và lắp đặt sofa cho khu lounge, phòng khách VIP và một số suite; vật liệu được chọn theo tiêu chuẩn vận hành khách sạn.',
+    image: SOFA2_PAGE_IMAGES.project5, scope: 'Sảnh lounge và 28 phòng suite', productsUsed: 'Sofa Munich 2 Chỗ\nSofa Frankfurt Recliner',
+    reviewQuote: 'Mẫu duyệt, màu sắc và tiến độ giao hàng được kiểm soát rõ ràng; sản phẩm đáp ứng tốt tần suất sử dụng cao.',
+    reviewName: 'Trần Đức Anh', reviewRole: 'Đại diện bộ phận mua hàng', reviewRating: 4.9, reviewDate: '2025-10-12',
+    order: 11, author: 'Nguyễn Minh Anh',
+  }),
+  makeCmsProjectSeed({
+    id: '12', name: 'Fusion Suites Đà Nẵng', type: 'khach-san', typeLabel: 'Dự án khách sạn',
+    location: 'Sơn Trà, Đà Nẵng', year: 2024,
+    description: 'Trang bị sofa cho 32 phòng lưu trú và khu vực đón khách, sử dụng chất liệu dễ vệ sinh và bảng màu nhẹ phù hợp không gian ven biển.',
+    image: SOFA2_PAGE_IMAGES.project6, scope: '32 phòng và khu vực đón khách', productsUsed: 'Sofa Oslo 3 Chỗ\nSofa Copenhagen',
+    reviewQuote: 'Thiết kế phù hợp tinh thần nghỉ dưỡng, các thông số bàn giao rõ ràng và đội kỹ thuật hỗ trợ nhanh.',
+    reviewName: 'Lê Ngọc Mai', reviewRole: 'Quản lý trải nghiệm khách hàng', reviewRating: 4.8, reviewDate: '2024-09-30',
+    order: 12, author: 'Trần Hoàng Long',
+  }),
+  makeCmsProjectSeed({
+    id: '13', name: 'Amanoi Coastal Villas', type: 'resort', typeLabel: 'Dự án resort',
+    location: 'Vĩnh Hy, Ninh Thuận', year: 2025,
+    description: 'Cung cấp sofa trong nhà và khu vực hiên nghỉ cho 18 villa, chú trọng vật liệu bền với môi trường biển và dễ bảo trì.',
+    image: SOFA2_PAGE_IMAGES.project1, scope: '18 villa hướng biển', productsUsed: 'Sofa Sydney Outdoor\nSofa London Chesterfield',
+    reviewQuote: 'Giải pháp vật liệu ngoài trời được tư vấn kỹ và có hướng dẫn bảo dưỡng cụ thể cho đội vận hành.',
+    reviewName: 'Hoàng Yến Nhi', reviewRole: 'Quản lý khu villa', reviewRating: 5, reviewDate: '2025-07-09',
+    order: 13, author: 'Lê Thu Hà',
+  }),
+  makeCmsProjectSeed({
+    id: '14', name: 'Six Senses Ninh Vân Bay', type: 'resort', typeLabel: 'Dự án resort',
+    location: 'Nha Trang, Khánh Hòa', year: 2024,
+    description: 'Hoàn thiện sofa nghỉ dưỡng cho 20 suite và khu lounge, phối hợp cùng đơn vị thiết kế để giữ trải nghiệm thư thái, gần gũi thiên nhiên.',
+    image: SOFA2_PAGE_IMAGES.project2, scope: '20 suite và khu lounge', productsUsed: 'Sofa Sydney Outdoor\nSofa Copenhagen',
+    reviewQuote: 'Sản phẩm có cảm giác ngồi thoải mái, đường nét giản dị và hài hòa với tổng thể không gian nghỉ dưỡng.',
+    reviewName: 'Bùi Minh Quân', reviewRole: 'Đại diện vận hành resort', reviewRating: 4.9, reviewDate: '2024-12-02',
+    order: 14, author: 'Phạm Quốc Bảo',
+  }),
+  makeCmsProjectSeed({
+    id: '15', name: 'Capital Place Hà Nội', type: 'van-phong', typeLabel: 'Dự án văn phòng',
+    location: 'Ba Đình, Hà Nội', year: 2025,
+    description: 'Bố trí sofa cho khu tiếp khách và lounge tại 5 tầng văn phòng, ưu tiên thiết kế bền dáng, dễ vệ sinh và phù hợp lưu lượng cao.',
+    image: SOFA2_PAGE_IMAGES.project3, scope: '5 tầng văn phòng và lounge', productsUsed: 'Sofa Frankfurt Recliner\nSofa Oslo 3 Chỗ',
+    reviewQuote: 'Các khu vực tiếp khách được đồng bộ nhận diện, chất liệu dễ vệ sinh và bàn giao đúng lịch khai trương.',
+    reviewName: 'Đỗ Hải Nam', reviewRole: 'Quản lý cơ sở vật chất', reviewRating: 4.8, reviewDate: '2025-05-17',
+    order: 15, author: 'Nguyễn Minh Anh',
+  }),
+  makeCmsProjectSeed({
+    id: '16', name: 'Deutsches Haus Office Lounge', type: 'van-phong', typeLabel: 'Dự án văn phòng',
+    location: 'Quận 1, TP.HCM', year: 2023,
+    description: 'Cung cấp sofa cho khu lounge và phòng họp điều hành, tập trung vào công năng tiếp khách, độ bền kết cấu và đường nét tối giản.',
+    image: SOFA2_PAGE_IMAGES.project4, scope: 'Lounge, phòng họp và khu tiếp khách', productsUsed: 'Sofa Berlin Góc\nSofa Frankfurt Recliner',
+    reviewQuote: 'Đội dự án phản hồi nhanh các yêu cầu kỹ thuật, sản phẩm phù hợp với thiết kế văn phòng hiện đại.',
+    reviewName: 'Võ Thanh Phong', reviewRole: 'Điều phối dự án văn phòng', reviewRating: 4.7, reviewDate: '2023-11-21',
+    order: 16, author: 'Trần Hoàng Long',
+  }),
+  makeCmsProjectSeed({
+    id: '17', name: 'Porsche Centre Hà Nội', type: 'showroom', typeLabel: 'Dự án showroom',
+    location: 'Long Biên, Hà Nội', year: 2025,
+    description: 'Thiết kế khu lounge tiếp khách cho showroom xe sang, phối vật liệu và màu sắc theo bộ nhận diện, đảm bảo luồng di chuyển thông thoáng.',
+    image: SOFA2_PAGE_IMAGES.project5, scope: 'Lounge khách hàng và phòng tư vấn', productsUsed: 'Sofa Berlin Góc\nSofa Tokyo Đơn',
+    reviewQuote: 'Không gian lounge tạo cảm giác cao cấp nhưng vẫn thân thiện; đội ngũ thi công phối hợp tốt với lịch vận hành showroom.',
+    reviewName: 'Phan Anh Tuấn', reviewRole: 'Quản lý showroom', reviewRating: 4.9, reviewDate: '2025-03-28',
+    order: 17, author: 'Lê Thu Hà',
+  }),
+  makeCmsProjectSeed({
+    id: '18', name: 'Flagship LUXE Sofa Thảo Điền', type: 'showroom', typeLabel: 'Dự án showroom',
+    location: 'TP. Thủ Đức, TP.HCM', year: 2026,
+    description: 'Xây dựng không gian trải nghiệm flagship gồm khu thử sofa, thư viện vật liệu, bàn tư vấn dự án và góc tiếp khách riêng.',
+    image: SOFA2_PAGE_IMAGES.project6, scope: 'Flagship showroom 3 tầng', productsUsed: 'Sofa Berlin Góc\nSofa Tokyo Đơn\nSofa Copenhagen',
+    reviewQuote: 'Khách có thể trải nghiệm chất liệu và cấu hình sofa trực tiếp; cách bố trí giúp buổi tư vấn dự án hiệu quả hơn.',
+    reviewName: 'Nguyễn Thảo Vy', reviewRole: 'Quản lý trải nghiệm showroom', reviewRating: 5, reviewDate: '2026-09-16',
+    order: 18, author: 'Phạm Quốc Bảo', featured: 'Có',
+  }),
+  makeCmsProjectSeed({
+    id: 'project-hidden-19', name: 'Khu nghỉ dưỡng mẫu Bãi Dài', type: 'resort', typeLabel: 'Dự án resort',
+    location: 'Cam Ranh, Khánh Hòa', year: 2026,
+    description: 'Hồ sơ dự án đang chờ khách hàng duyệt bộ ảnh cuối cùng và xác nhận phạm vi lắp đặt trước khi phát hành.',
+    image: SOFA2_PAGE_IMAGES.project4, scope: 'Khu lounge và 10 căn villa', productsUsed: 'Sofa Sydney Outdoor\nSofa Copenhagen',
+    reviewQuote: '', reviewName: '', reviewRole: '', reviewRating: 0, reviewDate: '',
+    order: 21, author: 'Trần Hoàng Long', status: 'Tạm ẩn', completionStatus: 'Đang triển khai',
+  }),
+];
+
+const CMS_PROJECT_ROWS = [...CMS_PROJECT_SEEDS, ...CMS_EXTRA_PROJECT_SEEDS];
+
 const CMS_SHOWROOM_SEEDS: Record<string, string | number>[] = [
   {
     id: '1', code: 'HN01', slug: 'ha-noi', name: 'LUXE Sofa Hà Nội', city: 'Hà Nội', district: 'Thanh Xuân',
@@ -860,6 +1091,28 @@ const CMS_GROUP: Sofa2AdminGroup = {
     cmsPage('policy', 'Trang chính sách', '/sofa2/policy', cmsPolicyRows),
     cmsPage('terms', 'Trang điều khoản', '/sofa2/policy/terms', cmsTermsRows),
     cmsPage('faq', 'Trang FAQ', '/sofa2/faq', cmsFaqRows),
+    mod(
+      'projects',
+      'Dự án / Portfolio',
+      'Quản lý portfolio 6 danh mục cùng nội dung chi tiết, album ảnh có chú thích, video, sản phẩm liên kết, đánh giá khách hàng, SEO và trạng thái xuất bản; dữ liệu xuất bản đồng bộ với các trang client Sofa2.',
+      'solar:gallery-bold-duotone',
+      [
+        { label: 'Tổng dự án', value: String(CMS_PROJECT_ROWS.length) },
+        { label: 'Đang xuất bản', value: String(CMS_PROJECT_ROWS.filter((row) => row.status === 'Đã xuất bản').length) },
+        { label: 'Danh mục', value: String(new Set(CMS_PROJECT_ROWS.map((row) => row.type)).size) },
+        { label: 'Nổi bật', value: String(CMS_PROJECT_ROWS.filter((row) => row.featured === 'Có').length) },
+      ],
+      [
+        { key: 'name', label: 'Tên dự án' },
+        { key: 'typeLabel', label: 'Danh mục' },
+        { key: 'location', label: 'Địa điểm' },
+        { key: 'year', label: 'Năm' },
+        { key: 'order', label: 'Thứ tự', type: 'number' },
+        STATUS_COL,
+      ],
+      CMS_PROJECT_ROWS,
+      ['Thêm dự án', 'Xem Portfolio client']
+    ),
     mod(
       'showrooms',
       'Showroom',

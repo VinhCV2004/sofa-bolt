@@ -19,7 +19,8 @@ import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
 import { Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { SOFA2_PROJECTS, SOFA2_PROJECT_TYPES } from 'src/sections/sofa2/sofa2-pages-data';
+import { SOFA2_PROJECT_TYPES } from 'src/sections/sofa2/sofa2-pages-data';
+import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 
 // ----------------------------------------------------------------------
 
@@ -28,8 +29,17 @@ const metadata = { title: 'Dự án - LUXE Sofa' };
 export default function Page() {
   const theme = useTheme();
   const [activeType, setActiveType] = useState('all');
-
-  const filtered = activeType === 'all' ? SOFA2_PROJECTS : SOFA2_PROJECTS.filter((p) => p.type === activeType);
+  const { rows } = useSofa2AdminRows('cms', 'projects', { load: false });
+  const projects = rows
+    .filter((row) => String(row.status) === 'Đã xuất bản')
+    .map((row) => ({
+      id: String(row.id ?? ''), name: String(row.name ?? ''), type: String(row.type ?? ''),
+      typeLabel: String(row.typeLabel ?? ''), location: String(row.location ?? ''),
+      year: String(row.year ?? ''), image: String(row.image ?? ''),
+    }))
+    .filter((project) => project.id && project.name)
+    .sort((a, b) => Number(rows.find((row) => String(row.id) === a.id)?.order ?? 0) - Number(rows.find((row) => String(row.id) === b.id)?.order ?? 0));
+  const filtered = activeType === 'all' ? projects : projects.filter((project) => project.type === activeType);
 
   return (
     <>

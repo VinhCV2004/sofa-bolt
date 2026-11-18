@@ -16,9 +16,9 @@ import { textGradient } from 'src/theme/styles';
 import { Iconify } from 'src/components/iconify';
 import { varFade, MotionViewport } from 'src/components/animate';
 
+import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import { Sofa2Section, Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
-import { SOFA2_PROJECTS, SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 
 const DESIGN_GROUP = 'Thiết kế nội thất';
 const DESIGN_INTRO = 'Từ ý tưởng đến bản vẽ — chúng tôi kiến tạo không gian sống mang dấu ấn riêng của bạn.';
@@ -33,6 +33,10 @@ export default function Page() {
   const theme = useTheme();
   const { sub } = useParams();
   const { rows } = useSofa2AdminRows('cms', 'service-catalog');
+  const { rows: projectRows } = useSofa2AdminRows('cms', 'projects', { load: false });
+  const projects = projectRows
+    .filter((project) => String(project.status) === 'Đã xuất bản')
+    .sort((a, b) => Number(b.featured === 'Có') - Number(a.featured === 'Có') || Number(a.order ?? 0) - Number(b.order ?? 0));
   const services = rows
     .filter((row) => String(row.serviceGroup) === DESIGN_GROUP && String(row.status) === 'Đã xuất bản')
     .sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0));
@@ -180,10 +184,11 @@ export default function Page() {
           <Typography variant="h2">Mẫu thiết kế đã thực hiện</Typography>
         </Stack>
         <Grid container spacing={3}>
-          {SOFA2_PROJECTS.slice(0, 6).map((project) => (
+          {projects.slice(0, 6).map((project) => (
             <Grid key={project.id} xs={12} sm={6} md={4}>
               <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
-                <Box component="img" src={project.image} alt={project.name} sx={{ width: 1, aspectRatio: '4/3', objectFit: 'cover' }} />
+                <Box component={RouterLink} href={`/sofa2/projects/${project.id}`} sx={{ color: 'inherit', textDecoration: 'none' }}>
+                <Box component="img" src={String(project.image ?? '')} alt={String(project.name ?? '')} sx={{ width: 1, aspectRatio: '4/3', objectFit: 'cover' }} />
                 <Stack spacing={1} sx={{ p: 3 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Iconify icon="solar:map-point-bold-duotone" width={16} sx={{ color: 'primary.main' }} />
@@ -192,6 +197,7 @@ export default function Page() {
                   <Typography variant="h6">{project.name}</Typography>
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>{project.description}</Typography>
                 </Stack>
+                </Box>
               </Stack>
             </Grid>
           ))}

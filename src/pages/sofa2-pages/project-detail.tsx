@@ -22,12 +22,34 @@ import { varFade, MotionViewport } from 'src/components/animate';
 import { Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
 import { useSofa2AdminRows } from 'src/sections/sofa2-admin/sofa2-admin-store';
 import {
-  SOFA2_PROJECTS,
   SOFA2_PRODUCTS,
   formatSofa2Price,
 } from 'src/sections/sofa2/sofa2-pages-data';
 
 // ----------------------------------------------------------------------
+
+const getProjectVideoEmbedUrl = (raw: string) => {
+  try {
+    const url = new URL(raw);
+    if (!['http:', 'https:'].includes(url.protocol)) return '';
+    const host = url.hostname.toLowerCase().replace(/^www\./, '');
+    if (host === 'youtu.be') {
+      const id = url.pathname.split('/').filter(Boolean)[0];
+      return id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}` : '';
+    }
+    if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+      const id = url.searchParams.get('v') || url.pathname.match(/^\/(?:embed|shorts)\/([^/?]+)/)?.[1];
+      return id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}` : '';
+    }
+    if (host === 'vimeo.com') {
+      const id = url.pathname.split('/').filter(Boolean).pop();
+      return id && /^\d+$/.test(id) ? `https://player.vimeo.com/video/${id}` : '';
+    }
+  } catch {
+    return '';
+  }
+  return '';
+};
 
 const GALLERY = [
   'https://images.pexels.com/photos/276583/pexels-photo-276583.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -39,14 +61,31 @@ const GALLERY = [
 export default function Page() {
   const theme = useTheme();
   const { id = '' } = useParams();
+  const projectRows = useSofa2AdminRows('cms', 'projects', { load: false }).rows;
+  const projectRow = projectRows.find((row) => String(row.id ?? '') === id && String(row.status) === 'Đã xuất bản');
   const projectSeo = useSofa2AdminRows('seo', 'project', { load: false }).rows.find(
     (row) => String(row.url ?? '') === `/sofa2/projects/${id}`
   );
-  const projectIndexable = !['không', 'false', '0'].includes(String(projectSeo?.indexable ?? 'Có').toLowerCase())
+  const project = projectRow ? {
+    id: String(projectRow.id ?? ''), name: String(projectRow.name ?? ''),
+    type: String(projectRow.type ?? ''), typeLabel: String(projectRow.typeLabel ?? ''),
+    location: String(projectRow.location ?? ''), year: String(projectRow.year ?? ''),
+    description: String(projectRow.description ?? ''), image: String(projectRow.image ?? ''),
+    gallery: String(projectRow.gallery ?? ''), scope: String(projectRow.scope ?? ''),
+    productsUsed: String(projectRow.productsUsed ?? ''),
+    videoUrl: String(projectRow.videoUrl ?? ''), videoCaption: String(projectRow.videoCaption ?? ''),
+    showReview: String(projectRow.showReview ?? 'Không'),
+    reviewQuote: String(projectRow.reviewQuote ?? ''), reviewName: String(projectRow.reviewName ?? ''),
+    reviewRole: String(projectRow.reviewRole ?? ''), reviewRating: Number(projectRow.reviewRating ?? 0),
+    reviewDate: String(projectRow.reviewDate ?? ''), reviewAvatar: String(projectRow.reviewAvatar ?? ''),
+    completionStatus: String(projectRow.completionStatus ?? ''),
+    indexable: String(projectRow.indexable ?? 'Có'),
+    metaTitle: String(projectRow.metaTitle ?? ''), metaDescription: String(projectRow.metaDescription ?? ''),
+  } : undefined;
+  const projectIndexable = !['không', 'false', '0'].includes(String(project?.indexable ?? 'Có').toLowerCase())
+    && !['không', 'false', '0'].includes(String(projectSeo?.indexable ?? 'Có').toLowerCase())
     && !['không', 'false', '0'].includes(String(projectSeo?.published ?? 'Có').toLowerCase());
   const projectCanonical = String(projectSeo?.canonical ?? '') || `https://luxesofa.vn/sofa2/projects/${id}`;
-
-  const project = SOFA2_PROJECTS.find((p) => p.id === id);
 
   if (!project) {
     return (
@@ -69,13 +108,22 @@ export default function Page() {
     );
   }
 
-  const usedProducts = SOFA2_PRODUCTS.slice(0, 3);
+  const galleryImages = project.gallery.split(/\r?\n/).map((line) => {
+    const [src, ...caption] = line.split('|');
+    return { src: src.trim(), caption: caption.join('|').trim() };
+  }).filter((image) => image.src);
+  const relatedProductNames = project.productsUsed.split(/\r?\n/).map((name) => name.trim()).filter(Boolean);
+  const usedProducts = relatedProductNames
+    .map((name) => SOFA2_PRODUCTS.find((product) => product.name.toLocaleLowerCase() === name.toLocaleLowerCase()))
+    .filter((product): product is (typeof SOFA2_PRODUCTS)[number] => Boolean(product));
+  const videoEmbedUrl = getProjectVideoEmbedUrl(project.videoUrl);
+  const isVideoFile = /\.(mp4|webm)(?:[?#].*)?$/i.test(project.videoUrl);
 
   return (
     <>
       <Helmet>
-        <title>{String(projectSeo?.title ?? '') || `${project.name} - LUXE Sofa`}</title>
-        <meta name="description" content={String(projectSeo?.description ?? '') || project.description} />
+        <title>{String(projectSeo?.title ?? '') || project.metaTitle || `${project.name} - LUXE Sofa`}</title>
+        <meta name="description" content={String(projectSeo?.description ?? '') || project.metaDescription || project.description} />
         <meta name="robots" content={projectIndexable ? 'index, follow' : 'noindex, nofollow'} />
         <link rel="canonical" href={projectCanonical} />
         {projectIndexable && (
@@ -93,6 +141,14 @@ export default function Page() {
               genre: project.typeLabel,
               creator: { '@type': 'Organization', name: 'LUXE Sofa' },
               about: { '@type': 'Product', name: 'Sofa nội thất LUXE Sofa' },
+              ...(project.showReview === 'Có' && project.reviewQuote && project.reviewRating > 0 ? {
+                review: {
+                  '@type': 'Review',
+                  reviewBody: project.reviewQuote,
+                  author: { '@type': 'Person', name: project.reviewName || 'Khách hàng dự án' },
+                  reviewRating: { '@type': 'Rating', ratingValue: project.reviewRating, bestRating: 5 },
+                },
+              } : {}),
             }).replace(/</g, '\\u003c')}
           </script>
         )}
@@ -116,11 +172,8 @@ export default function Page() {
                 </Typography>
                 <Typography variant="h2">{project.name}</Typography>
                 <Typography sx={{ color: 'text.secondary' }}>{project.description}</Typography>
-                <Typography sx={{ color: 'text.secondary' }}>
-                  LUXE Sofa tự hào đồng hành cùng dự án với các giải pháp nội thất sofa được thiết
-                  kế riêng, tối ưu không gian và phong cách cho từng khu vực. Mỗi sản phẩm đều trải
-                  qua quy trình chế tác thủ công nghiêm ngặt để đảm bảo chất lượng cao cấp.
-                </Typography>
+                {project.scope && <Typography sx={{ color: 'text.secondary' }}>Quy mô thực hiện: {project.scope}.</Typography>}
+                {project.completionStatus && <Typography variant="body2" sx={{ color: 'text.secondary' }}>Tiến độ: {project.completionStatus}</Typography>}
               </Stack>
             </Grid>
             <Grid xs={12} md={5}>
@@ -171,6 +224,24 @@ export default function Page() {
         </Container>
       </Box>
 
+      {videoEmbedUrl || isVideoFile ? (
+        <Box component="section" sx={{ py: { xs: 6, md: 9 } }}>
+          <Container component={MotionViewport}>
+            <Stack spacing={2} sx={{ mb: 3 }}>
+              <Typography variant="overline" sx={{ color: 'text.disabled' }}>Video dự án</Typography>
+              {project.videoCaption && <Typography variant="h4">{project.videoCaption}</Typography>}
+            </Stack>
+            <Box sx={{ maxWidth: 1000, mx: 'auto', aspectRatio: '16 / 9', overflow: 'hidden', borderRadius: 3, bgcolor: 'common.black' }}>
+              {videoEmbedUrl ? (
+                <Box component="iframe" src={videoEmbedUrl} title={`Video dự án ${project.name}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen loading="lazy" sx={{ width: 1, height: 1, border: 0 }} />
+              ) : (
+                <Box component="video" src={project.videoUrl} controls playsInline preload="metadata" sx={{ width: 1, height: 1 }} />
+              )}
+            </Box>
+          </Container>
+        </Box>
+      ) : null}
+
       {/* Gallery */}
       <Box
         component="section"
@@ -193,15 +264,18 @@ export default function Page() {
             </Typography>
           </Stack>
           <Grid container spacing={2}>
-            {GALLERY.map((src, idx) => (
-              <Grid key={idx} xs={12} sm={6} md={3}>
-                <Box
-                  component={m.img}
-                  variants={varFade({ distance: 24 }).inUp}
-                  src={src}
-                  alt={`Dự án ${idx + 1}`}
-                  sx={{ width: 1, borderRadius: 2, aspectRatio: '1/1', objectFit: 'cover' }}
-                />
+            {(galleryImages.length ? galleryImages : GALLERY.map((src) => ({ src, caption: '' }))).map((image, idx) => (
+              <Grid key={`${image.src}-${idx}`} xs={12} sm={6} md={3}>
+                <Stack spacing={1}>
+                  <Box
+                    component={m.img}
+                    variants={varFade({ distance: 24 }).inUp}
+                    src={image.src}
+                    alt={image.caption || `${project.name} — ảnh ${idx + 1}`}
+                    sx={{ width: 1, borderRadius: 2, aspectRatio: '1/1', objectFit: 'cover' }}
+                  />
+                  {image.caption && <Typography variant="caption" sx={{ color: 'text.secondary' }}>{image.caption}</Typography>}
+                </Stack>
               </Grid>
             ))}
           </Grid>
@@ -209,7 +283,7 @@ export default function Page() {
       </Box>
 
       {/* Products used */}
-      <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
+      {usedProducts.length > 0 && <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
         <Container component={MotionViewport}>
           <Stack spacing={2} sx={{ mb: 5 }}>
             <Typography variant="overline" sx={{ color: 'text.disabled' }}>
@@ -272,10 +346,10 @@ export default function Page() {
             ))}
           </Grid>
         </Container>
-      </Box>
+      </Box>}
 
-      {/* Customer review placeholder */}
-      <Box
+      {/* Customer review */}
+      {project.showReview === 'Có' && project.reviewQuote ? <Box
         component="section"
         sx={{
           py: { xs: 8, md: 12 },
@@ -298,21 +372,22 @@ export default function Page() {
             variants={varFade({ distance: 24 }).inUp}
           >
             <Avatar
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&q=80"
+              src={project.reviewAvatar || undefined}
               sx={{ width: 64, height: 64, mx: 'auto' }}
-            />
-            <Rating value={5} readOnly sx={{ mx: 'auto' }} />
-            <Typography variant="h6">
-              &ldquo;LUXE Sofa đã vượt mong đợi của chúng tôi về chất lượng và dịch vụ.&rdquo;
-            </Typography>
-            <Typography sx={{ color: 'text.secondary' }}>
-              &ldquo;Đội ngũ thiết kế chuyên nghiệp, sofa chế tác tinh xảo và đúng tiến độ. Chúng
-              tôi rất hài lòng với kết quả.&rdquo;
-            </Typography>
-            <Typography variant="subtitle2">— Đại diện dự án {project.name}</Typography>
+            >
+              {project.reviewName.slice(0, 1)}
+            </Avatar>
+            <Rating value={Math.min(5, Math.max(0, project.reviewRating))} precision={0.1} readOnly sx={{ mx: 'auto' }} />
+            <Typography variant="h6">&ldquo;{project.reviewQuote}&rdquo;</Typography>
+            {(project.reviewName || project.reviewRole) && (
+              <Typography sx={{ color: 'text.secondary' }}>
+                {project.reviewName}{project.reviewRole ? ` — ${project.reviewRole}` : ''}
+              </Typography>
+            )}
+            {project.reviewDate && <Typography variant="caption" sx={{ color: 'text.disabled' }}>{project.reviewDate}</Typography>}
           </Stack>
         </Container>
-      </Box>
+      </Box> : null}
     </>
   );
 }
