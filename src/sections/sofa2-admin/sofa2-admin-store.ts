@@ -131,12 +131,12 @@ try {
   if (saved) {
     const savedRows = JSON.parse(saved) as Store;
     Object.entries(savedRows).forEach(([storeKey, rows]) => {
-      if (storeKey === 'cms/projects') {
-        const projectDefaults = store[storeKey] ?? [];
+      if (['cms/projects', 'cms/collections'].includes(storeKey)) {
+        const moduleDefaults = store[storeKey] ?? [];
         store[storeKey] = (rows ?? []).map((row, index) => ({
-          ...(projectDefaults.find((seed) => String(seed.id ?? '') === String(row.id ?? '')) ?? {}),
+          ...(moduleDefaults.find((seed) => String(seed.id ?? '') === String(row.id ?? '')) ?? {}),
           ...row,
-          id: String(row.id ?? `cms-projects-${index + 1}`),
+          id: String(row.id ?? `cms-${storeKey.slice(4)}-${index + 1}`),
         }));
       } else {
         store[storeKey] = storeKey.startsWith('cms/')

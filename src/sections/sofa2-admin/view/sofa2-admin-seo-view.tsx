@@ -183,6 +183,7 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
   const categoryRows = useSofa2AdminRows('seo', 'category', { load: false }).rows;
   const productRows = useSofa2AdminRows('seo', 'product', { load: false }).rows;
   const collectionRows = useSofa2AdminRows('seo', 'collection', { load: false }).rows;
+  const managedCollectionRows = useSofa2AdminRows('cms', 'collections', { load: false }).rows;
   const projectRows = useSofa2AdminRows('seo', 'project', { load: false }).rows;
   const managedProjectRows = useSofa2AdminRows('cms', 'projects', { load: false }).rows;
   const showroomRows = useSofa2AdminRows('seo', 'showroom', { load: false }).rows;
@@ -261,6 +262,23 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
       indexable: category.indexable !== false && !['không', 'false', '0'].includes(String(seoRow?.indexable ?? 'Có').toLowerCase()) ? 'Có' : 'Không',
     };
   }), [liveCategories, categoryRows]);
+  const liveCollectionSeoRows = useMemo(() => managedCollectionRows
+    .filter((collection) => String(collection.status) === 'Đã xuất bản')
+    .map((collection) => {
+      const url = `/sofa2/collections/${collection.slug}`;
+      const seoRow = collectionRows.find((row) => String(row.url) === url);
+      return {
+        url,
+        title: String(collection.metaTitle || `${collection.name} - LUXE Sofa`),
+        description: String(collection.metaDescription || collection.description || ''),
+        canonical: `${SOFA2_SITE_ORIGIN}${url}`,
+        published: 'Có',
+        inSitemap: String(collection.indexable ?? 'Có'),
+        ...(seoRow ?? {}),
+        indexable: !['không', 'false', '0'].includes(String(collection.indexable ?? 'Có').toLowerCase())
+          && !['không', 'false', '0'].includes(String(seoRow?.indexable ?? 'Có').toLowerCase()) ? 'Có' : 'Không',
+      };
+    }), [managedCollectionRows, collectionRows]);
   const liveProjectSeoRows = useMemo(() => managedProjectRows
     .filter((project) => String(project.status) === 'Đã xuất bản')
     .map((project) => {
@@ -330,6 +348,21 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
       url: `${SOFA2_SITE_ORIGIN}/sofa2/products/category/${category.slug}`,
       isPartOf: { '@type': 'WebSite', name: 'LUXE Sofa', url: `${SOFA2_SITE_ORIGIN}/sofa2` },
     })),
+    ...managedCollectionRows.filter((collection) => {
+      const row = collectionRows.find((item) => String(item.url) === `/sofa2/collections/${collection.slug}`);
+      return String(collection.status) === 'Đã xuất bản'
+        && !['không', 'false', '0'].includes(String(collection.indexable ?? 'Có').toLowerCase())
+        && !['không', 'false', '0'].includes(String(row?.indexable ?? 'Có').toLowerCase())
+        && !['không', 'false', '0'].includes(String(row?.published ?? 'Có').toLowerCase());
+    }).map((collection) => ({
+      '@type': 'CollectionPage',
+      '@id': `${SOFA2_SITE_ORIGIN}/sofa2/collections/${collection.slug}#collection`,
+      name: collection.name,
+      description: collection.description,
+      image: collection.image,
+      url: `${SOFA2_SITE_ORIGIN}/sofa2/collections/${collection.slug}`,
+      numberOfItems: String(collection.productIds ?? '').split(/\r?\n/).filter(Boolean).length,
+    })),
     ...managedProjectRows.filter((project) => {
       const row = projectRows.find((item) => String(item.url) === `/sofa2/projects/${project.id}`);
       return String(project.status) === 'Đã xuất bản'
@@ -355,12 +388,12 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
         },
       } : {}),
     })),
-  ], [liveProducts, liveCategories, productRows, categoryRows, projectRows, managedProjectRows]);
+  ], [liveProducts, liveCategories, productRows, categoryRows, projectRows, managedProjectRows, collectionRows, managedCollectionRows]);
   const sitemapPageModules = [
     { file: 'sitemap-pages.xml', rows: brandRows },
     { file: 'sitemap-categories.xml', rows: liveCategorySeoRows },
     { file: 'sitemap-products.xml', rows: liveProductSeoRows },
-    { file: 'sitemap-collections.xml', rows: collectionRows },
+    { file: 'sitemap-collections.xml', rows: liveCollectionSeoRows },
     { file: 'sitemap-projects.xml', rows: liveProjectSeoRows },
     { file: 'sitemap-showrooms.xml', rows: liveShowroomSeoRows },
     { file: 'sitemap-blog.xml', rows: blogRows },

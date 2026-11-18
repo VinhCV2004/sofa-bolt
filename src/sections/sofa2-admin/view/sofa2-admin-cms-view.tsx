@@ -540,6 +540,26 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       const ctaLink = String(form.values.ctaLink ?? '').trim();
       if (ctaLink && !/^\/sofa2(?:\/|$)/.test(ctaLink)) next.ctaLink = 'Liên kết phải là đường dẫn nội bộ bắt đầu bằng /sofa2.';
     }
+    if (group.slug === 'cms' && module.slug === 'collections') {
+      const slug = sofa2Slugify(String(form.values.slug || form.values.name || ''));
+      const name = String(form.values.name ?? '').trim().toLocaleLowerCase();
+      if (!slug) next.slug = 'Nhập slug hoặc tên bộ sưu tập hợp lệ.';
+      if (slug && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && sofa2Slugify(String(row.slug ?? row.name ?? '')) === slug)) next.slug = 'Slug bộ sưu tập đã tồn tại.';
+      if (name && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.name ?? '').trim().toLocaleLowerCase() === name)) next.name = 'Tên bộ sưu tập đã tồn tại.';
+      const productIds = String(form.values.productIds ?? '').split(/\r?\n/).map((id) => id.trim()).filter(Boolean);
+      const knownProductIds = new Set(SOFA2_CLIENT_PRODUCTS.map((product) => String(product.id)));
+      if (!productIds.length) next.productIds = 'Chọn ít nhất một sản phẩm cho bộ sưu tập.';
+      if (new Set(productIds).size !== productIds.length) next.productIds = 'Không thể lặp lại cùng một ID sản phẩm.';
+      const invalidProductIds = productIds.filter((id) => !knownProductIds.has(id));
+      if (invalidProductIds.length) next.productIds = `Không tìm thấy ID sản phẩm Sofa2: ${invalidProductIds.join(', ')}.`;
+      const startDate = String(form.values.startDate ?? '');
+      const endDate = String(form.values.endDate ?? '');
+      if (startDate && endDate && startDate > endDate) next.endDate = 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.';
+      const ctaLink = String(form.values.ctaLink ?? '').trim();
+      if (ctaLink && !/^\/sofa2(?:\/|$)/.test(ctaLink)) next.ctaLink = 'Liên kết phải là đường dẫn nội bộ bắt đầu bằng /sofa2.';
+    }
     if (group.slug === 'cms' && module.slug === 'projects') {
       const name = String(form.values.name ?? '').trim().toLocaleLowerCase();
       if (name && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
@@ -1397,6 +1417,16 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       clean.slug = sofa2Slugify(String(clean.slug || clean.title || ''));
       if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
     }
+    if (group.slug === 'cms' && module.slug === 'collections') {
+      clean.slug = sofa2Slugify(String(clean.slug || clean.name || ''));
+      clean.productIds = [...new Set(String(clean.productIds ?? '').split(/\r?\n/).map((id) => id.trim()).filter(Boolean))].join('\n');
+      clean.count = String(clean.productIds).split('\n').filter(Boolean).length;
+      clean.featured = isPortalEnabled(clean.featured) ? 'Có' : 'Không';
+      clean.indexable = isPortalEnabled(clean.indexable) ? 'Có' : 'Không';
+      clean.order = Number(clean.order) || 0;
+      clean.ctaLink = String(clean.ctaLink || '/sofa2/products').trim();
+      if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
+    }
     if (group.slug === 'cms' && module.slug === 'projects') {
       const categoryTypes: Record<string, string> = {
         'Dự án căn hộ': 'can-ho',
@@ -1458,7 +1488,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       clean.channel = sofa2Slugify(String(clean.channel || clean.label || ''));
       clean.enabled = isPortalEnabled(clean.enabled) ? 'Có' : 'Không';
     }
-    if (group.slug === 'cms' && ['blog', 'blog-categories', 'blog-authors', 'blog-comments', 'blog-social', 'service-catalog', 'projects', 'showrooms', 'showroom-bookings'].includes(module.slug) && form.mode === 'create' && !clean.id) {
+    if (group.slug === 'cms' && ['blog', 'blog-categories', 'blog-authors', 'blog-comments', 'blog-social', 'service-catalog', 'collections', 'projects', 'showrooms', 'showroom-bookings'].includes(module.slug) && form.mode === 'create' && !clean.id) {
       clean.id = `cms-${module.slug}-${Date.now().toString(36)}`;
     }
     if (group.slug === 'cms' && module.slug === 'seo') {

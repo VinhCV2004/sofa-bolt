@@ -1,4 +1,4 @@
-import { SOFA2_PROJECTS, SOFA2_BLOG_POSTS, SOFA2_PAGE_IMAGES, SOFA2_PRODUCT_CATEGORIES, SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
+import { SOFA2_PROJECTS, SOFA2_BLOG_POSTS, SOFA2_COLLECTIONS, SOFA2_PAGE_IMAGES, SOFA2_PRODUCT_CATEGORIES, SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
 
 import { SOFA2_SHOP_GROUP } from './sofa2-shop';
 import { SOFA2_SUPPORT_GROUP } from './sofa2-support';
@@ -619,6 +619,84 @@ const CMS_SERVICE_CATALOG_SEEDS: Record<string, string | number>[] = [
   },
 ];
 
+const COLLECTION_PRODUCT_IDS: Record<string, string[]> = {
+  new: ['7', '8', '11', '12', '13', '15', '16'],
+  featured: ['2', '5', '9', '11', '13', '14', '15'],
+  seasonal: ['1', '3', '4', '6', '8', '10', '13', '14'],
+  luxury: ['5', '9', '11', '13', '15', '16'],
+  bestseller: ['1', '2', '3', '5', '9', '10', '14', '15'],
+};
+
+const COLLECTION_INTROS: Record<string, string> = {
+  new: 'Khám phá các thiết kế sofa mới với tỷ lệ hiện đại, vật liệu được tuyển chọn và cấu hình phù hợp cho căn hộ, nhà phố. Mỗi sản phẩm đều có thông tin kích thước, chất liệu và lựa chọn màu để khách hàng dễ dàng so sánh.',
+  featured: 'Tuyển chọn những thiết kế được khách hàng quan tâm nhờ sự cân bằng giữa thẩm mỹ, công năng và độ bền. Bộ sưu tập phù hợp với nhiều phong cách phòng khách từ hiện đại đến Bắc Âu.',
+  seasonal: 'Gợi ý sofa và bảng màu theo mùa, kết hợp chất liệu, tông màu và cách phối không gian để làm mới phòng khách theo thời tiết và nhịp sống.',
+  luxury: 'Các thiết kế cao cấp chú trọng chất liệu tuyển chọn, đường may tinh xảo và cấu trúc bền vững. Liên hệ tư vấn để lựa chọn cấu hình phù hợp với không gian riêng.',
+  bestseller: 'Những mẫu sofa được yêu thích nhờ trải nghiệm sử dụng thoải mái, thiết kế linh hoạt và giá trị sử dụng lâu dài. Xem đánh giá, thông số và lựa chọn chất liệu cho từng mẫu.',
+};
+
+const CMS_COLLECTION_SEEDS: Record<string, string | number>[] = [
+  ...SOFA2_COLLECTIONS.map((collection, index) => {
+    const collectionType = ['Mới', 'Nổi bật', 'Theo mùa', 'Luxury', 'Bestseller'][index] ?? 'Tuyển chọn';
+    const productIds = COLLECTION_PRODUCT_IDS[collection.slug] ?? [];
+    return {
+      ...collection,
+      collectionType,
+      description: [
+        'Những thiết kế mới nhất với phong cách hiện đại, dễ phối trong nhiều không gian sống.',
+        'Các mẫu sofa được tuyển chọn nhờ thiết kế nổi bật và trải nghiệm sử dụng được yêu thích.',
+        'Sofa phù hợp bảng màu và nhu cầu sử dụng theo từng mùa trong năm.',
+        'Dòng sofa cao cấp với vật liệu tuyển chọn và chi tiết hoàn thiện tinh xảo.',
+        'Những mẫu sofa bán chạy được khách hàng tin chọn cho phòng khách gia đình.',
+      ][index],
+      intro: COLLECTION_INTROS[collection.slug] ?? collection.description,
+      productIds: productIds.join('\n'),
+      count: productIds.length,
+      imageAlt: `${collection.name} — không gian sofa LUXE Sofa`,
+      seasonLabel: collection.slug === 'seasonal' ? 'Thu Đông 2026' : '',
+      startDate: collection.slug === 'seasonal' ? '2026-09-01' : '',
+      endDate: collection.slug === 'seasonal' ? '2027-02-28' : '',
+      featured: ['featured', 'luxury', 'bestseller'].includes(collection.slug) ? 'Có' : 'Không',
+      ctaLabel: 'Khám phá sản phẩm',
+      ctaLink: '/sofa2/products',
+      order: index + 1,
+      status: 'Đã xuất bản',
+      updated: '2026-11-15',
+      author: ['Minh Anh', 'Thu Hà', 'Quốc Bảo', 'Hoàng Long', 'Minh Anh'][index],
+      metaTitle: `${collection.name} | Sofa LUXE Sofa`.slice(0, 60),
+      metaDescription: `${collection.description} Khám phá các mẫu sofa LUXE Sofa.`.slice(0, 160),
+      ogImage: collection.image,
+      indexable: 'Có',
+    };
+  }),
+  {
+    id: 'autumn-2026', name: 'Bộ sưu tập Thu Đông 2026', slug: 'thu-dong-2026', collectionType: 'Theo mùa',
+    description: 'Bản nháp tuyển chọn sofa tông ấm và chất liệu dệt cho mùa Thu Đông 2026.',
+    intro: 'Bộ sưu tập đang chờ hoàn thiện hình ảnh chiến dịch, lịch phát hành và kiểm tra tồn kho sản phẩm trước khi công bố.',
+    image: SOFA2_PAGE_IMAGES.product5, imageAlt: 'Bộ sưu tập Thu Đông 2026 — ảnh xem trước',
+    productIds: '1\n5\n9\n11', count: 4, seasonLabel: 'Thu Đông 2026',
+    startDate: '2026-09-01', endDate: '2027-02-28', featured: 'Không',
+    ctaLabel: 'Khám phá sản phẩm', ctaLink: '/sofa2/products',
+    order: 6, status: 'Bản nháp', updated: '2026-11-15', author: 'Thu Hà',
+    metaTitle: 'Bộ sưu tập Thu Đông 2026 | LUXE Sofa',
+    metaDescription: 'Bản nháp bộ sưu tập sofa theo mùa Thu Đông 2026.',
+    ogImage: SOFA2_PAGE_IMAGES.product5, indexable: 'Không',
+  },
+  {
+    id: 'summer-2026-hidden', name: 'Bộ sưu tập Hè 2026', slug: 'he-2026', collectionType: 'Theo mùa',
+    description: 'Bộ sưu tập theo mùa đã kết thúc thời gian giới thiệu.',
+    intro: 'Nội dung lưu trữ để tham khảo; không hiển thị trong danh sách bộ sưu tập hiện tại.',
+    image: SOFA2_PAGE_IMAGES.product7, imageAlt: 'Bộ sưu tập Hè 2026',
+    productIds: '3\n6\n13', count: 3, seasonLabel: 'Hè 2026',
+    startDate: '2026-03-01', endDate: '2026-08-31', featured: 'Không',
+    ctaLabel: 'Xem sản phẩm', ctaLink: '/sofa2/products',
+    order: 7, status: 'Tạm ẩn', updated: '2026-09-01', author: 'Quốc Bảo',
+    metaTitle: 'Bộ sưu tập Hè 2026 | LUXE Sofa',
+    metaDescription: 'Bản lưu trữ bộ sưu tập sofa mùa Hè 2026.',
+    ogImage: SOFA2_PAGE_IMAGES.product7, indexable: 'Không',
+  },
+];
+
 const CMS_PROJECT_SEEDS: Record<string, string | number>[] = [
   ...SOFA2_PROJECTS.map((project, index) => ({
     ...project,
@@ -1091,6 +1169,28 @@ const CMS_GROUP: Sofa2AdminGroup = {
     cmsPage('policy', 'Trang chính sách', '/sofa2/policy', cmsPolicyRows),
     cmsPage('terms', 'Trang điều khoản', '/sofa2/policy/terms', cmsTermsRows),
     cmsPage('faq', 'Trang FAQ', '/sofa2/faq', cmsFaqRows),
+    mod(
+      'collections',
+      'Bộ sưu tập',
+      'Quản lý các trang Bộ sưu tập mới, nổi bật, theo mùa, Luxury và Bestseller; chọn sản phẩm hiển thị, nội dung, ảnh bìa, lịch chiến dịch và SEO.',
+      'solar:widget-5-bold-duotone',
+      [
+        { label: 'Tổng bộ sưu tập', value: String(CMS_COLLECTION_SEEDS.length) },
+        { label: 'Đang xuất bản', value: String(CMS_COLLECTION_SEEDS.filter((row) => row.status === 'Đã xuất bản').length) },
+        { label: 'Nhóm nội dung', value: String(new Set(CMS_COLLECTION_SEEDS.map((row) => row.collectionType)).size) },
+        { label: 'Nổi bật', value: String(CMS_COLLECTION_SEEDS.filter((row) => row.featured === 'Có').length) },
+      ],
+      [
+        { key: 'name', label: 'Bộ sưu tập' },
+        { key: 'collectionType', label: 'Loại' },
+        { key: 'count', label: 'Sản phẩm', type: 'number' },
+        { key: 'slug', label: 'Slug' },
+        { key: 'order', label: 'Thứ tự', type: 'number' },
+        STATUS_COL,
+      ],
+      CMS_COLLECTION_SEEDS,
+      ['Thêm bộ sưu tập', 'Xem client']
+    ),
     mod(
       'projects',
       'Dự án / Portfolio',
