@@ -253,7 +253,7 @@ export const SOFA2_SUPPORT_GROUP: Sofa2AdminGroup = {
       ],
       [{ key: 'inquiryId', label: 'Mã liên hệ' }, { key: 'name', label: 'Người gửi' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Điện thoại' }, { key: 'subject', label: 'Chủ đề' }, { key: 'receivedAt', label: 'Tiếp nhận' }, { key: 'source', label: 'Nguồn' }, { key: 'assignedTo', label: 'Phụ trách' }, S],
       CONTACT_INQUIRY_ROWS),
-    mod('contact-info', 'Địa điểm & giờ làm việc', 'Quản lý địa chỉ, giờ mở cửa từng showroom và liên kết bản đồ trên /sofa2/contact; hotline/email lấy từ Kênh liên hệ.', 'solar:map-point-wave-bold-duotone',
+    mod('contact-info', 'Địa điểm liên hệ dự phòng', 'Nguồn dự phòng tương thích dữ liệu cũ cho trang Liên hệ. Danh sách chi nhánh chuẩn, bản đồ, giờ mở cửa và gallery hiện được quản lý tại CMS → Showroom.', 'solar:map-point-wave-bold-duotone',
       [
         { label: 'Showroom đang hiển thị', value: String(SOFA2_SHOWROOMS.length) },
         { label: 'Đã cấu hình bản đồ', value: String(SOFA2_SHOWROOMS.length) },

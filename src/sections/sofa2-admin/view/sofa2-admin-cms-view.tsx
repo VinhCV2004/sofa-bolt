@@ -206,6 +206,12 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
   const { rows: accessRoles } = useSofa2AdminRows('access', 'roles', {
     load: group.slug === 'access' && module.slug === 'users',
   });
+  const { rows: showroomRows } = useSofa2AdminRows('cms', 'showrooms', {
+    load: group.slug === 'cms' && module.slug === 'showroom-bookings',
+  });
+  const { rows: relatedShowroomBookings, updateRow: updateRelatedShowroomBooking } = useSofa2AdminRows('cms', 'showroom-bookings', {
+    load: group.slug === 'cms' && module.slug === 'showrooms',
+  });
   const { rows: blogCategoryRows } = useSofa2AdminRows('cms', 'blog-categories', {
     load: group.slug === 'cms' && module.slug === 'blog',
   });
@@ -375,7 +381,24 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           ? schema.fields.map((field) => field.key === 'postTitle'
               ? { ...field, options: blogPostsRows.map((row) => String(row.title ?? '')) }
               : field)
-          : schema.fields;
+          : group.slug === 'cms' && module.slug === 'showroom-bookings'
+            ? schema.fields.map((field) => {
+                if (field.key === 'showroom') {
+                  const available = showroomRows
+                    .filter((row) => String(row.status) === 'Đã xuất bản' && String(row.bookingEnabled) === 'Có')
+                    .map((row) => String(row.name ?? ''));
+                  const current = String(form.values.showroom ?? '');
+                  return { ...field, options: current && !available.includes(current) ? [...available, current] : available };
+                }
+                if (field.key === 'appointmentTime') {
+                  const location = showroomRows.find((row) => String(row.name ?? '') === String(form.values.showroom ?? ''));
+                  const options = String(location?.appointmentSlots ?? '').split(/\\r?\\n/).map((slot) => slot.trim()).filter(Boolean);
+                  const current = String(form.values.appointmentTime ?? '');
+                  return { ...field, options: current && !options.includes(current) ? [...options, current] : options };
+                }
+                return field;
+              })
+            : schema.fields;
 
   const publishLabel = schema.publishLabel ?? 'Xuất bản';
   const defaultDraft = schema.defaultStatus ?? (statusOptions.includes('Bản nháp') ? 'Bản nháp' : statusOptions[1] ?? 'Bản nháp');
@@ -454,7 +477,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       const willAutoSlug =
         group.slug === 'cms' &&
         field.key === 'slug' &&
-        ['blog', 'static-pages', 'blog-categories', 'blog-authors', 'service-catalog'].includes(module.slug) &&
+        ['blog', 'static-pages', 'blog-categories', 'blog-authors', 'service-catalog', 'showrooms'].includes(module.slug) &&
         !!String(form.values[titleKey] ?? form.values.label ?? form.values.name ?? '').trim();
       const willAutoChannel = group.slug === 'cms' && module.slug === 'blog-social'
         && field.key === 'channel' && !!String(form.values.label ?? '').trim();
@@ -515,6 +538,50 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
         && sofa2Slugify(String(row.slug ?? row.title ?? '')) === slug)) next.slug = 'Slug đã tồn tại trong nhóm dịch vụ này.';
       const ctaLink = String(form.values.ctaLink ?? '').trim();
       if (ctaLink && !/^\/sofa2(?:\/|$)/.test(ctaLink)) next.ctaLink = 'Liên kết phải là đường dẫn nội bộ bắt đầu bằng /sofa2.';
+    }
+    if (group.slug === 'cms' && module.slug === 'showrooms') {
+      const slug = sofa2Slugify(String(form.values.slug || form.values.name || ''));
+      const code = String(form.values.code ?? '').trim().toLocaleUpperCase();
+      if (!slug) next.slug = 'Vui lòng nhập tên hoặc slug showroom hợp lệ.';
+      if (slug && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && sofa2Slugify(String(row.slug ?? row.name ?? '')) === slug)) next.slug = 'Slug showroom đã tồn tại.';
+      if (code && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.code ?? '').trim().toLocaleUpperCase() === code)) next.code = 'Mã showroom đã tồn tại.';
+      const phone = String(form.values.phone ?? '').replace(/\D/g, '');
+      if (phone.length < 9 || phone.length > 12) next.phone = 'Nhập số điện thoại hợp lệ (9–12 chữ số).';
+      const email = String(form.values.email ?? '').trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Email chưa đúng định dạng.';
+      const lat = Number(form.values.lat);
+      const lng = Number(form.values.lng);
+      if (!Number.isFinite(lat) || lat < -90 || lat > 90) next.lat = 'Vĩ độ phải nằm trong khoảng -90 đến 90.';
+      if (!Number.isFinite(lng) || lng < -180 || lng > 180) next.lng = 'Kinh độ phải nằm trong khoảng -180 đến 180.';
+    }
+    if (group.slug === 'cms' && module.slug === 'showroom-bookings') {
+      const phone = String(form.values.phone ?? '').replace(/\D/g, '');
+      if (phone.length < 9 || phone.length > 12) next.phone = 'Nhập số điện thoại hợp lệ (9–12 chữ số).';
+      const email = String(form.values.email ?? '').trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = 'Email chưa đúng định dạng.';
+      const showroom = showroomRows.find((row) => String(row.name ?? '') === String(form.values.showroom ?? ''));
+      const originalBooking = form.mode === 'edit' ? rows[form.index] : undefined;
+      const hasHistoricalShowroomSnapshot = !showroom
+        && String(originalBooking?.showroom ?? '') === String(form.values.showroom ?? '');
+      if (!showroom && !hasHistoricalShowroomSnapshot) next.showroom = 'Chọn một showroom đang được quản lý.';
+      if (showroom && String(showroom.bookingEnabled) !== 'Có' && form.mode === 'create') next.showroom = 'Showroom hiện chưa nhận đặt lịch online.';
+      const date = String(form.values.appointmentDate ?? '');
+      if (form.mode === 'create' && date && date < sofa2Today()) next.appointmentDate = 'Ngày hẹn không thể ở quá khứ.';
+      const bookingCode = String(form.values.bookingCode ?? '').trim().toUpperCase();
+      if (bookingCode && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.bookingCode ?? '').trim().toUpperCase() === bookingCode)) next.bookingCode = 'Mã lịch hẹn đã tồn tại.';
+      const activeStatus = ['Chờ xác nhận', 'Đã xác nhận'].includes(String(form.values.status));
+      const duplicateSlot = activeStatus && rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+        && String(row.showroom) === String(form.values.showroom)
+        && String(row.appointmentDate) === date
+        && String(row.appointmentTime) === String(form.values.appointmentTime)
+        && ['Chờ xác nhận', 'Đã xác nhận'].includes(String(row.status)));
+      if (duplicateSlot) next.appointmentTime = 'Khung giờ này đã có một lịch hẹn đang hoạt động.';
+      const guests = Number(form.values.guests ?? 1);
+      if (!Number.isInteger(guests) || guests < 1 || guests > 20) next.guests = 'Số khách phải từ 1 đến 20 người.';
+      if (String(form.values.status) === 'Đã xác nhận' && !String(form.values.assignedTo ?? '').trim()) next.assignedTo = 'Gán nhân viên phụ trách trước khi xác nhận.';
     }
     if (group.slug === 'cms' && module.slug === 'promotions') {
       const code = String(form.values.code ?? '').trim();
@@ -1291,6 +1358,21 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       clean.slug = sofa2Slugify(String(clean.slug || clean.title || ''));
       if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
     }
+    if (group.slug === 'cms' && module.slug === 'showrooms') {
+      clean.slug = sofa2Slugify(String(clean.slug || clean.name || ''));
+      clean.code = String(clean.code ?? '').trim().toLocaleUpperCase();
+      clean.bookingEnabled = isPortalEnabled(clean.bookingEnabled) ? 'Có' : 'Không';
+      if (String(clean.status) === 'Đã xuất bản' && !String(clean.updated ?? '').trim()) clean.updated = sofa2Today();
+    }
+    if (group.slug === 'cms' && module.slug === 'showroom-bookings') {
+      clean.bookingCode = String(clean.bookingCode || `SR-${sofa2Today().replace(/-/g, '').slice(2)}-${Date.now().toString().slice(-5)}`).toLocaleUpperCase();
+      const linkedShowroom = showroomRows.find((row) => String(row.name ?? '') === String(clean.showroom ?? ''));
+      clean.showroomId = String(linkedShowroom?.id ?? clean.showroomId ?? '');
+      clean.email = String(clean.email ?? '').trim().toLocaleLowerCase();
+      clean.guests = Number(clean.guests) || 1;
+      clean.createdAt = String(clean.createdAt || sofa2Today());
+      if (String(clean.status) === 'Đã xác nhận' && !String(clean.assignedTo ?? '').trim()) clean.assignedTo = 'Chưa phân công';
+    }
     if (group.slug === 'cms' && module.slug === 'blog') {
       const category = blogCategoryRows.find((row) => String(row.label ?? '') === String(clean.category ?? ''));
       const author = blogAuthorRows.find((row) => String(row.name ?? '') === String(clean.author ?? ''));
@@ -1313,7 +1395,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       clean.channel = sofa2Slugify(String(clean.channel || clean.label || ''));
       clean.enabled = isPortalEnabled(clean.enabled) ? 'Có' : 'Không';
     }
-    if (group.slug === 'cms' && ['blog', 'blog-categories', 'blog-authors', 'blog-comments', 'blog-social', 'service-catalog'].includes(module.slug) && form.mode === 'create' && !clean.id) {
+    if (group.slug === 'cms' && ['blog', 'blog-categories', 'blog-authors', 'blog-comments', 'blog-social', 'service-catalog', 'showrooms', 'showroom-bookings'].includes(module.slug) && form.mode === 'create' && !clean.id) {
       clean.id = `cms-${module.slug}-${Date.now().toString(36)}`;
     }
     if (group.slug === 'cms' && module.slug === 'seo') {
@@ -1511,6 +1593,15 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       createRow(clean);
     } else {
       updateRow(form.index, clean);
+    }
+    if (group.slug === 'cms' && module.slug === 'showrooms' && previousRow
+      && String(previousRow.name ?? '') !== String(clean.name ?? '')) {
+      relatedShowroomBookings.forEach((booking, index) => {
+        if (String(booking.showroomId ?? '') === String(previousRow.id ?? '')
+          || String(booking.showroom ?? '') === String(previousRow.name ?? '')) {
+          updateRelatedShowroomBooking(index, { ...booking, showroom: String(clean.name ?? ''), updated: sofa2Today() });
+        }
+      });
     }
     if (approvedProfileToCreate) createSofa2AdminRow('customer', 'profiles', approvedProfileToCreate);
     if (group.slug === 'customer' && module.slug === 'addresses' && isPortalEnabled(clean.isDefault)) {
