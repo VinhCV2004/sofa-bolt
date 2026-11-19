@@ -52,6 +52,17 @@ export default function Page() {
   const { blocks: cmsBlocks } = useCmsPageBlocks('about');
   const { seo } = useCmsSeo('/sofa2/about');
   const cmsIntro = cmsBlocks.find((b) => b.block === 'intro' && b.content);
+  const cmsHero = cmsBlocks.find((block) => block.block === 'hero' && block.type === 'Banner');
+  const cmsValues = cmsBlocks.filter((block) => block.type === 'Core value');
+  const cmsMetrics = cmsBlocks.filter((block) => block.type === 'Company metric');
+  const cmsSubPages = cmsBlocks.filter((block) => block.type === 'About page');
+  const cmsCta = cmsBlocks.find((block) => block.block === 'about-cta');
+  const isCmsManaged = cmsBlocks.some((block) => block.type === 'About page');
+  const values = isCmsManaged ? cmsValues.map((block) => ({ title: block.heading, desc: block.content, icon: block.icon || 'solar:star-bold-duotone' })) : VALUES;
+  const metrics = isCmsManaged ? cmsMetrics.map((block) => ({ value: block.heading, label: block.content })) : SOFA2_COMPANY_INFO.stats;
+  const subPages = isCmsManaged
+    ? cmsSubPages.map((block) => ({ section: block.block.replace(/^page-/, ''), title: block.heading, icon: block.icon || 'solar:document-text-bold-duotone' }))
+    : SUB_PAGES;
 
   return (
     <>
@@ -62,9 +73,9 @@ export default function Page() {
       </Helmet>
 
       {/* Hero */}
-      <Sofa2PageHero
-        overline="Về LUXE Sofa"
-        title={(
+      {(!isCmsManaged || cmsHero) && <Sofa2PageHero
+        overline={cmsHero?.title || 'Về LUXE Sofa'}
+        title={cmsHero?.heading || (
           <>
             Câu chuyện thương hiệu
             <Box component="span" sx={{ ...textGradient(`135deg, ${theme.vars.palette.primary.light}, ${theme.vars.palette.warning.light}`) }}>
@@ -72,12 +83,12 @@ export default function Page() {
             </Box>
           </>
         )}
-        subtitle="Hơn 12 năm chế tác sofa cao cấp với tình yêu nghề và sự tỉ mỉ — mang đến không gian sống sang trọng cho hàng vạn gia đình Việt."
-        image={SOFA2_PAGE_IMAGES.aboutHero}
-      />
+        subtitle={cmsHero?.content || 'Hơn 12 năm chế tác sofa cao cấp với tình yêu nghề và sự tỉ mỉ — mang đến không gian sống sang trọng cho hàng vạn gia đình Việt.'}
+        image={cmsHero?.image || SOFA2_PAGE_IMAGES.aboutHero}
+      />}
 
       {/* Intro */}
-      <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
+      {(!isCmsManaged || cmsIntro) && <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
         <Container component={MotionViewport}>
           <Grid container spacing={{ xs: 5, md: 8 }} alignItems="center">
             <Grid xs={12} md={6}>
@@ -124,10 +135,10 @@ export default function Page() {
             </Grid>
           </Grid>
         </Container>
-      </Box>
+      </Box>}
 
       {/* Values */}
-      <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: (t) => varAlpha(t.vars.palette.grey['500Channel'], 0.04) }}>
+      {values.length > 0 && <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: (t) => varAlpha(t.vars.palette.grey['500Channel'], 0.04) }}>
         <Container component={MotionViewport}>
           <Stack spacing={2} sx={{ textAlign: 'center', maxWidth: 640, mx: 'auto', mb: { xs: 5, md: 8 } }}>
             <Typography variant="overline" sx={{ color: 'text.disabled' }}>Giá trị cốt lõi</Typography>
@@ -137,7 +148,7 @@ export default function Page() {
             </Typography>
           </Stack>
           <Grid container spacing={3}>
-            {VALUES.map((item) => (
+            {values.map((item) => (
               <Grid key={item.title} xs={12} md={4}>
                 <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ p: 4, height: 1, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
                   <Box sx={{ width: 56, height: 56, display: 'flex', borderRadius: 1.5, alignItems: 'center', justifyContent: 'center', bgcolor: (t) => varAlpha(t.vars.palette.primary.mainChannel, 0.08), color: 'primary.main' }}>
@@ -150,13 +161,13 @@ export default function Page() {
             ))}
           </Grid>
         </Container>
-      </Box>
+      </Box>}
 
       {/* Stats */}
-      <Box component="section" sx={{ py: { xs: 6, md: 10 } }}>
+      {metrics.length > 0 && <Box component="section" sx={{ py: { xs: 6, md: 10 } }}>
         <Container component={MotionViewport}>
           <Grid container spacing={3}>
-            {SOFA2_COMPANY_INFO.stats.map((s) => (
+            {metrics.map((s) => (
               <Grid key={s.label} xs={6} md={3}>
                 <Stack spacing={0.5} alignItems="center" component={m.div} variants={varFade({ distance: 24 }).inUp}>
                   <Typography variant="h2" sx={{ color: 'primary.main', fontWeight: 'fontWeightBold' }}>{s.value}</Typography>
@@ -166,10 +177,10 @@ export default function Page() {
             ))}
           </Grid>
         </Container>
-      </Box>
+      </Box>}
 
       {/* Sub pages */}
-      <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: (t) => varAlpha(t.vars.palette.grey['500Channel'], 0.04) }}>
+      {subPages.length > 0 && <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: (t) => varAlpha(t.vars.palette.grey['500Channel'], 0.04) }}>
         <Container component={MotionViewport}>
           <Stack spacing={2} sx={{ textAlign: 'center', maxWidth: 640, mx: 'auto', mb: { xs: 5, md: 8 } }}>
             <Typography variant="overline" sx={{ color: 'text.disabled' }}>Khám phá thêm</Typography>
@@ -179,7 +190,7 @@ export default function Page() {
             </Typography>
           </Stack>
           <Grid container spacing={3}>
-            {SUB_PAGES.map((item) => (
+            {subPages.map((item) => (
               <Grid key={item.section} xs={6} sm={4} md={3}>
                 <Button
                   component={RouterLink}
@@ -208,22 +219,22 @@ export default function Page() {
             ))}
           </Grid>
         </Container>
-      </Box>
+      </Box>}
 
       {/* CTA */}
-      <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
+      {(!isCmsManaged || cmsCta) && <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
         <Container component={MotionViewport}>
           <Stack spacing={4} alignItems="center" sx={{ textAlign: 'center', maxWidth: 640, mx: 'auto', p: { xs: 5, md: 8 }, borderRadius: 3, bgcolor: 'primary.main', color: 'common.white' }}>
-            <Typography variant="h3">Trở thành một phần câu chuyện</Typography>
+            <Typography variant="h3">{cmsCta?.heading || 'Trở thành một phần câu chuyện'}</Typography>
             <Typography sx={{ color: varAlpha(theme.vars.palette.common.whiteChannel, 0.8) }}>
-              Ghé showroom hoặc đặt lịch tư vấn miễn phí để trải nghiệm chất lượng LUXE Sofa.
+              {cmsCta?.content || 'Ghé showroom hoặc đặt lịch tư vấn miễn phí để trải nghiệm chất lượng LUXE Sofa.'}
             </Typography>
-            <Button component={RouterLink} href="/sofa2/showrooms" size="large" variant="contained" color="warning" startIcon={<Iconify icon="solar:calendar-bold-duotone" />}>
-              Đặt lịch tư vấn
+            <Button component={RouterLink} href={cmsCta?.ctaLink || '/sofa2/showrooms'} size="large" variant="contained" color="warning" startIcon={<Iconify icon="solar:calendar-bold-duotone" />}>
+              {cmsCta?.ctaLabel || 'Đặt lịch tư vấn'}
             </Button>
           </Stack>
         </Container>
-      </Box>
+      </Box>}
     </>
   );
 }

@@ -1467,8 +1467,17 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
           !(form.mode === 'edit' && index === form.index) &&
           String(row.block ?? '').trim().toLocaleLowerCase() === blockName
         )) next.block = 'Mã khối này đã tồn tại trên trang.';
+        if (module.slug === 'about') {
+          const blockSlug = sofa2Slugify(String(form.values.block ?? ''));
+          if (!blockSlug) next.block = 'Mã nội dung cần có ít nhất một ký tự chữ hoặc số.';
+          if (form.values.type === 'About page' && !/^page-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(blockSlug)) {
+            next.block = 'Mã trang con cần có dạng page-ten-trang, ví dụ page-history.';
+          }
+          if (rows.some((row, index) => !(form.mode === 'edit' && index === form.index)
+            && sofa2Slugify(String(row.block ?? '')) === blockSlug)) next.block = 'Mã nội dung sau khi chuẩn hóa đã được sử dụng.';
+        }
       }
-      ['image', 'imageMobile', 'cover', 'ogImage', 'ctaLink'].forEach((key) => {
+      ['image', 'imageMobile', 'cover', 'ogImage', 'ctaLink', 'videoUrl'].forEach((key) => {
         if (!isSafeCmsUrl(form.values[key])) next[key] = 'Chỉ hỗ trợ URL http(s) hoặc đường dẫn nội bộ bắt đầu bằng /.';
       });
       const startAt = toDateInput(form.values.startAt);
@@ -1494,6 +1503,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       if (field.type === 'number') clean[field.key] = Number(clean[field.key]) || 0;
       else clean[field.key] = String(clean[field.key] ?? '').trim();
     });
+    if (group.slug === 'cms' && module.slug === 'about') clean.block = sofa2Slugify(String(clean.block ?? ''));
     if (group.slug === 'customer' && ['registrations', 'password-resets'].includes(module.slug)) {
       clean.email = String(clean.email ?? '').trim().toLowerCase();
     }

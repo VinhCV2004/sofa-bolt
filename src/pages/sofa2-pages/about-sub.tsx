@@ -21,6 +21,7 @@ import { varFade, MotionViewport } from 'src/components/animate';
 
 import { SOFA2_MILESTONES } from 'src/sections/sofa2/sofa2-data';
 import { Sofa2PageHero } from 'src/sections/sofa2/sofa2-page-hero';
+import { useCmsPageBlocks } from 'src/sections/sofa2/sofa2-cms-client';
 import { SOFA2_PAGE_IMAGES } from 'src/sections/sofa2/sofa2-pages-data';
 
 // ----------------------------------------------------------------------
@@ -83,24 +84,61 @@ const PARTNERS = ['Vingroup', 'Vinpearl', 'Marriott', 'InterContinental', 'BMW',
 
 const GALLERY = [SOFA2_PAGE_IMAGES.workshop, SOFA2_PAGE_IMAGES.factory, SOFA2_PAGE_IMAGES.technology, SOFA2_PAGE_IMAGES.team, SOFA2_PAGE_IMAGES.product1, SOFA2_PAGE_IMAGES.product7, SOFA2_PAGE_IMAGES.cta, SOFA2_PAGE_IMAGES.contact];
 
+const companyVideoEmbed = (rawUrl: string) => {
+  try {
+    const url = new URL(rawUrl);
+    if (!['http:', 'https:'].includes(url.protocol)) return '';
+    const youtubeId = url.hostname.endsWith('youtu.be')
+      ? url.pathname.split('/').filter(Boolean)[0]
+      : url.hostname.includes('youtube.com')
+        ? url.searchParams.get('v') || url.pathname.match(/\/embed\/([^/]+)/)?.[1]
+        : '';
+    if (youtubeId && /^[\w-]{6,20}$/.test(youtubeId)) return `https://www.youtube-nocookie.com/embed/${youtubeId}`;
+    const vimeoId = url.hostname.includes('vimeo.com') ? url.pathname.match(/\/(\d+)\/?$/)?.[1] : '';
+    if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}`;
+    return '';
+  } catch {
+    return '';
+  }
+};
+
 export default function Page() {
   const theme = useTheme();
   const { section = '' } = useParams();
-
-  const meta = SECTION_META[section] ?? {
+  const { blocks: aboutBlocks } = useCmsPageBlocks('about');
+  const isCmsManaged = aboutBlocks.some((block) => block.type === 'About page');
+  const pageBlock = aboutBlocks.find((block) => block.block === `page-${section}` && block.type === 'About page');
+  const sectionRows = useMemo(() => aboutBlocks.filter((block) => block.block.startsWith(`${section}-`) && block.type !== 'About page'), [aboutBlocks, section]);
+  const meta = pageBlock ? {
+    title: pageBlock.heading,
+    overline: pageBlock.title || 'Về LUXE Sofa',
+    image: pageBlock.image || SOFA2_PAGE_IMAGES.aboutHero,
+    helmet: pageBlock.metaTitle || `${pageBlock.heading} | LUXE Sofa`,
+  } : SECTION_META[section] ?? {
     title: 'Không tìm thấy trang',
     overline: 'Lỗi',
     image: SOFA2_PAGE_IMAGES.aboutHero,
     helmet: 'Không tìm thấy - LUXE Sofa',
   };
+  const pageExists = !isCmsManaged || Boolean(pageBlock);
 
   const content = useMemo(() => {
+    const blocksOf = (type: string) => sectionRows.filter((block) => block.type === type);
+    if (!pageExists) {
+      return (
+        <Stack spacing={3} alignItems="center" sx={{ textAlign: 'center', py: 10 }}>
+          <Iconify icon="solar:file-remove-bold-duotone" width={64} sx={{ color: 'text.disabled' }} />
+          <Typography variant="h4">Trang giới thiệu chưa được xuất bản</Typography>
+          <Button component={RouterLink} href="/sofa2/about" variant="contained">Quay lại Giới thiệu</Button>
+        </Stack>
+      );
+    }
     switch (section) {
       case 'history':
         return (
           <Stack spacing={4} component={MotionViewport}>
-            {SOFA2_MILESTONES.map((item, idx) => (
-              <Grid key={item.year} container spacing={4} alignItems="center" component={m.div} variants={varFade({ distance: 24 }).inUp}>
+            {(blocksOf('Milestone').length ? blocksOf('Milestone').map((block) => ({ id: block.id, year: block.title, title: block.heading, description: block.content })) : SOFA2_MILESTONES.map((item) => ({ ...item, id: item.year }))).map((item) => (
+              <Grid key={item.id} container spacing={4} alignItems="center" component={m.div} variants={varFade({ distance: 24 }).inUp}>
                 <Grid xs={12} sm={3}>
                   <Typography variant="h2" sx={{ color: 'primary.main', fontWeight: 'fontWeightBold' }}>{item.year}</Typography>
                 </Grid>
@@ -117,8 +155,10 @@ export default function Page() {
       case 'vision':
         return (
           <Grid container spacing={3} component={MotionViewport}>
-            {VISION.map((item) => (
-              <Grid key={item.title} xs={12} md={6}>
+            {(blocksOf('Vision').length || blocksOf('Mission').length
+              ? [...blocksOf('Vision'), ...blocksOf('Mission')].map((block) => ({ id: block.id, title: block.heading, desc: block.content, icon: block.icon || 'solar:star-bold-duotone' }))
+              : VISION.map((item) => ({ ...item, id: item.title }))).map((item) => (
+              <Grid key={item.id} xs={12} md={6}>
                 <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ p: 4, height: 1, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
                   <Iconify icon={item.icon} width={32} sx={{ color: 'primary.main' }} />
                   <Typography variant="h5">{item.title}</Typography>
@@ -131,8 +171,10 @@ export default function Page() {
       case 'values':
         return (
           <Grid container spacing={3} component={MotionViewport}>
-            {VALUES.map((item) => (
-              <Grid key={item.title} xs={12} md={4}>
+            {(blocksOf('Core value').length
+              ? blocksOf('Core value').map((block) => ({ id: block.id, title: block.heading, desc: block.content, icon: block.icon || 'solar:star-bold-duotone' }))
+              : VALUES.map((item) => ({ ...item, id: item.title }))).map((item) => (
+              <Grid key={item.id} xs={12} md={4}>
                 <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ p: 4, height: 1, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
                   <Box sx={{ width: 56, height: 56, display: 'flex', borderRadius: 1.5, alignItems: 'center', justifyContent: 'center', bgcolor: (t) => varAlpha(t.vars.palette.primary.mainChannel, 0.08), color: 'primary.main' }}>
                     <Iconify icon={item.icon} width={28} />
@@ -149,14 +191,13 @@ export default function Page() {
           <Grid container spacing={{ xs: 5, md: 8 }} alignItems="center" component={MotionViewport}>
             <Grid xs={12} md={6}>
               <Box component={m.div} variants={varFade({ distance: 24 }).inLeft}>
-                <Box component="img" src={SOFA2_PAGE_IMAGES.factory} alt="Nhà máy" sx={{ width: 1, borderRadius: 2, aspectRatio: '4/3', objectFit: 'cover' }} />
+                <Box component="img" src={blocksOf('Factory')[0]?.image || meta.image || SOFA2_PAGE_IMAGES.factory} alt={blocksOf('Factory')[0]?.heading || 'Nhà máy'} sx={{ width: 1, borderRadius: 2, aspectRatio: '4/3', objectFit: 'cover' }} />
               </Box>
             </Grid>
             <Grid xs={12} md={6}>
               <Stack spacing={3} component={m.div} variants={varFade({ distance: 24 }).inRight}>
-                <Typography variant="h3">Nhà máy 5000m² tại Bình Dương</Typography>
-                <Typography sx={{ color: 'text.secondary' }}>Nhà máy LUXE Sofa được trang bị dây chuyền sản xuất hiện đại kết hợp chế tác thủ công, công suất 500 sofa/tháng với hơn 80 nghệ nhân lành nghề.</Typography>
-                <Typography sx={{ color: 'text.secondary' }}>Khu vực sản xuất được chia thành các phân xưởng chuyên biệt: chế tác gỗ, may bọc, lắp ráp và kiểm tra chất lượng, đảm bảo mỗi sản phẩm đạt chuẩn quốc tế.</Typography>
+                <Typography variant="h3">{blocksOf('Factory')[0]?.heading || 'Nhà máy 5000m² tại Bình Dương'}</Typography>
+                <Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap' }}>{blocksOf('Factory')[0]?.content || 'Nhà máy LUXE Sofa được trang bị dây chuyền sản xuất hiện đại kết hợp chế tác thủ công. Khu vực sản xuất được chia thành các phân xưởng chuyên biệt: chế tác gỗ, may bọc, lắp ráp và kiểm tra chất lượng.'}</Typography>
               </Stack>
             </Grid>
           </Grid>
@@ -164,8 +205,10 @@ export default function Page() {
       case 'process':
         return (
           <Grid container spacing={3} component={MotionViewport}>
-            {PROCESS_STEPS.map((item) => (
-              <Grid key={item.step} xs={12} sm={6} md={4}>
+            {(blocksOf('Process step').length
+              ? blocksOf('Process step').map((block) => ({ id: block.id, step: block.title, title: block.heading, desc: block.content }))
+              : PROCESS_STEPS.map((item) => ({ ...item, id: item.step }))).map((item) => (
+              <Grid key={item.id} xs={12} sm={6} md={4}>
                 <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ p: 4, height: 1, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
                   <Typography variant="h2" sx={{ ...textGradient(`135deg, ${theme.vars.palette.primary.light}, ${theme.vars.palette.warning.light}`), opacity: 0.5 }}>{item.step}</Typography>
                   <Typography variant="h6">{item.title}</Typography>
@@ -178,8 +221,10 @@ export default function Page() {
       case 'technology':
         return (
           <Grid container spacing={3} component={MotionViewport}>
-            {TECH.map((item) => (
-              <Grid key={item.title} xs={12} sm={6} md={3}>
+            {(blocksOf('Technology').length
+              ? blocksOf('Technology').map((block) => ({ id: block.id, title: block.heading, desc: block.content, icon: block.icon || 'solar:cpu-bold-duotone' }))
+              : TECH.map((item) => ({ ...item, id: item.title }))).map((item) => (
+              <Grid key={item.id} xs={12} sm={6} md={3}>
                 <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} sx={{ p: 4, height: 1, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
                   <Box sx={{ width: 56, height: 56, display: 'flex', borderRadius: 1.5, alignItems: 'center', justifyContent: 'center', bgcolor: (t) => varAlpha(t.vars.palette.primary.mainChannel, 0.08), color: 'primary.main' }}>
                     <Iconify icon={item.icon} width={28} />
@@ -194,8 +239,10 @@ export default function Page() {
       case 'certifications':
         return (
           <Grid container spacing={3} component={MotionViewport}>
-            {CERTS.map((item) => (
-              <Grid key={item.title} xs={12} sm={6} md={3}>
+            {(blocksOf('Certificate').length
+              ? blocksOf('Certificate').map((block) => ({ id: block.id, title: block.heading, desc: block.content, icon: block.icon || 'solar:medal-ribbon-bold-duotone' }))
+              : CERTS.map((item) => ({ ...item, id: item.title }))).map((item) => (
+              <Grid key={item.id} xs={12} sm={6} md={3}>
                 <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} alignItems="center" sx={{ p: 4, height: 1, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card, textAlign: 'center' }}>
                   <Box sx={{ width: 72, height: 72, display: 'flex', borderRadius: '50%', alignItems: 'center', justifyContent: 'center', bgcolor: (t) => varAlpha(t.vars.palette.primary.mainChannel, 0.08), color: 'primary.main' }}>
                     <Iconify icon={item.icon} width={36} />
@@ -210,12 +257,15 @@ export default function Page() {
       case 'team':
         return (
           <Grid container spacing={3} component={MotionViewport}>
-            {TEAM.map((member) => (
-              <Grid key={member.name} xs={12} sm={6} md={3}>
+            {(blocksOf('Team member').length
+              ? blocksOf('Team member').map((block) => ({ id: block.id, name: block.heading, role: block.title, avatar: block.image, bio: block.content }))
+              : TEAM.map((member) => ({ ...member, id: member.name, bio: '' }))).map((member) => (
+              <Grid key={member.id} xs={12} sm={6} md={3}>
                 <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} spacing={2} alignItems="center" sx={{ p: 4, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
                   <Avatar src={member.avatar} alt={member.name} sx={{ width: 96, height: 96 }} />
                   <Typography variant="h6">{member.name}</Typography>
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>{member.role}</Typography>
+                  {!!member.bio && <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center' }}>{member.bio}</Typography>}
                 </Stack>
               </Grid>
             ))}
@@ -224,10 +274,13 @@ export default function Page() {
       case 'partners':
         return (
           <Grid container spacing={3} component={MotionViewport}>
-            {PARTNERS.map((name) => (
-              <Grid key={name} xs={6} sm={4} md={2}>
+            {(blocksOf('Partner').length
+              ? blocksOf('Partner').map((block) => ({ id: block.id, name: block.heading, description: block.content }))
+              : PARTNERS.map((name) => ({ id: name, name, description: '' }))).map((partner) => (
+              <Grid key={partner.id} xs={6} sm={4} md={2}>
                 <Stack component={m.div} variants={varFade({ distance: 24 }).inUp} alignItems="center" justifyContent="center" sx={{ p: 4, height: 120, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
-                  <Typography variant="h6" sx={{ fontWeight: 'fontWeightBold', opacity: 0.6 }}>{name}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'fontWeightBold', opacity: 0.6 }}>{partner.name}</Typography>
+                  {!!partner.description && <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center' }}>{partner.description}</Typography>}
                 </Stack>
               </Grid>
             ))}
@@ -236,50 +289,87 @@ export default function Page() {
       case 'gallery':
         return (
           <Grid container spacing={2} component={MotionViewport}>
-            {GALLERY.map((src, idx) => (
-              <Grid key={idx} xs={6} sm={4} md={3}>
-                <Box component={m.img} variants={varFade({ distance: 24 }).inUp} src={src} alt={`Gallery ${idx + 1}`} sx={{ width: 1, borderRadius: 2, aspectRatio: '1/1', objectFit: 'cover' }} />
+            {(blocksOf('Gallery image').length
+              ? blocksOf('Gallery image').map((block) => ({ id: block.id, image: block.image, title: block.heading }))
+              : GALLERY.map((image, index) => ({ id: String(index), image, title: `Gallery ${index + 1}` }))).map((item) => (
+              <Grid key={item.id} xs={6} sm={4} md={3}>
+                <Box component={m.img} variants={varFade({ distance: 24 }).inUp} src={item.image} alt={item.title} sx={{ width: 1, borderRadius: 2, aspectRatio: '1/1', objectFit: 'cover' }} />
               </Grid>
             ))}
           </Grid>
         );
       case 'video':
         return (
-          <Stack spacing={3} component={MotionViewport}>
-            {[SOFA2_PAGE_IMAGES.technology, SOFA2_PAGE_IMAGES.factory, SOFA2_PAGE_IMAGES.workshop].map((src, idx) => (
-              <Box key={idx} component={m.div} variants={varFade({ distance: 24 }).inUp} sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden', aspectRatio: '16/9' }}>
-                <Box component="img" src={src} alt={`Video ${idx + 1}`} sx={{ width: 1, height: 1, objectFit: 'cover' }} />
-                <Stack alignItems="center" justifyContent="center" sx={{ position: 'absolute', inset: 0, bgcolor: varAlpha(theme.vars.palette.common.blackChannel, 0.4) }}>
-                  <Box sx={{ width: 72, height: 72, display: 'flex', borderRadius: '50%', alignItems: 'center', justifyContent: 'center', bgcolor: varAlpha(theme.vars.palette.common.whiteChannel, 0.9), color: 'primary.main' }}>
-                    <Iconify icon="solar:play-bold" width={36} />
-                  </Box>
-                </Stack>
-              </Box>
-            ))}
-          </Stack>
+          <Grid container spacing={3} component={MotionViewport}>
+            {(blocksOf('Video').length
+              ? blocksOf('Video').map((block) => ({ id: block.id, title: block.heading, description: block.content, image: block.image, url: block.videoUrl }))
+              : [SOFA2_PAGE_IMAGES.technology, SOFA2_PAGE_IMAGES.factory, SOFA2_PAGE_IMAGES.workshop].map((image, index) => ({ id: String(index), title: `Video ${index + 1}`, description: '', image, url: '' }))).map((item) => {
+                const embedUrl = companyVideoEmbed(item.url);
+                const directVideo = /^https?:\/\/.+\.(mp4|webm)(\?.*)?$/i.test(item.url);
+                return (
+                  <Grid key={item.id} xs={12} md={6}>
+                    <Stack spacing={1.5}>
+                      <Box component={m.div} variants={varFade({ distance: 24 }).inUp} sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden', aspectRatio: '16/9', bgcolor: 'grey.900' }}>
+                        {embedUrl ? (
+                          <Box component="iframe" src={embedUrl} title={item.title} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen sx={{ width: 1, height: 1, border: 0 }} />
+                        ) : directVideo ? (
+                          <Box component="video" src={item.url} poster={item.image} controls preload="metadata" sx={{ width: 1, height: 1, objectFit: 'cover' }} />
+                        ) : (
+                          <>
+                            <Box component="img" src={item.image || meta.image} alt={item.title} sx={{ width: 1, height: 1, objectFit: 'cover' }} />
+                            <Stack alignItems="center" justifyContent="center" sx={{ position: 'absolute', inset: 0, bgcolor: varAlpha(theme.vars.palette.common.blackChannel, 0.45), color: 'common.white' }}>
+                              <Iconify icon="solar:play-bold" width={48} />
+                              {!item.url && <Typography variant="caption" sx={{ mt: 1 }}>Video chưa được gắn liên kết</Typography>}
+                              {!!item.url && <Typography variant="caption" sx={{ mt: 1 }}>URL video chưa được hỗ trợ</Typography>}
+                            </Stack>
+                          </>
+                        )}
+                      </Box>
+                      <Typography variant="h6">{item.title}</Typography>
+                      {!!item.description && <Typography variant="body2" sx={{ color: 'text.secondary' }}>{item.description}</Typography>}
+                    </Stack>
+                  </Grid>
+                );
+              })}
+          </Grid>
         );
       default:
-        return (
+        return sectionRows.length ? (
+          <Grid container spacing={3} component={MotionViewport}>
+            {sectionRows.map((block) => (
+              <Grid key={block.id} xs={12} md={block.image ? 6 : 12}>
+                <Stack spacing={2} sx={{ p: 3, height: 1, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
+                  {block.image && <Box component="img" src={block.image} alt={block.heading} sx={{ width: 1, borderRadius: 1.5, maxHeight: 420, objectFit: 'cover' }} />}
+                  <Typography variant="h5">{block.heading}</Typography>
+                  <Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap' }}>{block.content}</Typography>
+                </Stack>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
           <Stack spacing={3} alignItems="center" sx={{ textAlign: 'center', py: 10 }}>
             <Iconify icon="solar:file-remove-bold-duotone" width={64} sx={{ color: 'text.disabled' }} />
             <Typography variant="h4">Trang không tồn tại</Typography>
-            <Button component={RouterLink} href="/sofa2/about" variant="contained">Quay lại trang Về chúng tôi</Button>
+            <Button component={RouterLink} href="/sofa2/about" variant="contained">Quay lại trang Giới thiệu</Button>
           </Stack>
         );
     }
-  }, [section, theme]);
+  }, [meta.image, pageExists, section, sectionRows, theme]);
 
   return (
     <>
       <Helmet>
-        <title>{meta.helmet}</title>
+        <title>{pageBlock?.metaTitle || meta.helmet}</title>
+        {pageBlock?.metaDescription && <meta name="description" content={pageBlock.metaDescription} />}
+        <meta name="robots" content={pageExists && (!pageBlock || pageBlock.indexable) ? 'index, follow' : 'noindex, nofollow'} />
+        <link rel="canonical" href={`https://luxesofa.vn/sofa2/about/${section}`} />
       </Helmet>
 
-      <Sofa2PageHero
+      {pageExists && <Sofa2PageHero
         overline={meta.overline}
         title={meta.title}
         image={meta.image}
-      />
+      />}
 
       <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
         <Container>{content}</Container>
