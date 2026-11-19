@@ -1,9 +1,9 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { SOFA2_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
-import { getSofa2AdminRows } from './sofa2-admin-store';
 
+import { getSofa2AdminRows } from './sofa2-admin-store';
 import { SOFA2_SITE_ORIGIN } from './sofa2-seo-generator';
 
 // ----------------------------------------------------------------------
@@ -24,6 +24,7 @@ type PublicSeoPage = {
   ogDescription?: string;
   indexable?: string | boolean;
   follow?: string | boolean;
+  published?: string | boolean;
   schemaType: string;
 };
 
@@ -108,19 +109,24 @@ export function Sofa2SeoHead() {
   const seoData = useMemo<PublicSeoData>(() => {
     const modules = ['category', 'product', 'collection', 'project', 'showroom', 'blog', 'brand'];
     const pages = modules.flatMap((moduleSlug) =>
-      getSofa2AdminRows('seo', moduleSlug).map((row) => ({
-        url: String(row.page ?? ''),
-        title: String(row.title ?? ''),
-        description: String(row.description ?? ''),
-        keyword: String(row.keyword ?? ''),
-        keyword2: String(row.keyword2 ?? ''),
-        h1: String(row.h1 ?? ''),
-        canonical: String(row.canonical ?? ''),
-        ogImage: String(row.ogImage ?? ''),
-        indexable: String(row.indexable ?? 'Có'),
-        follow: String(row.follow ?? 'Có'),
-        schemaType: String(row.schemaType ?? ''),
-      }))
+      getSofa2AdminRows('seo', moduleSlug)
+        .filter((row) => !['không', 'false', '0'].includes(String(row.published ?? 'Có').trim().toLowerCase()))
+        .map((row) => ({
+          url: String(row.url ?? row.page ?? ''),
+          title: String(row.title ?? ''),
+          description: String(row.description ?? ''),
+          keyword: String(row.keyword ?? ''),
+          keyword2: String(row.keyword2 ?? ''),
+          h1: String(row.h1 ?? ''),
+          canonical: String(row.canonical ?? ''),
+          ogImage: String(row.ogImage ?? ''),
+          ogTitle: String(row.ogTitle ?? ''),
+          ogDescription: String(row.ogDescription ?? ''),
+          indexable: String(row.indexable ?? 'Có'),
+          follow: String(row.follow ?? 'Có'),
+          published: String(row.published ?? 'Có'),
+          schemaType: String(row.schemaType ?? ''),
+        }))
     );
     return { pages, schemas: [] };
   }, []);

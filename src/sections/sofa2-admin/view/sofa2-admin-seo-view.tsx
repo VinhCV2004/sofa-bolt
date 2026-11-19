@@ -46,6 +46,7 @@ import { type Sofa2SeoSchema } from '../sofa2-seo';
 import { Sofa2AdminLayout } from './sofa2-admin-layout';
 import { SOFA2_SITE_ORIGIN } from '../sofa2-seo-generator';
 import { sofa2Today, type Sofa2CmsField } from '../sofa2-cms';
+import { Sofa2SearchConsolePanel } from './sofa2-search-console-panel';
 import {
   type AdminRow,
   loadSofa2SeoRows,
@@ -926,6 +927,12 @@ export function Sofa2AdminSeoView({ group, module, schema }: Props) {
               >
                 {error || (loading ? 'Đang tải dữ liệu SEO demo…' : 'Đang lưu thay đổi SEO cục bộ…')}
               </Alert>
+            </Grid>
+          )}
+
+          {schema.kind === 'page' && (
+            <Grid xs={12}>
+              <Sofa2SearchConsolePanel />
             </Grid>
           )}
 
