@@ -1749,6 +1749,25 @@ const CMS_GROUP: Sofa2AdminGroup = {
 // ----------------------------------------------------------------------
 
 const PRODUCT_SKUS = ['LX-OSL-01', 'LX-BER-04', 'LX-COP-12', 'LX-TOK-03', 'LX-MUN-07', 'LX-HEL-02', 'LX-FRA-01', 'LX-AMS-01', 'LX-ROM-06', 'LX-REY-08', 'LX-LON-10', 'LX-SEO-11', 'LX-SYD-14', 'LX-PAR-16', 'LX-IST-18', 'LX-MAD-20'];
+const PRODUCT_DETAIL_SEEDS = [
+  { frameMaterial: 'Gỗ sồi FSC ghép mộng, chân gỗ tháo rời', upholstery: 'Vải linen dệt thoáng màu be; có thể đặt bọc màu xám hoặc nâu', cushion: 'Mút HR 40D kết hợp lớp bông lông vũ nhân tạo, đệm ngồi tháo rời', weightKg: 58, seatCount: 3, features: 'Khung gỗ sồi FSC có chứng nhận nguồn gốc\nĐệm tháo rời, dễ vệ sinh và thay vỏ\nChân cao thuận tiện cho robot hút bụi', assembly: 'Lắp chân ghế bằng bộ vít đi kèm; cần 2 người thao tác. Thời gian lắp dự kiến 15 phút.', included: '01 sofa Oslo 3 chỗ, 03 gối tựa, bộ lục giác lắp chân và phiếu bảo hành.', usageInstructions: 'Đặt ghế trên mặt sàn phẳng; phân bổ tải trọng đều trên mặt đệm. Giữ khoảng cách tối thiểu 10 cm với tường.', careGuide: 'Hút bụi đầu mềm hàng tuần. Thấm vết bẩn bằng khăn trắng sạch, không chà mạnh; vỏ đệm nên giặt khô. Tránh nắng gắt chiếu trực tiếp.', warrantyText: 'Bảo hành khung 10 năm, mút và đường may 2 năm; không áp dụng cho hao mòn tự nhiên hoặc vệ sinh sai hướng dẫn.', videoUrl: '', videoCaption: '', relatedProductIds: '3\n10\n6' },
+  { frameMaterial: 'Khung thép sơn tĩnh điện kết hợp gỗ plywood chịu lực', upholstery: 'Da PU cao cấp phủ chống bám bẩn màu đen hoặc xám đậm', cushion: 'Mút đúc định hình đàn hồi cao, đệm lưng nhiều lớp', weightKg: 92, seatCount: 5, features: 'Thiết kế góc chữ L tối ưu chỗ ngồi cho gia đình\nBề mặt da PU dễ lau chùi hằng ngày\nKhung chịu lực, chân chống trượt', assembly: 'Ghép module góc và thân ghế theo chốt định vị; khuyến nghị đội giao hàng lắp đặt tại nhà.', included: '01 bộ sofa góc Berlin, 04 gối tựa và hướng dẫn bảo quản.', usageInstructions: 'Không đứng hoặc nhún mạnh trên tay vịn. Xoay vị trí đệm định kỳ để hạn chế lún lệch.', careGuide: 'Lau bằng khăn mềm hơi ẩm, sau đó lau khô. Không dùng cồn, chất tẩy mạnh hoặc vật sắc trên bề mặt da PU.', warrantyText: 'Bảo hành khung 5 năm, phần da và đường may 2 năm theo điều kiện của LUXE Sofa.', videoUrl: '', videoCaption: '', relatedProductIds: '1\n9\n15' },
+  { frameMaterial: 'Gỗ tần bì sấy, liên kết mộng gia cường', upholstery: 'Vải cotton pha dễ tháo vỏ, tông trắng kem / be / xám', cushion: 'Mút HR mật độ cao, đệm ngồi có khóa kéo tháo vỏ', weightKg: 39, seatCount: 2, features: 'Kích thước gọn cho căn hộ và phòng khách nhỏ\nTựa lưng nghiêng hỗ trợ tư thế thư giãn\nChân gỗ sáng màu phong cách Bắc Âu', assembly: 'Bắt 4 chân gỗ theo dấu định vị dưới đáy ghế; siết đều tay, không dùng máy siết lực cao.', included: '01 sofa Copenhagen 2 chỗ, 02 gối tựa rời.', usageInstructions: 'Đặt ghế cách nguồn nhiệt và cửa sổ nắng trực tiếp. Tránh để vật nhọn móc vào sợi vải.', careGuide: 'Hút bụi với đầu chổi mềm. Vết bẩn cần xử lý ngay bằng khăn thấm; kiểm tra nhãn vải trước khi giặt vỏ.', warrantyText: 'Bảo hành khung 5 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '1\n10\n6' },
+  { frameMaterial: 'Gỗ sồi tự nhiên, chân nghiêng gia công CNC', upholstery: 'Vải velvet mềm mịn màu nâu; có lựa chọn be và xám', cushion: 'Mút đàn hồi cao bọc bông mềm, tựa lưng liền khối', weightKg: 24, seatCount: 1, features: 'Form ghế đơn nhỏ gọn, dễ phối nhiều không gian\nChân gỗ chéo tạo dáng Mid-Century\nĐệm ngồi dày, nâng đỡ ổn định', assembly: 'Lắp chân theo đúng vị trí đánh dấu. Đặt ghế nằm trên thảm mềm khi thao tác để tránh trầy vải.', included: '01 ghế sofa đơn Tokyo và bộ phụ kiện lắp chân.', usageInstructions: 'Dùng cho một người ngồi; không đứng lên ghế hoặc ngồi lên tay vịn.', careGuide: 'Hút bụi đầu bọc vải hàng tuần. Dùng dung dịch vệ sinh velvet chuyên dụng và thử ở vùng khuất trước.', warrantyText: 'Bảo hành khung 5 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '6\n3\n1' },
+  { frameMaterial: 'Khung gỗ sồi gia cường, chân gỗ tiện', upholstery: 'Da bò thật màu đen hoặc nâu đậm, vân tự nhiên', cushion: 'Mút HR kết hợp memory foam, độ đàn hồi cân bằng', weightKg: 64, seatCount: 2, features: 'Da bò thật nhập khẩu, vân da tự nhiên\nĐệm memory foam nâng đỡ êm ái\nTay vịn bản rộng phong cách Industrial', assembly: 'Lắp chân ghế theo hướng dẫn; kiểm tra độ cân bằng trước khi sử dụng.', included: '01 sofa Munich 2 chỗ, 02 gối tựa và bộ chăm sóc da cơ bản.', usageInstructions: 'Tránh để vật nhọn, khóa kim loại hoặc quần áo ướt tiếp xúc lâu với da. Không ngồi dồn tải ở một mép ghế.', careGuide: 'Lau bụi bằng khăn khô mềm. Dưỡng da chuyên dụng 3–6 tháng/lần; tránh ánh nắng và nguồn nhiệt trực tiếp.', warrantyText: 'Bảo hành khung 10 năm, da và đường may 2 năm; da tự nhiên có sai khác vân màu là đặc tính vật liệu.', videoUrl: '', videoCaption: '', relatedProductIds: '2\n11\n14' },
+  { frameMaterial: 'Gỗ tự nhiên đã xử lý chống cong vênh', upholstery: 'Vải linen dệt thô màu be, xám hoặc nâu', cushion: 'Mút đúc đàn hồi cao, lớp bông phủ bề mặt', weightKg: 31, seatCount: 1, features: 'Dáng tròn tạo điểm nhấn cho góc đọc sách\nTựa lưng ôm nhẹ, đệm dày êm\nPhù hợp phòng ngủ, phòng khách và sảnh chờ', assembly: 'Gắn chân đế và kiểm tra khóa cố định trước khi đặt ghế đứng.', included: '01 ghế Helsinki tròn và 01 gối tựa.', usageInstructions: 'Đặt trên bề mặt phẳng; không kéo lê ghế để bảo vệ chân và sàn nhà.', careGuide: 'Hút bụi định kỳ bằng đầu mềm. Với vải linen, thấm vết bẩn từ ngoài vào trong, không chà xát.', warrantyText: 'Bảo hành khung 5 năm, phần mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '4\n3\n10' },
+  { frameMaterial: 'Khung gỗ cứng gia cường, cơ cấu recliner kim loại', upholstery: 'Da bò thật màu đen hoặc nâu, xử lý bề mặt mềm', cushion: 'Mút đàn hồi cao, tựa lưng phân vùng nâng đỡ', weightKg: 86, seatCount: 3, features: 'Cơ chế ngả điện với 3 mức thư giãn\nTựa lưng và gác chân điều chỉnh bằng nút bấm\nCổng sạc và chế độ massage theo cấu hình', assembly: 'Sản phẩm cần kỹ thuật viên kết nối mô-tơ và kiểm tra dây điện. Không tự tháo phần cơ cấu ngả.', included: '01 sofa recliner, bộ nguồn, điều khiển và hướng dẫn an toàn điện.', usageInstructions: 'Chừa khoảng trống phía sau và trước ghế khi ngả. Ngắt nguồn trước khi vệ sinh hoặc di chuyển.', careGuide: 'Lau bằng khăn mềm, không để dung dịch lọt vào công tắc/mô-tơ. Bảo dưỡng da bằng sản phẩm chuyên dụng.', warrantyText: 'Bảo hành khung 10 năm, cơ cấu điện 2 năm, da 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '14\n2\n11' },
+  { frameMaterial: 'Khung thép chịu lực sơn tĩnh điện', upholstery: 'Vải technical chống bám bẩn màu xám hoặc xanh navy', cushion: 'Mút đa tầng, thiết kế hỗ trợ lưng khi ngồi lâu', weightKg: 72, seatCount: 3, features: 'Cổng sạc USB tích hợp bên hông\nNgăn chứa đồ kín đáo dưới đệm\nLoa Bluetooth và module thông minh theo cấu hình', assembly: 'Lắp module theo sơ đồ đi kèm; kết nối thiết bị điện tử sau khi ghế đã đặt đúng vị trí.', included: '01 sofa Amsterdam, bộ cấp nguồn USB và hướng dẫn kết nối.', usageInstructions: 'Sử dụng bộ nguồn đúng thông số. Không để chất lỏng gần ổ cắm, loa và cổng sạc.', careGuide: 'Hút bụi đầu mềm; xử lý vết bẩn bằng khăn ẩm vừa phải. Rút nguồn trước khi vệ sinh các module điện.', warrantyText: 'Bảo hành khung 5 năm, module điện tử 12 tháng, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '12\n1\n2' },
+  { frameMaterial: 'Khung gỗ sồi gia cường, các module liên kết bằng khóa kim loại', upholstery: 'Da bò Ý màu nâu, kem hoặc đen', cushion: 'Mút HR đa lớp, gối lưng rời có thể điều chỉnh', weightKg: 142, seatCount: 6, features: 'Các module linh hoạt thay đổi cấu hình chữ U\nDa bò Ý mềm, bền và lên màu tự nhiên\nPhù hợp phòng khách rộng, biệt thự và không gian tiếp khách', assembly: 'Định vị từng module theo bản vẽ mặt bằng; khóa liên kết các phần trước khi sử dụng.', included: 'Bộ sofa Rome modular theo cấu hình đặt hàng, gối tựa và bộ khóa liên kết.', usageInstructions: 'Không dịch chuyển riêng một module khi đang khóa nối; nâng module bằng ít nhất 2 người.', careGuide: 'Hút bụi khe ghép. Lau và dưỡng da định kỳ; tránh kéo lê module trên sàn.', warrantyText: 'Bảo hành khung 10 năm, da và phụ kiện liên kết 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '15\n2\n11' },
+  { frameMaterial: 'Gỗ sồi sấy tự nhiên, chân gỗ tiện', upholstery: 'Vải bouclé dệt nổi màu trắng kem, xám hoặc xanh rêu', cushion: 'Đệm ngồi tháo rời, mút HR bọc bông mềm', weightKg: 46, seatCount: 2, features: 'Bề mặt bouclé tạo cảm giác mềm và ấm\nĐệm tháo rời dễ vệ sinh, thay vỏ\nTỷ lệ nhỏ gọn cho căn hộ hiện đại', assembly: 'Bắt chân gỗ vào đáy ghế; siết chéo lần lượt để ghế cân bằng.', included: '01 sofa Reykjavik 2 chỗ, 02 gối tựa.', usageInstructions: 'Tránh móc khóa, phụ kiện sắc cạnh vào bề mặt bouclé. Không đặt vật nóng trực tiếp lên ghế.', careGuide: 'Hút bụi đầu mềm theo chiều sợi. Xử lý vết bẩn ngay; không chải mạnh làm xù bề mặt.', warrantyText: 'Bảo hành khung 5 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '3\n1\n6' },
+  { frameMaterial: 'Khung gỗ tần bì ghép chịu lực, lò xo thép', upholstery: 'Da bò full-grain màu cognac hoặc xanh navy', cushion: 'Mút đàn hồi cao, đệm lưng cố định và tay cuộn cổ điển', weightKg: 98, seatCount: 3, features: 'Chần nút thủ công kiểu Chesterfield\nDa full-grain giữ vân tự nhiên đặc trưng\nTay cuộn và chân gỗ tạo vẻ sang trọng cổ điển', assembly: 'Lắp chân ghế theo bộ phụ kiện. Do khối lượng lớn, cần tối thiểu 2 người nâng.', included: '01 sofa London Chesterfield, bộ lắp chân và hướng dẫn chăm sóc da.', usageInstructions: 'Tránh đặt sát cửa sổ nắng gắt hoặc điều hòa thổi trực tiếp; phân bổ tải đều trên ghế.', careGuide: 'Lau bụi bằng khăn mềm, hút bụi các nút chần. Dưỡng da 3–6 tháng/lần theo hướng dẫn.', warrantyText: 'Bảo hành khung 10 năm, da và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '5\n2\n14' },
+  { frameMaterial: 'Khung thép sơn tĩnh điện và cơ cấu giường gấp', upholstery: 'Vải kháng bẩn màu xám, xanh navy hoặc be', cushion: 'Đệm mút đa tầng, hỗ trợ cả chế độ ngồi và nằm', weightKg: 78, seatCount: 3, features: 'Chuyển đổi nhanh từ sofa sang giường\nKhoang chứa chăn gối tích hợp\nCổng USB hỗ trợ sạc thiết bị', assembly: 'Đội giao hàng lắp đặt và hướng dẫn thao tác mở/đóng cơ cấu giường.', included: '01 sofa giường Seoul, bộ nguồn USB và hướng dẫn vận hành.', usageInstructions: 'Mở hết cơ cấu trước khi nằm; không để trẻ em thao tác cơ cấu gấp khi không có người lớn.', careGuide: 'Hút bụi thường xuyên; dùng dung dịch phù hợp với vải kháng bẩn. Lau khô hoàn toàn trước khi gấp lại.', warrantyText: 'Bảo hành khung và cơ cấu gấp 5 năm, module điện 12 tháng, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '8\n1\n10' },
+  { frameMaterial: 'Khung nhôm chống oxy hóa, liên kết inox', upholstery: 'Vải outdoor chống UV, thoát nước nhanh màu be cát hoặc xám đá', cushion: 'Mút outdoor thoát nước, vỏ đệm tháo rời', weightKg: 54, seatCount: 3, features: 'Vật liệu phù hợp hiên nhà và khu vực ngoài trời có mái che\nVải chống tia UV, khô nhanh sau khi vệ sinh\nKhung nhôm nhẹ, hạn chế ăn mòn', assembly: 'Lắp theo bộ phụ kiện inox đi kèm; kiểm tra siết chặt sau khi hoàn thiện.', included: '01 sofa Sydney outdoor, đệm ngồi và gối tựa outdoor.', usageInstructions: 'Khi không sử dụng dài ngày, cất đệm nơi khô ráo hoặc dùng áo phủ. Không ngâm sản phẩm trong nước.', careGuide: 'Làm sạch vải bằng nước sạch và xà phòng trung tính; để khô tự nhiên. Rửa sạch muối/bụi nếu đặt gần biển.', warrantyText: 'Bảo hành khung 5 năm, phụ kiện và đường may 1 năm; không áp dụng hư hại do bão/ngập.', videoUrl: '', videoCaption: '', relatedProductIds: '1\n8\n16' },
+  { frameMaterial: 'Khung gỗ cứng gia cường, cơ cấu ngả kim loại', upholstery: 'Da microfiber màu nâu hoặc kem, bề mặt dễ vệ sinh', cushion: 'Mút đàn hồi cao, tựa đầu và gác chân điều chỉnh', weightKg: 91, seatCount: 3, features: 'Recliner điện hỗ trợ tựa đầu và gác chân\nCổng sạc thiết bị tích hợp\nBề mặt microfiber mềm, dễ lau chùi', assembly: 'Kỹ thuật viên kết nối nguồn và kiểm tra hành trình ngả trước khi bàn giao.', included: '01 sofa Paris recliner, bộ nguồn, điều khiển và hướng dẫn sử dụng.', usageInstructions: 'Chừa khoảng trống cho phần gác chân khi mở. Không ngồi lên gác chân đang mở.', careGuide: 'Lau bằng khăn mềm hơi ẩm; tránh dung môi và chất tẩy mạnh. Ngắt nguồn trước khi vệ sinh.', warrantyText: 'Bảo hành khung 10 năm, cơ cấu điện 2 năm, vật liệu bọc 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '7\n5\n2' },
+  { frameMaterial: 'Khung gỗ óc chó xử lý chống mối mọt, kết cấu gia cường', upholstery: 'Vải linen pha màu xanh rêu, be hoặc nâu', cushion: 'Mút HR nhiều lớp, gối tựa rời phối màu thủ công', weightKg: 136, seatCount: 6, features: 'Thiết kế chữ U cho gia đình đông người\nKhung gỗ óc chó tạo điểm nhấn Indochine\nCó thể đổi vị trí module theo mặt bằng', assembly: 'Lắp đặt bởi đội kỹ thuật; xác nhận hướng góc trái/phải theo sơ đồ đơn hàng.', included: 'Bộ sofa Istanbul U theo cấu hình, gối tựa phối màu và hướng dẫn chăm sóc.', usageInstructions: 'Không kéo từng module khi đang liên kết. Tránh đặt đồ uống trực tiếp trên bề mặt gỗ.', careGuide: 'Lau gỗ bằng khăn mềm khô; vệ sinh vải bằng hút bụi và dung dịch trung tính. Tránh ẩm kéo dài.', warrantyText: 'Bảo hành khung 10 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '9\n2\n11' },
+  { frameMaterial: 'Khung gỗ tần bì sấy, chân thấp gia công CNC', upholstery: 'Vải nỉ dệt màu xám sáng, be hoặc đen', cushion: 'Mút HR dày, hỗ trợ tư thế ngồi thư giãn', weightKg: 57, seatCount: 3, features: 'Dáng lounge thấp cho góc đọc sách và khu vực tiếp khách\nĐệm rộng, tựa lưng thoải mái\nPhong cách tối giản dễ phối nội thất', assembly: 'Lắp chân ghế và kiểm tra độ cân bằng; nên có 2 người thao tác.', included: '01 sofa Madrid Lounge, 02 gối tựa và phụ kiện lắp ráp.', usageInstructions: 'Đặt ghế trên sàn phẳng; không đứng lên hoặc nhảy trên bề mặt đệm.', careGuide: 'Hút bụi định kỳ bằng đầu mềm. Với vết bẩn, dùng khăn sạch thấm nhẹ và để khô tự nhiên.', warrantyText: 'Bảo hành khung 5 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '6\n3\n10' },
+];
+
 const SOFA2_PRODUCT_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PRODUCTS.map((product, index) => ({
   id: product.id,
   sku: PRODUCT_SKUS[index],
@@ -1762,7 +1781,10 @@ const SOFA2_PRODUCT_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PROD
   shortDescription: product.description.slice(0, 180),
   description: product.description,
   image: product.image,
-  gallery: product.images.join(', '),
+  gallery: product.images.join('\n'),
+  images360: index < 2 ? product.images.join('\n') : '',
+  colors: (product.colors ?? []).join('\n'),
+  ...PRODUCT_DETAIL_SEEDS[index],
   price: product.price,
   compareAt: product.oldPrice ?? product.price,
   warranty: 60,
@@ -1858,6 +1880,52 @@ const PRODUCT_VARIANT_EXTRA_PRICING: Record<string, string | number>[] = PRODUCT
   endDate: '2026-12-31',
   status: 'Đang giảm',
 }));
+
+const PRODUCT_REVIEW_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PRODUCTS.flatMap((product, index) => {
+  const reviewers = ['Nguyễn Minh Anh', 'Trần Hoàng Long', 'Lê Thu Hà', 'Phạm Quốc Bảo'];
+  const reviewNotes = [
+    'Sản phẩm hoàn thiện đẹp, màu thực tế hài hòa với phòng khách. Đội giao hàng lắp đặt cẩn thận.',
+    'Đệm ngồi chắc vừa phải, kích thước đúng tư vấn. Nhân viên hỗ trợ nhiệt tình và giao đúng hẹn.',
+    'Chất liệu và đường may chỉn chu; sử dụng một thời gian vẫn giữ form tốt. Rất hài lòng với lựa chọn này.',
+    'Thiết kế đẹp, đóng gói kỹ. Được tư vấn chọn màu và kích thước phù hợp với không gian nhà.',
+  ];
+  return [0, 1].map((reviewIndex) => ({
+    product: PRODUCT_SKUS[index],
+    customer: reviewers[(index + reviewIndex) % reviewers.length],
+    rating: reviewIndex === 0 ? 5 : (index % 4 === 0 ? 4 : 5),
+    title: reviewIndex === 0 ? `Hài lòng với ${product.name}` : 'Đúng mô tả, giao hàng chu đáo',
+    content: reviewNotes[(index + reviewIndex) % reviewNotes.length],
+    date: `2026-10-${String(28 - ((index + reviewIndex) % 18)).padStart(2, '0')}`,
+    verifiedPurchase: 'Có',
+    status: 'Đã xuất bản',
+  }));
+}).concat([
+  { product: PRODUCT_SKUS[0], customer: 'Khách hàng chờ xác minh', rating: 4, title: 'Đang kiểm tra đơn hàng', content: 'Đánh giá đang chờ xác minh đơn mua trước khi xuất bản.', date: '2026-11-12', verifiedPurchase: 'Chờ xác minh', status: 'Chờ duyệt' },
+  { product: PRODUCT_SKUS[1], customer: 'Khách hàng ẩn danh', rating: 1, title: 'Nội dung cần kiểm duyệt', content: 'Bản ghi mẫu đang ẩn, không hiển thị trên website.', date: '2026-11-10', verifiedPurchase: 'Không', status: 'Ẩn' },
+]);
+
+const PRODUCT_QUESTION_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PRODUCTS.map((product, index) => ({
+  product: PRODUCT_SKUS[index],
+  customer: ['Mai Anh', 'Tuấn Phạm', 'Hương Nguyễn', 'Đức Trần'][index % 4],
+  question: [
+    `Sản phẩm ${product.name} có thể chọn màu khác ngoài màu đang hiển thị không?`,
+    `Kích thước ${product.size} đã bao gồm phần tay vịn chưa?`,
+    `Chất liệu của ${product.name} có phù hợp với gia đình có trẻ nhỏ không?`,
+    `LUXE Sofa có hỗ trợ giao và lắp đặt ${product.name} tại nhà không?`,
+  ][index % 4],
+  answer: [
+    `Có. Màu sắc và cấu hình thực tế phụ thuộc vào biến thể đang mở bán; vui lòng chọn phiên bản hoặc liên hệ showroom để xác nhận tồn kho.`,
+    `Kích thước công bố là kích thước tổng thể phủ bì. Đội ngũ tư vấn có thể xác nhận bản vẽ chi tiết trước khi đặt hàng.`,
+    `Sản phẩm có hướng dẫn vệ sinh theo chất liệu; vui lòng xử lý vết bẩn sớm và tránh dùng hóa chất mạnh. Có thể liên hệ chúng tôi để được tư vấn theo nhu cầu gia đình.`,
+    `Có. LUXE Sofa hỗ trợ giao hàng và lắp đặt theo khu vực; chi phí và thời gian sẽ được xác nhận khi lên đơn.`,
+  ][index % 4],
+  answeredBy: 'Tư vấn viên LUXE Sofa',
+  date: `2026-11-${String(12 - (index % 10)).padStart(2, '0')}`,
+  status: 'Đã xuất bản',
+})).concat([
+  { product: PRODUCT_SKUS[0], customer: 'Khách hàng mới', question: 'Tôi muốn hỏi thêm về thời gian giao hàng.', answer: '', answeredBy: '', date: '2026-11-14', status: 'Chờ duyệt' },
+  { product: PRODUCT_SKUS[2], customer: 'Khách hàng mới', question: 'Có thể đặt mẫu vải tại showroom không?', answer: '', answeredBy: '', date: '2026-11-13', status: 'Chờ duyệt' },
+]);
 
 const PRODUCT_GROUP: Sofa2AdminGroup = {
   slug: 'catalog',
@@ -2145,6 +2213,30 @@ const PRODUCT_GROUP: Sofa2AdminGroup = {
         { sku: 'LX-TOK-03', priceList: 'Bán lẻ lưu trữ 2025', note: 'Giá chương trình đã kết thúc.', list: money(9900000), sale: money(8500000), dealer: money(7800000), startDate: '2025-01-01', endDate: '2025-12-31', status: 'Hết hiệu lực' },
       ],
       ['Tạo bảng giá']
+    ),
+    mod(
+      'product-reviews', 'Đánh giá sản phẩm', 'Duyệt, ẩn hoặc quản lý đánh giá gắn với sản phẩm.',
+      'solar:chat-square-like-bold-duotone',
+      [
+        { label: 'Tổng đánh giá mẫu', value: String(PRODUCT_REVIEW_SEEDS.length) },
+        { label: 'Đã xuất bản', value: String(PRODUCT_REVIEW_SEEDS.filter((row) => row.status === 'Đã xuất bản').length) },
+        { label: 'Chờ duyệt', value: String(PRODUCT_REVIEW_SEEDS.filter((row) => row.status === 'Chờ duyệt').length) },
+        { label: 'Ẩn', value: String(PRODUCT_REVIEW_SEEDS.filter((row) => row.status === 'Ẩn').length) },
+      ],
+      [{ key: 'product', label: 'SKU sản phẩm' }, { key: 'customer', label: 'Khách hàng' }, { key: 'rating', label: 'Sao', type: 'number' }, STATUS_COL],
+      PRODUCT_REVIEW_SEEDS, ['Thêm đánh giá']
+    ),
+    mod(
+      'product-questions', 'Hỏi & Đáp sản phẩm', 'Quản lý câu hỏi, câu trả lời và trạng thái hiển thị trên trang sản phẩm.',
+      'solar:question-circle-bold-duotone',
+      [
+        { label: 'Tổng câu hỏi mẫu', value: String(PRODUCT_QUESTION_SEEDS.length) },
+        { label: 'Đã xuất bản', value: String(PRODUCT_QUESTION_SEEDS.filter((row) => row.status === 'Đã xuất bản').length) },
+        { label: 'Chờ duyệt', value: String(PRODUCT_QUESTION_SEEDS.filter((row) => row.status === 'Chờ duyệt').length) },
+        { label: 'Đã trả lời', value: String(PRODUCT_QUESTION_SEEDS.filter((row) => Boolean(row.answer)).length) },
+      ],
+      [{ key: 'product', label: 'SKU sản phẩm' }, { key: 'question', label: 'Câu hỏi' }, { key: 'answer', label: 'Trả lời' }, STATUS_COL],
+      PRODUCT_QUESTION_SEEDS, ['Thêm câu hỏi']
     ),
   ],
 };

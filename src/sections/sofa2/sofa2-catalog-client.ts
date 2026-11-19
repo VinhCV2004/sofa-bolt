@@ -13,6 +13,21 @@ export type Sofa2CatalogProduct = (typeof SOFA2_PRODUCTS)[number] & {
   metaTitle: string;
   metaDescription: string;
   indexable: boolean;
+  images360: string[];
+  videoUrl: string;
+  videoCaption: string;
+  frameMaterial: string;
+  upholstery: string;
+  cushion: string;
+  weightKg: number;
+  seatCount: number;
+  features: string[];
+  assembly: string;
+  included: string;
+  usageInstructions: string;
+  careGuide: string;
+  warrantyText: string;
+  relatedProductIds: string[];
 };
 
 type CatalogCategory = {
@@ -175,7 +190,7 @@ function toClientProduct(
   const regularPrice = Number(priceRow?.list ?? row.compareAt ?? fallback.oldPrice ?? row.price ?? fallback.price);
   const salePrice = Number(priceRow?.sale ?? row.price ?? fallback.price);
   const image = String(row.image ?? fallback.image);
-  const gallery = String(row.gallery ?? '').split(',').map((item) => item.trim()).filter(Boolean);
+  const gallery = String(row.gallery ?? '').split(/[\r\n,]+/).map((item) => item.trim()).filter(Boolean);
   const colors = linkedVariants.length
     ? Array.from(new Set(linkedVariants.map((variant) => String(variant.option ?? '').split('/')[1]?.trim()).filter(Boolean)))
     : fallback.colors;
@@ -201,9 +216,26 @@ function toClientProduct(
     oldPrice: regularPrice > salePrice ? regularPrice : undefined,
     image,
     images: gallery.length ? gallery : [image],
+    images360: String(row.images360 ?? '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
+    videoUrl: String(row.videoUrl ?? ''),
+    videoCaption: String(row.videoCaption ?? ''),
+    frameMaterial: String(row.frameMaterial ?? ''),
+    upholstery: String(row.upholstery ?? ''),
+    cushion: String(row.cushion ?? ''),
+    weightKg: Number(row.weightKg ?? 0),
+    seatCount: Number(row.seatCount ?? 0),
+    features: String(row.features ?? '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
+    assembly: String(row.assembly ?? ''),
+    included: String(row.included ?? ''),
+    usageInstructions: String(row.usageInstructions ?? ''),
+    careGuide: String(row.careGuide ?? ''),
+    warrantyText: String(row.warrantyText ?? ''),
+    relatedProductIds: String(row.relatedProductIds ?? '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean),
     material: String(row.material ?? fallback.material),
     size: String(row.dimensions ?? fallback.size),
-    colors: colors.length ? colors : fallback.colors,
+    colors: String(row.colors ?? '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean).length
+      ? String(row.colors).split(/\r?\n/).map((item) => item.trim()).filter(Boolean)
+      : colors.length ? colors : fallback.colors,
     badge: status === 'Hết hàng' || stock <= 0
       ? 'Hết hàng'
       : regularPrice > salePrice
