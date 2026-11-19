@@ -61,8 +61,11 @@ export default function Page() {
   const { id = '' } = useParams();
   const { products } = useSofa2CatalogProducts();
   const productSeoRows = useSofa2AdminRows('seo', 'product', { load: false }).rows;
+  const productReviewRows = useSofa2AdminRows('catalog', 'product-reviews').rows;
+  const productQuestionRows = useSofa2AdminRows('catalog', 'product-questions').rows;
   const [tab, setTab] = useState('info');
   const [selectedImage, setSelectedImage] = useState(0);
+  const [show360, setShow360] = useState(false);
   const [selectedVariantSku, setSelectedVariantSku] = useState('');
   const [added, setAdded] = useState(false);
   const cartStore = useSofa2AdminRows('shopping', 'cart');
@@ -93,8 +96,28 @@ export default function Page() {
     );
   }
 
-  const related = products.filter((p) => p.id !== product.id).slice(0, 4);
+  const matchesProduct = (row: Record<string, unknown>) => {
+    const linkedProduct = String(row.product ?? '').trim().toLowerCase();
+    return linkedProduct === product.name.toLowerCase() || linkedProduct === product.sku.toLowerCase() || linkedProduct === product.id.toLowerCase();
+  };
+  const reviews = productReviewRows.filter((row) => matchesProduct(row) && String(row.status) === 'Đã xuất bản');
+  const questions = productQuestionRows.filter((row) => matchesProduct(row) && String(row.status) === 'Đã xuất bản');
+  const averageRating = reviews.length
+    ? reviews.reduce((sum, row) => sum + Number(row.rating ?? 0), 0) / reviews.length
+    : product.rating;
+
+  const related = product.relatedProductIds.length
+    ? product.relatedProductIds.map((relatedId) => products.find((item) => item.id === relatedId || item.slug === relatedId || item.sku === relatedId || item.name === relatedId)).filter((item): item is NonNullable<typeof item> => Boolean(item) && item?.id !== product.id).slice(0, 4)
+    : products.filter((p) => p.id !== product.id && (p.category === product.category || p.style === product.style)).slice(0, 4);
   const images = product.images?.length ? product.images : [product.image];
+  const { videoUrl } = product;
+  const videoEmbedUrl = /youtu\.be\//i.test(videoUrl)
+    ? `https://www.youtube-nocookie.com/embed/${videoUrl.split(/youtu\.be\//i)[1]?.split(/[?&]/)[0]}`
+    : /youtube\.com\/watch/i.test(videoUrl)
+      ? `https://www.youtube-nocookie.com/embed/${videoUrl.match(/[?&]v=([^&]+)/i)?.[1] ?? ''}`
+      : /vimeo\.com\//i.test(videoUrl)
+        ? `https://player.vimeo.com/video/${videoUrl.split(/vimeo\.com\//i)[1]?.split(/[?&]/)[0]}`
+        : '';
   const addToCart = () => {
     const cartIndex = cartStore.rows.findIndex(
       (row) => String(row.customerId) === SOFA2_PORTAL_CUSTOMER_ID
@@ -145,10 +168,10 @@ export default function Page() {
               color: product.colors,
               url: productCanonical,
               brand: { '@type': 'Brand', name: 'LUXE Sofa' },
-              aggregateRating: product.reviews > 0 ? {
+              aggregateRating: reviews.length > 0 ? {
                 '@type': 'AggregateRating',
-                ratingValue: product.rating,
-                reviewCount: product.reviews,
+                ratingValue: averageRating,
+                reviewCount: reviews.length,
               } : undefined,
               offers: {
                 '@type': 'Offer',
@@ -175,8 +198,15 @@ export default function Page() {
             {/* Gallery */}
             <Grid xs={12} md={6}>
               <Stack spacing={2} component={m.div} variants={varFade({ distance: 24 }).inLeft}>
-                <Box component="img" src={images[selectedImage]} alt={product.name} sx={{ width: 1, borderRadius: 2, aspectRatio: '4/3', objectFit: 'cover' }} />
-                <Stack direction="row" spacing={1.5}>
+                <Box component="img" src={show360 && product.images360.length ? product.images360[selectedImage % product.images360.length] : images[selectedImage % images.length]} alt={product.name} sx={{ width: 1, borderRadius: 2, aspectRatio: '4/3', objectFit: 'cover' }} />
+                {(product.images360.length > 0 || images.length > 1) && (
+                  <Stack direction="row" spacing={1}>
+                    {product.images360.length > 0 && <Button size="small" variant={show360 ? 'contained' : 'outlined'} onClick={() => { setShow360(true); setSelectedImage(0); }}>Xem ảnh 360°</Button>}
+                    {images.length > 0 && <Button size="small" variant={!show360 ? 'contained' : 'outlined'} onClick={() => { setShow360(false); setSelectedImage(0); }}>Thư viện ảnh</Button>}
+                    {show360 && <><Button size="small" onClick={() => setSelectedImage((index) => (index - 1 + product.images360.length) % product.images360.length)}>Góc trước</Button><Button size="small" onClick={() => setSelectedImage((index) => (index + 1) % product.images360.length)}>Góc tiếp</Button></>}
+                  </Stack>
+                )}
+                {!show360 && <Stack direction="row" spacing={1.5}>
                   {images.map((src, idx) => (
                     <Box
                       key={idx}
@@ -187,7 +217,7 @@ export default function Page() {
                       sx={{ width: 80, height: 60, borderRadius: 1, objectFit: 'cover', cursor: 'pointer', border: (t) => `2px solid ${idx === selectedImage ? t.vars.palette.primary.main : 'transparent'}` }}
                     />
                   ))}
-                </Stack>
+                </Stack>}
               </Stack>
             </Grid>
 
@@ -196,8 +226,8 @@ export default function Page() {
               <Stack spacing={3} component={m.div} variants={varFade({ distance: 24 }).inRight}>
                 <Typography variant="h2">{product.name}</Typography>
                 <Stack direction="row" alignItems="center" spacing={1}>
-                  <Rating value={product.rating} precision={0.1} readOnly />
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>{product.rating} ({product.reviews} đánh giá)</Typography>
+                  <Rating value={averageRating} precision={0.1} readOnly />
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>{averageRating.toFixed(1)} ({reviews.length || product.reviews} đánh giá)</Typography>
                 </Stack>
                 <Stack direction="row" alignItems="center" spacing={2}>
                   <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'fontWeightBold' }}>{formatSofa2Price(Number(selectedVariant?.price ?? product.price))}</Typography>
@@ -267,6 +297,20 @@ export default function Page() {
         </Container>
       </Box>
 
+      {videoUrl && (
+        <Box component="section" sx={{ py: { xs: 5, md: 8 } }}>
+          <Container>
+            <Stack spacing={2}>
+              <Typography variant="h4">Video sản phẩm</Typography>
+              {product.videoCaption && <Typography color="text.secondary">{product.videoCaption}</Typography>}
+              {/\.(mp4|webm)(\?.*)?$/i.test(videoUrl)
+                ? <Box component="video" src={videoUrl} controls sx={{ width: 1, maxHeight: 640, borderRadius: 2, bgcolor: 'common.black' }} />
+                : videoEmbedUrl && <Box component="iframe" src={videoEmbedUrl} title={product.videoCaption || `Video ${product.name}`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen sx={{ width: 1, aspectRatio: '16/9', border: 0, borderRadius: 2 }} />}
+            </Stack>
+          </Container>
+        </Box>
+      )}
+
       {/* Tabs: specs / care */}
       <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: (t) => varAlpha(t.vars.palette.grey['500Channel'], 0.04) }}>
         <Container component={MotionViewport}>
@@ -279,7 +323,11 @@ export default function Page() {
               <Stack spacing={2} component={m.div} variants={varFade({ distance: 24 }).inUp}>
                 <Typography variant="h5">Thông tin sản phẩm</Typography>
                 <Typography sx={{ color: 'text.secondary' }}>{product.description}</Typography>
-                <Typography sx={{ color: 'text.secondary' }}>Sofa {product.name} được chế tác thủ công bởi nghệ nhân LUXE Sofa, đảm bảo chất lượng cao và độ bền vượt thời gian. Sản phẩm đi kèm bảo hành chính hãng 10 năm.</Typography>
+                {product.features.length > 0 && <Stack component="ul" spacing={1} sx={{ pl: 3, m: 0 }}>{product.features.map((feature) => <Typography component="li" key={feature} sx={{ color: 'text.secondary' }}>{feature}</Typography>)}</Stack>}
+                {product.assembly && <><Typography variant="subtitle1">Lắp đặt</Typography><Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>{product.assembly}</Typography></>}
+                {product.included && <><Typography variant="subtitle1">Đi kèm</Typography><Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>{product.included}</Typography></>}
+                {product.warrantyText && <><Typography variant="subtitle1">Bảo hành</Typography><Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>{product.warrantyText}</Typography></>}
+                {!product.features.length && !product.assembly && !product.included && !product.warrantyText && <Typography sx={{ color: 'text.secondary' }}>Liên hệ LUXE Sofa để được tư vấn chi tiết về sản phẩm.</Typography>}
               </Stack>
             )}
 
@@ -295,6 +343,11 @@ export default function Page() {
                     <Typography variant="overline" sx={{ color: 'text.disabled' }}>Kích thước</Typography>
                     <Typography>{product.size}</Typography>
                   </Stack>
+                  {product.frameMaterial && <Stack sx={{ p: 2, borderRadius: 1, bgcolor: 'background.paper', flex: '1 1 200px' }}><Typography variant="overline" sx={{ color: 'text.disabled' }}>Vật liệu khung</Typography><Typography>{product.frameMaterial}</Typography></Stack>}
+                  {product.upholstery && <Stack sx={{ p: 2, borderRadius: 1, bgcolor: 'background.paper', flex: '1 1 200px' }}><Typography variant="overline" sx={{ color: 'text.disabled' }}>Vật liệu bọc</Typography><Typography>{product.upholstery}</Typography></Stack>}
+                  {product.cushion && <Stack sx={{ p: 2, borderRadius: 1, bgcolor: 'background.paper', flex: '1 1 200px' }}><Typography variant="overline" sx={{ color: 'text.disabled' }}>Cấu tạo đệm</Typography><Typography>{product.cushion}</Typography></Stack>}
+                  {product.weightKg > 0 && <Stack sx={{ p: 2, borderRadius: 1, bgcolor: 'background.paper', flex: '1 1 200px' }}><Typography variant="overline" sx={{ color: 'text.disabled' }}>Khối lượng</Typography><Typography>{product.weightKg} kg</Typography></Stack>}
+                  {product.seatCount > 0 && <Stack sx={{ p: 2, borderRadius: 1, bgcolor: 'background.paper', flex: '1 1 200px' }}><Typography variant="overline" sx={{ color: 'text.disabled' }}>Số chỗ ngồi</Typography><Typography>{product.seatCount}</Typography></Stack>}
                 </Stack>
               </Stack>
             )}
@@ -302,11 +355,9 @@ export default function Page() {
             {tab === 'care' && (
               <Stack spacing={2} component={m.div} variants={varFade({ distance: 24 }).inUp}>
                 <Typography variant="h5">Hướng dẫn bảo quản</Typography>
-                <Typography sx={{ color: 'text.secondary' }}>• Hút bụi định kỳ hàng tuần bằng máy hút bụi đầu mềm.</Typography>
-                <Typography sx={{ color: 'text.secondary' }}>• Tránh ánh nắng trực tiếp để không phai màu chất liệu.</Typography>
-                <Typography sx={{ color: 'text.secondary' }}>• Với sofa da, dùng khăn ẩm lau nhẹ và dưỡng da 6 tháng/lần.</Typography>
-                <Typography sx={{ color: 'text.secondary' }}>• Với sofa vải, giặt khô hoặc dùng dung dịch chuyên dụng.</Typography>
-                <Typography sx={{ color: 'text.secondary' }}>• Liên hệ dịch vụ bảo trì miễn phí của LUXE Sofa trong năm đầu.</Typography>
+                {product.usageInstructions && <><Typography variant="subtitle1">Sử dụng</Typography><Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>{product.usageInstructions}</Typography></>}
+                {product.careGuide && <Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>{product.careGuide}</Typography>}
+                {!product.usageInstructions && !product.careGuide && <Typography sx={{ color: 'text.secondary' }}>Vui lòng liên hệ LUXE Sofa để được hướng dẫn sử dụng và bảo quản phù hợp với chất liệu sản phẩm.</Typography>}
               </Stack>
             )}
           </Stack>
@@ -321,10 +372,16 @@ export default function Page() {
               Đánh giá
               <Box component="span" sx={{ opacity: 0.4 }}> từ khách hàng</Box>
             </Typography>
-            <Stack spacing={2} sx={{ p: 4, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card, textAlign: 'center' }}>
+            {reviews.length ? reviews.map((review, index) => (
+              <Stack key={`${review.customer}-${index}`} spacing={1} sx={{ p: 3, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
+                <Stack direction="row" spacing={1} alignItems="center"><Rating value={Number(review.rating ?? 0)} readOnly size="small" /><Typography variant="subtitle2">{String(review.customer ?? 'Khách hàng')}</Typography><Typography variant="caption" color="text.secondary">{String(review.date ?? '')}</Typography></Stack>
+                {review.title && <Typography variant="subtitle1">{String(review.title)}</Typography>}
+                <Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>{String(review.content ?? '')}</Typography>
+              </Stack>
+            )) : <Stack spacing={2} sx={{ p: 4, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card, textAlign: 'center' }}>
               <Iconify icon="solar:chat-square-like-bold-duotone" width={40} sx={{ color: 'text.disabled', mx: 'auto' }} />
-              <Typography sx={{ color: 'text.secondary' }}>Chưa có đánh giá cho sản phẩm này. Hãy là người đầu tiên đánh giá!</Typography>
-            </Stack>
+              <Typography sx={{ color: 'text.secondary' }}>Chưa có đánh giá được xuất bản cho sản phẩm này.</Typography>
+            </Stack>}
           </Stack>
         </Container>
       </Box>
@@ -336,10 +393,17 @@ export default function Page() {
             <Typography variant="h3">
               Hỏi & Đáp
             </Typography>
-            <Stack spacing={2} sx={{ p: 4, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card, textAlign: 'center' }}>
+            {questions.length ? questions.map((item, index) => (
+              <Stack key={`${item.customer}-${index}`} spacing={1} sx={{ p: 3, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card }}>
+                <Typography variant="subtitle1">Hỏi: {String(item.question ?? '')}</Typography>
+                <Typography variant="caption" color="text.secondary">{String(item.customer ?? 'Khách hàng')} · {String(item.date ?? '')}</Typography>
+                {item.answer && <Typography sx={{ color: 'text.secondary', whiteSpace: 'pre-line' }}>Trả lời: {String(item.answer)}</Typography>}
+                {item.answeredBy && <Typography variant="caption" color="text.secondary">{String(item.answeredBy)}</Typography>}
+              </Stack>
+            )) : <Stack spacing={2} sx={{ p: 4, borderRadius: 2, bgcolor: 'background.paper', boxShadow: (t) => t.customShadows.card, textAlign: 'center' }}>
               <Iconify icon="solar:question-circle-bold-duotone" width={40} sx={{ color: 'text.disabled', mx: 'auto' }} />
-              <Typography sx={{ color: 'text.secondary' }}>Chưa có câu hỏi nào. Bạn có thắc mắc về sản phẩm này?</Typography>
-            </Stack>
+              <Typography sx={{ color: 'text.secondary' }}>Chưa có câu hỏi được xuất bản cho sản phẩm này.</Typography>
+            </Stack>}
           </Stack>
         </Container>
       </Box>

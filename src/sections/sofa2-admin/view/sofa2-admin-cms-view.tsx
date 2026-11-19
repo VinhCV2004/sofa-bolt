@@ -227,7 +227,7 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
     load: group.slug === 'cms' && module.slug === 'blog',
   });
   const { rows: catalogProducts } = useSofa2AdminRows('catalog', 'products', {
-    load: group.slug === 'catalog' && module.slug === 'categories',
+    load: group.slug === 'catalog' && ['categories', 'product-reviews', 'product-questions'].includes(module.slug),
   });
   const { rows: customerProfiles } = useSofa2AdminRows('customer', 'profiles', {
     load: isCustomerDashboard,
@@ -361,7 +361,11 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
 
   const { titleKey, statusKey, statusOptions, clientPath, entity } = schema;
   const fields =
-    group.slug === 'access' && module.slug === 'users'
+    group.slug === 'catalog' && ['product-reviews', 'product-questions'].includes(module.slug)
+      ? schema.fields.map((field) => field.key === 'product'
+          ? { ...field, options: catalogProducts.map((row) => String(row.sku ?? row.name ?? '')).filter(Boolean) }
+          : field)
+      : group.slug === 'access' && module.slug === 'users'
       ? schema.fields.map((field) =>
           field.key === 'role'
             ? {
