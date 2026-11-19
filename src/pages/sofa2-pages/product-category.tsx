@@ -62,7 +62,7 @@ export default function Page() {
     <>
       <Helmet>
         <title>{String(categorySeo?.title ?? '') || selectedCategory?.metaTitle || `${label} - LUXE Sofa`}</title>
-        {(String(categorySeo?.description ?? '') || selectedCategory?.metaDescription) && <meta name="description" content={String(categorySeo?.description ?? '') || selectedCategory?.metaDescription} />}
+        {(String(categorySeo?.description ?? '') || selectedCategory?.metaDescription || selectedCategory?.description) && <meta name="description" content={String(categorySeo?.description ?? '') || selectedCategory?.metaDescription || selectedCategory?.description} />}
         <meta name="robots" content={categoryIndexable ? 'index, follow' : 'noindex, nofollow'} />
         <link rel="canonical" href={categoryCanonical} />
         {categoryIndexable && (
@@ -71,7 +71,7 @@ export default function Page() {
               '@context': 'https://schema.org',
               '@type': 'CollectionPage',
               name: selectedCategory?.label ?? label,
-              description: selectedCategory?.metaDescription || `${label} — danh mục sofa tại LUXE Sofa.`,
+              description: selectedCategory?.metaDescription || selectedCategory?.description || `${label} — danh mục sofa tại LUXE Sofa.`,
               url: categoryCanonical,
               isPartOf: { '@type': 'WebSite', name: 'LUXE Sofa', url: 'https://luxesofa.vn/sofa2' },
               breadcrumb: {
@@ -100,8 +100,8 @@ export default function Page() {
       <Sofa2PageHero
         overline="Danh mục"
         title={label}
-        subtitle={`${products.length} mẫu sofa trong danh mục này.`}
-        image={products[0]?.image ?? 'https://images.pexels.com/photos/276624/pexels-photo-276624.jpeg?auto=compress&cs=tinysrgb&w=1920'}
+        subtitle={selectedCategory?.description || `${products.length} mẫu sofa trong danh mục này.`}
+        image={selectedCategory?.image || products[0]?.image || 'https://images.pexels.com/photos/276624/pexels-photo-276624.jpeg?auto=compress&cs=tinysrgb&w=1920'}
       />
 
       <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>

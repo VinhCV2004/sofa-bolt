@@ -1748,7 +1748,7 @@ const CMS_GROUP: Sofa2AdminGroup = {
 // SẢN PHẨM
 // ----------------------------------------------------------------------
 
-const PRODUCT_SKUS = ['LX-OSL-01', 'LX-BER-04', 'LX-COP-12', 'LX-TOK-03', 'LX-MUN-07', 'LX-HEL-02', 'LX-FRA-01', 'LX-AMS-01', 'LX-ROM-06', 'LX-REY-08', 'LX-LON-10', 'LX-SEO-11', 'LX-SYD-14', 'LX-PAR-16', 'LX-IST-18', 'LX-MAD-20'];
+const PRODUCT_SKUS = ['LX-OSL-01', 'LX-BER-04', 'LX-COP-12', 'LX-TOK-03', 'LX-MUN-07', 'LX-HEL-02', 'LX-FRA-01', 'LX-AMS-01', 'LX-ROM-06', 'LX-REY-08', 'LX-LON-10', 'LX-SEO-11', 'LX-SYD-14', 'LX-PAR-16', 'LX-IST-18', 'LX-MAD-20', 'LX-FLO-21', 'LX-KYO-22', 'LX-KYG-23'];
 const PRODUCT_DETAIL_SEEDS = [
   { frameMaterial: 'Gỗ sồi FSC ghép mộng, chân gỗ tháo rời', upholstery: 'Vải linen dệt thoáng màu be; có thể đặt bọc màu xám hoặc nâu', cushion: 'Mút HR 40D kết hợp lớp bông lông vũ nhân tạo, đệm ngồi tháo rời', weightKg: 58, seatCount: 3, features: 'Khung gỗ sồi FSC có chứng nhận nguồn gốc\nĐệm tháo rời, dễ vệ sinh và thay vỏ\nChân cao thuận tiện cho robot hút bụi', assembly: 'Lắp chân ghế bằng bộ vít đi kèm; cần 2 người thao tác. Thời gian lắp dự kiến 15 phút.', included: '01 sofa Oslo 3 chỗ, 03 gối tựa, bộ lục giác lắp chân và phiếu bảo hành.', usageInstructions: 'Đặt ghế trên mặt sàn phẳng; phân bổ tải trọng đều trên mặt đệm. Giữ khoảng cách tối thiểu 10 cm với tường.', careGuide: 'Hút bụi đầu mềm hàng tuần. Thấm vết bẩn bằng khăn trắng sạch, không chà mạnh; vỏ đệm nên giặt khô. Tránh nắng gắt chiếu trực tiếp.', warrantyText: 'Bảo hành khung 10 năm, mút và đường may 2 năm; không áp dụng cho hao mòn tự nhiên hoặc vệ sinh sai hướng dẫn.', videoUrl: '', videoCaption: '', relatedProductIds: '3\n10\n6' },
   { frameMaterial: 'Khung thép sơn tĩnh điện kết hợp gỗ plywood chịu lực', upholstery: 'Da PU cao cấp phủ chống bám bẩn màu đen hoặc xám đậm', cushion: 'Mút đúc định hình đàn hồi cao, đệm lưng nhiều lớp', weightKg: 92, seatCount: 5, features: 'Thiết kế góc chữ L tối ưu chỗ ngồi cho gia đình\nBề mặt da PU dễ lau chùi hằng ngày\nKhung chịu lực, chân chống trượt', assembly: 'Ghép module góc và thân ghế theo chốt định vị; khuyến nghị đội giao hàng lắp đặt tại nhà.', included: '01 bộ sofa góc Berlin, 04 gối tựa và hướng dẫn bảo quản.', usageInstructions: 'Không đứng hoặc nhún mạnh trên tay vịn. Xoay vị trí đệm định kỳ để hạn chế lún lệch.', careGuide: 'Lau bằng khăn mềm hơi ẩm, sau đó lau khô. Không dùng cồn, chất tẩy mạnh hoặc vật sắc trên bề mặt da PU.', warrantyText: 'Bảo hành khung 5 năm, phần da và đường may 2 năm theo điều kiện của LUXE Sofa.', videoUrl: '', videoCaption: '', relatedProductIds: '1\n9\n15' },
@@ -1766,6 +1766,9 @@ const PRODUCT_DETAIL_SEEDS = [
   { frameMaterial: 'Khung gỗ cứng gia cường, cơ cấu ngả kim loại', upholstery: 'Da microfiber màu nâu hoặc kem, bề mặt dễ vệ sinh', cushion: 'Mút đàn hồi cao, tựa đầu và gác chân điều chỉnh', weightKg: 91, seatCount: 3, features: 'Recliner điện hỗ trợ tựa đầu và gác chân\nCổng sạc thiết bị tích hợp\nBề mặt microfiber mềm, dễ lau chùi', assembly: 'Kỹ thuật viên kết nối nguồn và kiểm tra hành trình ngả trước khi bàn giao.', included: '01 sofa Paris recliner, bộ nguồn, điều khiển và hướng dẫn sử dụng.', usageInstructions: 'Chừa khoảng trống cho phần gác chân khi mở. Không ngồi lên gác chân đang mở.', careGuide: 'Lau bằng khăn mềm hơi ẩm; tránh dung môi và chất tẩy mạnh. Ngắt nguồn trước khi vệ sinh.', warrantyText: 'Bảo hành khung 10 năm, cơ cấu điện 2 năm, vật liệu bọc 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '7\n5\n2' },
   { frameMaterial: 'Khung gỗ óc chó xử lý chống mối mọt, kết cấu gia cường', upholstery: 'Vải linen pha màu xanh rêu, be hoặc nâu', cushion: 'Mút HR nhiều lớp, gối tựa rời phối màu thủ công', weightKg: 136, seatCount: 6, features: 'Thiết kế chữ U cho gia đình đông người\nKhung gỗ óc chó tạo điểm nhấn Indochine\nCó thể đổi vị trí module theo mặt bằng', assembly: 'Lắp đặt bởi đội kỹ thuật; xác nhận hướng góc trái/phải theo sơ đồ đơn hàng.', included: 'Bộ sofa Istanbul U theo cấu hình, gối tựa phối màu và hướng dẫn chăm sóc.', usageInstructions: 'Không kéo từng module khi đang liên kết. Tránh đặt đồ uống trực tiếp trên bề mặt gỗ.', careGuide: 'Lau gỗ bằng khăn mềm khô; vệ sinh vải bằng hút bụi và dung dịch trung tính. Tránh ẩm kéo dài.', warrantyText: 'Bảo hành khung 10 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '9\n2\n11' },
   { frameMaterial: 'Khung gỗ tần bì sấy, chân thấp gia công CNC', upholstery: 'Vải nỉ dệt màu xám sáng, be hoặc đen', cushion: 'Mút HR dày, hỗ trợ tư thế ngồi thư giãn', weightKg: 57, seatCount: 3, features: 'Dáng lounge thấp cho góc đọc sách và khu vực tiếp khách\nĐệm rộng, tựa lưng thoải mái\nPhong cách tối giản dễ phối nội thất', assembly: 'Lắp chân ghế và kiểm tra độ cân bằng; nên có 2 người thao tác.', included: '01 sofa Madrid Lounge, 02 gối tựa và phụ kiện lắp ráp.', usageInstructions: 'Đặt ghế trên sàn phẳng; không đứng lên hoặc nhảy trên bề mặt đệm.', careGuide: 'Hút bụi định kỳ bằng đầu mềm. Với vết bẩn, dùng khăn sạch thấm nhẹ và để khô tự nhiên.', warrantyText: 'Bảo hành khung 5 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '6\n3\n10' },
+  { frameMaterial: 'Khung gỗ cao su sấy, chân gỗ tháo rời', upholstery: 'Vải nỉ dệt bền màu, tông xám, be hoặc xanh rêu', cushion: 'Mút HR 35D, đệm ngồi liền khối và gối tựa rời', weightKg: 38, seatCount: 2, features: 'Thiết kế nhỏ gọn cho căn hộ studio và góc café\nVỏ nỉ dệt tạo bề mặt ấm, màu sắc dễ phối\nChân gỗ nâng cao, thuận tiện vệ sinh sàn', assembly: 'Lắp bốn chân ghế theo bộ vít đi kèm; kiểm tra độ cân bằng trước khi sử dụng.', included: '01 sofa Florence Nỉ, 02 gối tựa và bộ phụ kiện lắp chân.', usageInstructions: 'Đặt trên sàn phẳng, tránh để vật sắc móc vào bề mặt nỉ. Không đứng lên đệm hoặc tay vịn.', careGuide: 'Hút bụi bằng đầu chổi mềm mỗi tuần. Thấm vết bẩn bằng khăn sạch; thử dung dịch vệ sinh ở vị trí khuất trước khi dùng.', warrantyText: 'Bảo hành khung 5 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '3\n4\n16' },
+  { frameMaterial: 'Khung gỗ tần bì gia cường, chân gỗ tiện', upholstery: 'Vải polyester pha linen chống xù, màu be cát, xám tro hoặc nâu nhạt', cushion: 'Mút HR nhiều lớp, vỏ đệm có khóa kéo tháo rời', weightKg: 52, seatCount: 3, features: 'Sofa vải 3 chỗ cho phòng khách và khu vực tiếp đón\nVỏ đệm tháo rời giúp thuận tiện vệ sinh\nMàu trung tính phù hợp không gian hiện đại', assembly: 'Lắp chân ghế theo dấu định vị; nên có hai người khi dựng sản phẩm.', included: '01 sofa Kyoto Vải, 03 gối tựa và hướng dẫn bảo quản.', usageInstructions: 'Xoay vị trí đệm định kỳ để hạn chế lún lệch; tránh để vật nóng hoặc chất lỏng trên bề mặt.', careGuide: 'Hút bụi đầu mềm. Giặt khô hoặc làm sạch theo nhãn hướng dẫn của vải; không dùng chất tẩy mạnh.', warrantyText: 'Bảo hành khung 5 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '1\n5\n17' },
+  { frameMaterial: 'Khung gỗ óc chó ghép mộng, kết cấu gia cường', upholstery: 'Vải dệt cao cấp màu nâu espresso hoặc be, đệm tháo rời', cushion: 'Mút HR mật độ cao kết hợp lớp bông mềm, tựa lưng rời', weightKg: 88, seatCount: 3, features: 'Khung gỗ óc chó hoàn thiện vân tự nhiên\nĐệm rời dễ sắp xếp và vệ sinh\nThiết kế phù hợp sảnh khách sạn và phòng khách cao cấp', assembly: 'Đội giao hàng lắp chân và kiểm tra các mối ghép; cần ít nhất hai người nâng sản phẩm.', included: '01 sofa Kyoto Gỗ, 03 gối tựa và hướng dẫn chăm sóc gỗ.', usageInstructions: 'Tránh kéo lê sản phẩm; không đặt sát nguồn nhiệt hoặc nơi ẩm kéo dài.', careGuide: 'Lau khung bằng khăn mềm khô, tránh hóa chất và nước đọng. Hút bụi vải bằng đầu hút chuyên dụng.', warrantyText: 'Bảo hành khung 10 năm, mút và đường may 2 năm.', videoUrl: '', videoCaption: '', relatedProductIds: '9\n11\n15' },
 ];
 
 const SOFA2_PRODUCT_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PRODUCTS.map((product, index) => ({
@@ -1776,6 +1779,8 @@ const SOFA2_PRODUCT_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PROD
   category: SOFA2_PRODUCT_CATEGORIES.types.find((item) => item.slug === product.category)?.label ?? product.category,
   style: SOFA2_PRODUCT_CATEGORIES.styles.find((item) => item.slug === product.style)?.label ?? product.style,
   space: SOFA2_PRODUCT_CATEGORIES.spaces.find((item) => item.slug === (product as any).space)?.label ?? (product as any).space ?? '',
+  additionalSpaces: product.id === '1' || product.id === '16' ? 'Cafe'
+    : product.id === '3' || product.id === '5' ? 'Nhà hàng' : '',
   material: product.material,
   dimensions: product.size,
   shortDescription: product.description.slice(0, 180),
@@ -1789,8 +1794,12 @@ const SOFA2_PRODUCT_SEEDS: Record<string, string | number>[] = SOFA2_CLIENT_PROD
   compareAt: product.oldPrice ?? product.price,
   warranty: 60,
   status: product.id === '4' ? 'Hết hàng' : 'Đang bán',
-  featured: index < 3 ? 'Có' : 'Không',
+  featured: index < 3 || ['11', '15', '19'].includes(product.id) ? 'Có' : 'Không',
   isNew: product.badge === 'Mới' ? 'Có' : 'Không',
+  launchDate: `2025-${String((index % 12) + 1).padStart(2, '0')}-${String((index % 27) + 1).padStart(2, '0')}`,
+  metaTitle: `${product.name} | LUXE Sofa`,
+  metaDescription: product.description.slice(0, 160),
+  indexable: 'Có',
 }));
 
 const PRODUCT_CATEGORY_GROUPS = [
@@ -1802,14 +1811,26 @@ const PRODUCT_CATEGORY_GROUPS = [
 ];
 const PRODUCT_CATEGORY_SEEDS: Record<string, string | number>[] = PRODUCT_CATEGORY_GROUPS.flatMap((group) =>
   group.items.map((category, index) => ({
+    id: `cat-${group.key}-${category.slug}`,
+    systemKey: `${group.key}:${category.slug}`,
     name: category.label,
     slug: category.slug,
     parent: group.parent,
-    description: `${category.label} — danh mục sản phẩm LUXE Sofa.`,
+    description: `${category.label} — danh mục sản phẩm LUXE Sofa. Khám phá các mẫu thiết kế, chất liệu và kích thước phù hợp cho từng không gian.`,
+    image: (group.key === 'spaces'
+      ? SOFA2_PRODUCT_SEEDS.find((product) => String(product.space) === category.label
+        || String(product.additionalSpaces ?? '').split(/\r?\n/).map((space) => space.trim()).includes(category.label))
+      : SOFA2_CLIENT_PRODUCTS.find((product) => group.key === 'types' ? product.category === category.slug
+        : group.key === 'styles' ? product.style === category.slug : false)
+    )?.image ?? SOFA2_CLIENT_PRODUCTS[index % SOFA2_CLIENT_PRODUCTS.length].image,
     products: SOFA2_CLIENT_PRODUCTS.filter((product) =>
       group.key === 'types' ? product.category === category.slug
         : group.key === 'styles' ? product.style === category.slug
-          : group.key === 'spaces' ? (product as any).space === category.slug
+          : group.key === 'spaces' ? (() => {
+              const seeded = SOFA2_PRODUCT_SEEDS.find((row) => String(row.id) === product.id);
+              return [String(seeded?.space ?? ''), ...String(seeded?.additionalSpaces ?? '').split(/\r?\n/).map((space) => space.trim())]
+                .some((space) => space === category.label || space === category.slug);
+            })()
             : group.key === 'sizes' ? (() => {
                 const length = Number(String(product.size).match(/\d+(?:\.\d+)?/)?.[0] ?? 0);
                 return category.slug === 'sofa-nho' ? length > 0 && length <= 140
@@ -1827,6 +1848,14 @@ const PRODUCT_CATEGORY_SEEDS: Record<string, string | number>[] = PRODUCT_CATEGO
     status: 'Hiển thị',
     builtIn: 'Có',
     order: index + 1,
+    ...(group.key === 'prices' ? {
+      minPrice: category.slug === 'duoi-10-trieu' ? 0 : category.slug === '10-20-trieu' ? 10_000_000 : category.slug === '20-50-trieu' ? 20_000_000 : 50_000_000,
+      maxPrice: category.slug === 'duoi-10-trieu' ? 10_000_000 : category.slug === '10-20-trieu' ? 20_000_000 : category.slug === '20-50-trieu' ? 50_000_000 : 0,
+    } : {}),
+    ...(group.key === 'sizes' ? {
+      minSizeCm: category.slug === 'sofa-nho' ? 0 : category.slug === 'sofa-trung' ? 140 : 220,
+      maxSizeCm: category.slug === 'sofa-nho' ? 140 : category.slug === 'sofa-trung' ? 220 : 0,
+    } : {}),
     showInMenu: group.key === 'types' ? 'Có' : 'Không',
     showInFilter: 'Có',
     metaTitle: `${category.label} | LUXE Sofa`,

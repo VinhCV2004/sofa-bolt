@@ -13,6 +13,7 @@ export type Sofa2CatalogProduct = (typeof SOFA2_PRODUCTS)[number] & {
   metaTitle: string;
   metaDescription: string;
   indexable: boolean;
+  spaces: string[];
   images360: string[];
   videoUrl: string;
   videoCaption: string;
@@ -33,6 +34,14 @@ export type Sofa2CatalogProduct = (typeof SOFA2_PRODUCTS)[number] & {
 type CatalogCategory = {
   slug: string;
   label: string;
+  description?: string;
+  image?: string;
+  showInMenu?: boolean;
+  showInFilter?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
+  minSizeCm?: number;
+  maxSizeCm?: number;
   metaTitle?: string;
   metaDescription?: string;
   indexable?: boolean;
@@ -79,19 +88,28 @@ export function useSofa2CatalogCategories(): CatalogCategories {
     };
     const configuredRow = (category: CatalogCategory, group: keyof CatalogCategories) =>
       rows.find((row) => mapCategoryGroup(row.parent) === group && (
-        String(row.slug ?? '').trim() === category.slug
+        String(row.systemKey ?? '') === `${group}:${category.slug}`
+        || String(row.slug ?? '').trim() === category.slug
         || String(row.name ?? '').trim().toLowerCase() === category.label.toLowerCase()
       ));
     const result = Object.fromEntries(
       (Object.keys(source) as (keyof CatalogCategories)[]).map((group) => [group,
         source[group].flatMap((category) => {
           const row = configuredRow(category, group);
-          if (row && (row.status === 'Ẩn' || !enabled(row.showInFilter))) return [];
+          if (row && (row.status === 'Ẩn' || (!enabled(row.showInFilter) && !enabled(row.showInMenu)))) return [];
           return [{
             ...category,
             ...(row ? {
               slug: String(row.slug ?? category.slug),
               label: String(row.name ?? category.label),
+              description: String(row.description ?? ''),
+              image: String(row.image ?? ''),
+              showInMenu: enabled(row.showInMenu),
+              showInFilter: enabled(row.showInFilter),
+              minPrice: Number(row.minPrice ?? 0),
+              maxPrice: Number(row.maxPrice ?? 0),
+              minSizeCm: Number(row.minSizeCm ?? 0),
+              maxSizeCm: Number(row.maxSizeCm ?? 0),
               metaTitle: String(row.metaTitle ?? ''),
               metaDescription: String(row.metaDescription ?? row.description ?? ''),
               indexable: enabled(row.indexable),
@@ -102,7 +120,7 @@ export function useSofa2CatalogCategories(): CatalogCategories {
     ) as CatalogCategories;
 
     rows
-      .filter((row) => row.status !== 'Ẩn' && enabled(row.showInFilter))
+      .filter((row) => row.status !== 'Ẩn' && (enabled(row.showInFilter) || enabled(row.showInMenu)))
       .forEach((row) => {
         const group = mapCategoryGroup(row.parent);
         const label = String(row.name ?? '').trim();
@@ -112,6 +130,14 @@ export function useSofa2CatalogCategories(): CatalogCategories {
           result[group].push({
             slug,
             label,
+            description: String(row.description ?? ''),
+            image: String(row.image ?? ''),
+            showInMenu: enabled(row.showInMenu),
+            showInFilter: enabled(row.showInFilter),
+            minPrice: Number(row.minPrice ?? 0),
+            maxPrice: Number(row.maxPrice ?? 0),
+            minSizeCm: Number(row.minSizeCm ?? 0),
+            maxSizeCm: Number(row.maxSizeCm ?? 0),
             metaTitle: String(row.metaTitle ?? ''),
             metaDescription: String(row.metaDescription ?? row.description ?? ''),
             indexable: enabled(row.indexable),
@@ -203,6 +229,15 @@ function toClientProduct(
   const spaceMatch = SOFA2_PRODUCT_CATEGORIES.spaces.find((item) =>
     item.label.toLowerCase() === rawSpace.toLowerCase() || item.slug === rawSpace
   );
+  const primarySpace = String(matchedSpace?.slug ?? spaceMatch?.slug ?? (rawSpace ? slugify(rawSpace) : fallback.space ?? ''));
+  const extraSpaces = String(row.additionalSpaces ?? '').split(/\r?\n/).map((item) => item.trim()).filter(Boolean)
+    .map((value) => {
+      const configured = categories.find((item) => String(item.parent ?? '').toLowerCase().includes('không gian')
+        && (String(item.name ?? '').trim().toLowerCase() === value.toLowerCase() || String(item.slug ?? '') === value));
+      const builtIn = SOFA2_PRODUCT_CATEGORIES.spaces.find((item) => item.label.toLowerCase() === value.toLowerCase() || item.slug === value);
+      return String(configured?.slug ?? builtIn?.slug ?? slugify(value));
+    });
+  const applicableSpaces = [...new Set([primarySpace, ...extraSpaces].filter(Boolean))];
   const description = String(row.description ?? fallback.description);
 
   return {
@@ -212,6 +247,8 @@ function toClientProduct(
     slug: String(row.slug ?? fallback.slug ?? slugify(row.name)),
     category,
     style,
+    space: primarySpace,
+    spaces: applicableSpaces,
     price: salePrice,
     oldPrice: regularPrice > salePrice ? regularPrice : undefined,
     image,
@@ -252,7 +289,7 @@ function toClientProduct(
     metaTitle: String(row.metaTitle ?? ''),
     metaDescription: String(row.metaDescription ?? row.shortDescription ?? description),
     indexable: !['không', 'false', '0'].includes(String(row.indexable ?? 'Có').toLowerCase()),
-    ...(matchedSpace ? { space: String(matchedSpace.slug ?? slugify(rawSpace)) } : spaceMatch ? { space: spaceMatch.slug } : rawSpace ? { space: slugify(rawSpace) } : {}),
+
   } as Sofa2CatalogProduct;
 }
 
@@ -291,24 +328,34 @@ export function filterSofa2CatalogProducts(
   );
   if (!group) return [];
   if (group === 'prices') {
+    const category = categories.prices.find((item) => item.slug === slug);
+    if (category && (Number(category.minPrice ?? 0) > 0 || Number(category.maxPrice ?? 0) > 0)) {
+      const min = Number(category.minPrice ?? 0);
+      const max = Number(category.maxPrice ?? 0);
+      return products.filter((product) => product.price >= min && (!max || product.price < max));
+    }
     if (slug === 'duoi-10-trieu') return products.filter((product) => product.price < 10_000_000);
     if (slug === '10-20-trieu') return products.filter((product) => product.price >= 10_000_000 && product.price < 20_000_000);
     if (slug === '20-50-trieu') return products.filter((product) => product.price >= 20_000_000 && product.price < 50_000_000);
-    return products.filter((product) => product.price >= 50_000_000);
+    if (slug === 'tren-50-trieu') return products.filter((product) => product.price >= 50_000_000);
+    return [];
   }
   return products.filter((product) => {
     if (group === 'sizes') {
       const longSide = Number(String(product.size).match(/\d+(?:\.\d+)?/)?.[0] ?? 0);
+      const sizeCategory = categories.sizes.find((item) => item.slug === slug);
+      if (sizeCategory && (Number(sizeCategory.minSizeCm ?? 0) > 0 || Number(sizeCategory.maxSizeCm ?? 0) > 0)) {
+        const min = Number(sizeCategory.minSizeCm ?? 0);
+        const max = Number(sizeCategory.maxSizeCm ?? 0);
+        return longSide > 0 && longSide >= min && (!max || longSide < max);
+      }
       if (slug === 'sofa-nho') return longSide > 0 && longSide <= 140;
       if (slug === 'sofa-trung') return longSide > 140 && longSide <= 220;
       if (slug === 'sofa-lon') return longSide > 220;
       return slugify(product.size) === slug;
     }
-    const candidate = group === 'types'
-      ? product.category
-      : group === 'styles'
-        ? product.style
-        : String((product as any).space ?? '');
+    if (group === 'spaces') return product.space === slug || product.spaces.includes(slug);
+    const candidate = group === 'types' ? product.category : product.style;
     return candidate === slug;
   });
 }
