@@ -546,11 +546,120 @@ const emit = () => {
   listeners.forEach((l) => l());
 };
 
+// Keep older browser-local catalog rows compatible with newly added multi-space assignments.
+const PRODUCT_SPACE_FIXTURE_MIGRATION_KEY = 'sofa2-product-space-fixtures-v1';
+if (typeof window !== 'undefined') {
+  try {
+    if (window.localStorage.getItem(PRODUCT_SPACE_FIXTURE_MIGRATION_KEY) !== 'done') {
+      const defaults = SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'catalog')?.modules
+        .find((module) => module.slug === 'products')?.rows ?? [];
+      const productsKey = key('catalog', 'products');
+      let changed = false;
+      store[productsKey] = (store[productsKey] ?? []).map((row) => {
+        if (Object.prototype.hasOwnProperty.call(row, 'additionalSpaces')) return row;
+        const seed = defaults.find((item) =>
+          String(item.id ?? '') === String(row.id ?? '') || String(item.sku ?? '') === String(row.sku ?? '')
+        );
+        if (!seed || !Object.prototype.hasOwnProperty.call(seed, 'additionalSpaces')) return row;
+        changed = true;
+        return { ...row, additionalSpaces: seed.additionalSpaces };
+      });
+      if (changed) emit();
+      window.localStorage.setItem(PRODUCT_SPACE_FIXTURE_MIGRATION_KEY, 'done');
+    }
+  } catch {
+    // Catalog remains usable when browser storage is unavailable.
+  }
+}
+
 if (hrSampleRowsMigrated || recruitmentDataReconciled || blogContentMigrated) emit();
+
+// Add the expanded product fixtures to browser stores created by earlier demo versions.
+// Existing product edits and intentional removals are preserved; only the new product IDs
+// and their newly introduced dependent mock rows are eligible for this one-time merge.
+const PRODUCT_FIXTURE_MIGRATION_KEY = 'sofa2-product-fixtures-v2';
+if (typeof window !== 'undefined') {
+  try {
+    if (window.localStorage.getItem(PRODUCT_FIXTURE_MIGRATION_KEY) !== 'done') {
+      const productGroup = SOFA2_ADMIN_GROUPS.find((group) => group.slug === 'catalog');
+      const newProductIds = new Set(['17', '18', '19']);
+      const newProducts = productGroup?.modules.find((module) => module.slug === 'products')?.rows
+        .filter((row) => newProductIds.has(String(row.id ?? ''))) ?? [];
+      const newSkus = new Set(newProducts.map((row) => String(row.sku ?? '')).filter(Boolean));
+      const newNames = new Set(newProducts.map((row) => String(row.name ?? '')).filter(Boolean));
+      const migrations: Array<{ module: string; rows: AdminRow[]; identity: (row: AdminRow) => string; include: (row: AdminRow) => boolean }> = [
+        {
+          module: 'products',
+          rows: newProducts,
+          identity: (row) => String(row.id ?? row.sku ?? ''),
+          include: (row) => newProductIds.has(String(row.id ?? '')),
+        },
+        {
+          module: 'variants',
+          rows: productGroup?.modules.find((module) => module.slug === 'variants')?.rows ?? [],
+          identity: (row) => String(row.sku ?? ''),
+          include: (row) => newNames.has(String(row.product ?? '')),
+        },
+        {
+          module: 'inventory',
+          rows: productGroup?.modules.find((module) => module.slug === 'inventory')?.rows ?? [],
+          identity: (row) => `${row.sku ?? ''}|${row.warehouse ?? ''}`,
+          include: (row) => [...newSkus].some((sku) => String(row.sku ?? '').startsWith(`${sku}-`)),
+        },
+        {
+          module: 'pricing',
+          rows: productGroup?.modules.find((module) => module.slug === 'pricing')?.rows ?? [],
+          identity: (row) => `${row.sku ?? ''}|${row.priceList ?? ''}|${row.startDate ?? ''}|${row.endDate ?? ''}|${row.status ?? ''}`,
+          include: (row) => [...newSkus].some((sku) => String(row.sku ?? '') === sku || String(row.sku ?? '').startsWith(`${sku}-`)),
+        },
+        {
+          module: 'product-reviews',
+          rows: productGroup?.modules.find((module) => module.slug === 'product-reviews')?.rows ?? [],
+          identity: (row) => `${row.product ?? ''}|${row.customer ?? ''}|${row.date ?? ''}|${row.title ?? ''}`,
+          include: (row) => newSkus.has(String(row.product ?? '')),
+        },
+        {
+          module: 'product-questions',
+          rows: productGroup?.modules.find((module) => module.slug === 'product-questions')?.rows ?? [],
+          identity: (row) => `${row.product ?? ''}|${row.customer ?? ''}|${row.date ?? ''}|${row.question ?? ''}`,
+          include: (row) => newSkus.has(String(row.product ?? '')),
+        },
+      ];
+      let changed = false;
+      migrations.forEach(({ module, rows, identity, include }) => {
+        const moduleKey = key('catalog', module);
+        const current = store[moduleKey] ?? [];
+        const known = new Set(current.map(identity));
+        const missing = rows.filter(include).filter((row) => {
+          const rowIdentity = identity(row);
+          if (!rowIdentity || known.has(rowIdentity)) return false;
+          known.add(rowIdentity);
+          return true;
+        }).map((row) => ({ ...row }));
+        if (missing.length) {
+          store[moduleKey] = [...current, ...missing];
+          changed = true;
+        }
+      });
+      if (changed) emit();
+      window.localStorage.setItem(PRODUCT_FIXTURE_MIGRATION_KEY, 'done');
+    }
+  } catch {
+    // Keep the storefront usable if browser storage is unavailable.
+  }
+}
 
 /** Đọc nhanh dữ liệu một module (không cần hook) */
 export const getSofa2AdminRows = (groupSlug: string, moduleSlug: string) =>
   store[key(groupSlug, moduleSlug)] ?? [];
+
+/** Replace one local demo module atomically so related admin/client rows stay in sync. */
+export function replaceSofa2AdminRows(groupSlug: string, moduleSlug: string, rows: AdminRow[]) {
+  const rowsKey = key(groupSlug, moduleSlug);
+  store[rowsKey] = rows.map((row) => ({ ...row }));
+  emit();
+  return store[rowsKey];
+}
 
 /** Add a row to the shared browser demo store so admin and client views stay in sync. */
 export function createSofa2AdminRow(groupSlug: string, moduleSlug: string, row: AdminRow) {
