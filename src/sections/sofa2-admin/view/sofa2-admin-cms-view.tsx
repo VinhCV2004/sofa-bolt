@@ -719,6 +719,16 @@ export function Sofa2AdminCmsView({ group, module, schema }: Props) {
       const usedCount = Number(form.values.usedCount ?? 0);
       if (stockLimit > 0 && usedCount > stockLimit) next.usedCount = 'Lượt đã dùng không thể vượt quá giới hạn.';
       const ctaLink = String(form.values.ctaLink ?? '').trim();
+      if (isPortalEnabled(form.values.popupEnabled)) {
+        const popupDelay = Number(form.values.popupDelay ?? 0);
+        if (!Number.isInteger(popupDelay) || popupDelay < 0 || popupDelay > 120) next.popupDelay = 'Độ trễ popup phải từ 0 đến 120 giây.';
+        const popupMaxViews = Number(form.values.popupMaxViews ?? 1);
+        if (!Number.isInteger(popupMaxViews) || popupMaxViews < 1 || popupMaxViews > 10) next.popupMaxViews = 'Số lần hiển thị tối đa phải từ 1 đến 10.';
+        const popupPaths = String(form.values.popupPaths ?? '').split(/\r?\n/).map((path) => path.trim()).filter(Boolean);
+        if (popupPaths.some((path) => !/^\/sofa2(?:\/|$)/.test(path) || (path.includes('*') && !path.endsWith('*')))) {
+          next.popupPaths = 'Mỗi đường dẫn phải bắt đầu bằng /sofa2; wildcard chỉ được đặt ở cuối path.';
+        }
+      }
       if (ctaLink && !/^\/sofa2(?:\/|$)/.test(ctaLink)) next.ctaLink = 'Liên kết phải là đường dẫn nội bộ bắt đầu bằng /sofa2.';
     }
     if (group.slug === 'cms' && module.slug === 'promotion-services') {

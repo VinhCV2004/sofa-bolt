@@ -14,6 +14,7 @@ import { allLangs } from 'src/locales';
 
 import { Logo } from 'src/components/logo';
 
+import { Sofa2EngagementTools } from 'src/sections/sofa2/sofa2-engagement-tools';
 import {
   useCmsFooterMenus,
   useCmsHeaderNavigation,
@@ -153,6 +154,7 @@ export function MainLayout({ sx, data, children, header }: MainLayoutProps) {
       sx={sx}
     >
       <Main>{children}</Main>
+      <Sofa2EngagementTools enabled={isSofa2} />
     </LayoutSection>
   );
 }
