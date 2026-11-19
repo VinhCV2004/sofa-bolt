@@ -1,4 +1,5 @@
-import { SOFA2_PROJECTS, SOFA2_BLOG_POSTS, SOFA2_COLLECTIONS, SOFA2_PAGE_IMAGES, SOFA2_PRODUCT_CATEGORIES, SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
+import { SOFA2_MILESTONES } from 'src/sections/sofa2/sofa2-data';
+import { SOFA2_PROJECTS, SOFA2_BLOG_POSTS, SOFA2_COLLECTIONS, SOFA2_PAGE_IMAGES, SOFA2_COMPANY_INFO, SOFA2_PRODUCT_CATEGORIES, SOFA2_PRODUCTS as SOFA2_CLIENT_PRODUCTS } from 'src/sections/sofa2/sofa2-pages-data';
 
 import { SOFA2_SHOP_GROUP } from './sofa2-shop';
 import { SOFA2_SUPPORT_GROUP } from './sofa2-support';
@@ -58,17 +59,26 @@ const cmsPage = (slug: string, name: string, path: string, rows?: Record<string,
   mod(
     slug,
     name,
-    `Quản lý nội dung, bố cục và trạng thái xuất bản cho ${name.toLowerCase()} (${path}).`,
+    slug === 'about'
+      ? `Quản lý trang Giới thiệu tại ${path}: trang chính và 11 trang con, mốc lịch sử, tầm nhìn, giá trị, nhà máy, quy trình, công nghệ, chứng nhận, nhân sự, đối tác, thư viện ảnh và video. Có CRUD, thứ tự, xuất bản/ẩn, ảnh và SEO; dữ liệu đã xuất bản đồng bộ trực tiếp với client.`
+      : `Quản lý nội dung, bố cục và trạng thái xuất bản cho ${name.toLowerCase()} (${path}).`,
     'solar:document-text-bold-duotone',
-    [
+    slug === 'about' ? [
+      { label: 'Bản ghi nội dung', value: String(rows?.length ?? 0) },
+      { label: 'Trang con', value: String(rows?.filter((row) => row.type === 'About page').length ?? 0) },
+      { label: 'Đã xuất bản', value: String(rows?.filter((row) => row.status === 'Đã xuất bản').length ?? 0) },
+      { label: 'Bản nháp / ẩn', value: String(rows?.filter((row) => row.status !== 'Đã xuất bản').length ?? 0) },
+    ] : [
       { label: 'Khối nội dung', value: '14' },
       { label: 'Lượt xem 30 ngày', value: '24.6K', trend: '+14%' },
       { label: 'Bản nháp', value: '3' },
       { label: 'Cập nhật cuối', value: '14/09' },
     ],
     [
-      { key: 'block', label: 'Khối nội dung' },
-      { key: 'type', label: 'Loại' },
+      { key: 'block', label: 'Khối / mã trang' },
+      { key: 'type', label: 'Loại nội dung' },
+      { key: 'heading', label: 'Tiêu đề' },
+      { key: 'order', label: 'Thứ tự', type: 'number' },
       STATUS_COL,
       { key: 'updated', label: 'Cập nhật' },
       { key: 'author', label: 'Người sửa' },
@@ -214,18 +224,94 @@ const cmsTermsRows: Record<string, string | number>[] = [
   },
 ];
 
-const cmsAboutRows: Record<string, string | number>[] = [
-  {
-    block: 'intro',
-    type: 'Rich text',
-    heading: 'Từ xưởng nhỏ đến thương hiệu quốc gia',
-    content: 'LUXE Sofa ra đời năm 2012 từ một xưởng mộc nhỏ tại Bình Dương. Chúng tôi chế tác sofa theo triết lý bền vững, tỉ mỉ và phù hợp với không gian sống Việt.',
-    image: '',
-    status: 'Đã xuất bản',
-    order: 1,
-    updated: '14/09/2026',
-    author: 'Minh Anh',
-  },
+const ABOUT_PAGE_SECTIONS = [
+  { section: 'history', title: 'Lịch sử hình thành', overline: 'Hành trình phát triển', image: SOFA2_PAGE_IMAGES.aboutHero, icon: 'solar:clock-circle-bold-duotone', description: 'Những dấu mốc phát triển và hành trình chế tác của LUXE Sofa.', metaTitle: 'Lịch sử hình thành | LUXE Sofa' },
+  { section: 'vision', title: 'Tầm nhìn & Sứ mệnh', overline: 'Định hướng tương lai', image: SOFA2_PAGE_IMAGES.workshop, icon: 'solar:eye-bold-duotone', description: 'Tầm nhìn, sứ mệnh và cam kết của LUXE Sofa với khách hàng.', metaTitle: 'Tầm nhìn & Sứ mệnh | LUXE Sofa' },
+  { section: 'values', title: 'Giá trị cốt lõi', overline: 'Triết lý thương hiệu', image: SOFA2_PAGE_IMAGES.workshop, icon: 'solar:hand-stars-bold-duotone', description: 'Các giá trị định hướng thiết kế, sản xuất và dịch vụ.', metaTitle: 'Giá trị cốt lõi | LUXE Sofa' },
+  { section: 'factory', title: 'Nhà máy sản xuất', overline: 'Năng lực sản xuất', image: SOFA2_PAGE_IMAGES.factory, icon: 'solar:buildings-bold-duotone', description: 'Giới thiệu xưởng, năng lực và các khu vực sản xuất sofa.', metaTitle: 'Nhà máy sản xuất | LUXE Sofa' },
+  { section: 'process', title: 'Quy trình sản xuất', overline: 'Từ ý tưởng đến sản phẩm', image: SOFA2_PAGE_IMAGES.factory, icon: 'solar:list-bold-duotone', description: 'Các bước thiết kế, tuyển chọn vật liệu, chế tác và kiểm tra chất lượng.', metaTitle: 'Quy trình sản xuất | LUXE Sofa' },
+  { section: 'technology', title: 'Công nghệ sản xuất', overline: 'Đổi mới không ngừng', image: SOFA2_PAGE_IMAGES.technology, icon: 'solar:cpu-bold-duotone', description: 'Công nghệ và kỹ thuật được ứng dụng trong từng sản phẩm.', metaTitle: 'Công nghệ sản xuất | LUXE Sofa' },
+  { section: 'certifications', title: 'Chứng nhận chất lượng', overline: 'Tiêu chuẩn chất lượng', image: SOFA2_PAGE_IMAGES.factory, icon: 'solar:medal-ribbon-bold-duotone', description: 'Các tiêu chuẩn và chứng nhận liên quan tới vật liệu, quy trình và sản phẩm.', metaTitle: 'Chứng nhận chất lượng | LUXE Sofa' },
+  { section: 'team', title: 'Đội ngũ nhân sự', overline: 'Những con người tạo nên LUXE', image: SOFA2_PAGE_IMAGES.team, icon: 'solar:users-group-rounded-bold-duotone', description: 'Đội ngũ thiết kế, nghệ nhân và chuyên viên chất lượng.', metaTitle: 'Đội ngũ nhân sự | LUXE Sofa' },
+  { section: 'partners', title: 'Đối tác', overline: 'Mạng lưới hợp tác', image: SOFA2_PAGE_IMAGES.cta, icon: 'solar:hand-shake-bold-duotone', description: 'Các đối tác cùng LUXE Sofa phát triển những không gian nội thất.', metaTitle: 'Đối tác | LUXE Sofa' },
+  { section: 'gallery', title: 'Hình ảnh công ty', overline: 'Khoảnh khắc chế tác', image: SOFA2_PAGE_IMAGES.workshop, icon: 'solar:gallery-bold-duotone', description: 'Thư viện hình ảnh về xưởng, đội ngũ và sản phẩm.', metaTitle: 'Hình ảnh công ty | LUXE Sofa' },
+  { section: 'video', title: 'Video giới thiệu', overline: 'Câu chuyện qua hình ảnh', image: SOFA2_PAGE_IMAGES.technology, icon: 'solar:videocamera-bold-duotone', description: 'Các video giới thiệu thương hiệu, nhà máy và quy trình sản xuất.', metaTitle: 'Video giới thiệu | LUXE Sofa' },
+];
+
+const ABOUT_ROW = (block: string, type: string, heading: string, content: string, order: number, extra: Record<string, string | number> = {}) => ({
+  id: `about-${block}`,
+  block,
+  type,
+  heading,
+  content,
+  order,
+  status: 'Đã xuất bản',
+  updated: '15/11/2026',
+  author: 'Minh Anh',
+  ...extra,
+});
+
+/** Seed đầy đủ cho CMS Giới thiệu; nội dung/số liệu là dữ liệu mẫu cần biên tập trước khi dùng thực tế. */
+export const SOFA2_ABOUT_MOCK_DATA: Record<string, string | number>[] = [
+  ABOUT_ROW('intro', 'Rich text', 'Từ xưởng nhỏ đến thương hiệu quốc gia', 'LUXE Sofa ra đời năm 2012 từ một xưởng mộc nhỏ tại Bình Dương. Chúng tôi chế tác sofa theo triết lý bền vững, tỉ mỉ và phù hợp với không gian sống Việt.', 2, { image: SOFA2_PAGE_IMAGES.workshop, title: 'Hành trình của chúng tôi', metaTitle: 'Về LUXE Sofa — Câu chuyện thương hiệu', metaDescription: 'Khám phá lịch sử, đội ngũ, quy trình chế tác và các giá trị của LUXE Sofa.', ogImage: SOFA2_PAGE_IMAGES.aboutHero, indexable: 'Có' }),
+  ABOUT_ROW('hero', 'Banner', 'Câu chuyện thương hiệu từ đôi bàn tay nghệ nhân', 'Hơn 12 năm chế tác sofa cao cấp với tình yêu nghề và sự tỉ mỉ — mang đến không gian sống sang trọng cho hàng vạn gia đình Việt.', 1, { image: SOFA2_PAGE_IMAGES.aboutHero, title: 'Về LUXE Sofa', ctaLabel: 'Khám phá hành trình', ctaLink: '/sofa2/about/history' }),
+  ...ABOUT_PAGE_SECTIONS.map((page, index) => ABOUT_ROW(`page-${page.section}`, 'About page', page.title, page.description, index + 1, {
+    title: page.overline, image: page.image, icon: page.icon, ctaLink: `/sofa2/about/${page.section}`,
+    metaTitle: page.metaTitle, metaDescription: page.description, ogImage: page.image, indexable: 'Có',
+  })),
+  ...SOFA2_COMPANY_INFO.stats.map((item, index) => ABOUT_ROW(`metric-${index + 1}`, 'Company metric', item.value, item.label, index + 1, { icon: 'solar:chart-2-bold-duotone' })),
+  ...SOFA2_MILESTONES.map((item, index) => ABOUT_ROW(`history-${item.year}`, 'Milestone', item.title, item.description, index + 1, { title: item.year, image: SOFA2_PAGE_IMAGES.aboutHero })),
+  ABOUT_ROW('vision-statement', 'Vision', 'Tầm nhìn', 'Trở thành thương hiệu sofa cao cấp được tin chọn tại Việt Nam và Đông Nam Á, kết hợp thiết kế bền vững với năng lực chế tác chuẩn mực.', 1, { icon: 'solar:eye-bold-duotone' }),
+  ABOUT_ROW('mission-statement', 'Mission', 'Sứ mệnh', 'Mang đến những sản phẩm sofa bền đẹp, phù hợp với nếp sống Việt; tạo trải nghiệm mua sắm minh bạch và dịch vụ đồng hành lâu dài.', 2, { icon: 'solar:rocket-bold-duotone' }),
+  ...[
+    { key: 'design', title: 'Thiết kế có bản sắc', content: 'Tạo nên những mẫu sofa hài hòa giữa thẩm mỹ, công năng và không gian sống Việt.', icon: 'solar:pallete2-bold-duotone' },
+    { key: 'craft', title: 'Tỉ mỉ trong chế tác', content: 'Chú trọng lựa chọn vật liệu, độ bền kết cấu và từng chi tiết hoàn thiện.', icon: 'solar:hand-stars-bold-duotone' },
+    { key: 'sustainable', title: 'Phát triển bền vững', content: 'Ưu tiên vật liệu có nguồn gốc rõ ràng, sử dụng lâu dài và hạn chế lãng phí.', icon: 'solar:leaf-bold-duotone' },
+    { key: 'customer', title: 'Khách hàng là trọng tâm', content: 'Lắng nghe nhu cầu sử dụng thực tế để tư vấn cấu hình, chất liệu và dịch vụ hậu mãi phù hợp.', icon: 'solar:users-group-rounded-bold-duotone' },
+    { key: 'integrity', title: 'Minh bạch & trách nhiệm', content: 'Tư vấn rõ về vật liệu, tiến độ, chính sách và trách nhiệm trong từng giai đoạn hợp tác.', icon: 'solar:shield-check-bold-duotone' },
+  ].map((item, index) => ABOUT_ROW(`value-${item.key}`, 'Core value', item.title, item.content, index + 1, { icon: item.icon })),
+  ABOUT_ROW('factory-main', 'Factory', 'Nhà máy chế tác tại Bình Dương', 'Không gian sản xuất kết hợp thiết bị hiện đại với tay nghề nghệ nhân. Các khu vực chuyên biệt gồm gia công khung, cắt may vật liệu bọc, lắp ráp và kiểm tra trước khi bàn giao.', 1, { title: 'Năng lực sản xuất', image: SOFA2_PAGE_IMAGES.factory }),
+  ...[
+    ['Thiết kế & tư vấn', 'Ghi nhận nhu cầu, kích thước và phong cách để xây dựng cấu hình phù hợp.'],
+    ['Tuyển chọn vật liệu', 'Kiểm tra chủng loại, màu sắc và tình trạng vật liệu trước khi đưa vào sản xuất.'],
+    ['Gia công khung', 'Cắt, ghép và gia cố kết cấu theo bản vẽ kỹ thuật của sản phẩm.'],
+    ['May bọc & lắp ráp', 'Hoàn thiện lớp đệm, đường may, bề mặt bọc và lắp các phụ kiện.'],
+    ['Kiểm tra & bàn giao', 'Rà soát độ cân bằng, đường may, phụ kiện và vệ sinh sản phẩm trước khi đóng gói.'],
+  ].map(([title, content], index) => ABOUT_ROW(`process-${index + 1}`, 'Process step', title, content, index + 1, { title: `Bước ${String(index + 1).padStart(2, '0')}` })),
+  ...[
+    { key: 'cnc', title: 'Gia công CNC', content: 'Ứng dụng thiết bị cắt và gia công theo bản vẽ để tăng độ đồng nhất của chi tiết khung.', icon: 'solar:cpu-bold-duotone' },
+    { key: 'foam', title: 'Cấu trúc đệm đa lớp', content: 'Lựa chọn cấu trúc mút và lớp đệm theo công năng, độ đàn hồi và cảm giác sử dụng.', icon: 'solar:bed-bold-duotone' },
+    { key: 'upholstery', title: 'Kỹ thuật bọc hoàn thiện', content: 'Kết hợp máy móc chuyên dụng và kỹ thuật thủ công để hoàn thiện bề mặt bọc.', icon: 'solar:settings-bold-duotone' },
+  ].map((item, index) => ABOUT_ROW(`technology-${item.key}`, 'Technology', item.title, item.content, index + 1, { icon: item.icon, image: SOFA2_PAGE_IMAGES.technology })),
+  ...[
+    { key: 'material', title: 'Kiểm soát nguồn gốc vật liệu', content: 'Hồ sơ vật liệu được đối chiếu theo lô trước khi đưa vào quy trình sản xuất.', icon: 'solar:leaf-bold-duotone' },
+    { key: 'quality', title: 'Quy trình quản lý chất lượng', content: 'Các bước kiểm tra nội bộ được ghi nhận để hỗ trợ truy xuất và cải tiến quy trình.', icon: 'solar:shield-check-bold-duotone' },
+    { key: 'safety', title: 'An toàn sử dụng', content: 'Thông tin an toàn, hướng dẫn sử dụng và bảo quản được cung cấp theo từng dòng sản phẩm.', icon: 'solar:medal-ribbon-bold-duotone' },
+  ].map((item, index) => ABOUT_ROW(`certificate-${item.key}`, 'Certificate', item.title, item.content, index + 1, { icon: item.icon, image: SOFA2_PAGE_IMAGES.factory })),
+  ...[
+    { key: 'minh-anh', name: 'Nguyễn Minh Anh', role: 'Giám đốc sáng tạo', bio: 'Phụ trách định hướng thiết kế và trải nghiệm thương hiệu.', image: SOFA2_PAGE_IMAGES.team },
+    { key: 'hoang-long', name: 'Trần Hoàng Long', role: 'Trưởng xưởng chế tác', bio: 'Điều phối quy trình chế tác và hướng dẫn đội ngũ nghệ nhân.', image: SOFA2_PAGE_IMAGES.team },
+    { key: 'thu-ha', name: 'Lê Thu Hà', role: 'Trưởng phòng thiết kế', bio: 'Phát triển giải pháp phối màu, vật liệu và cấu hình sofa.', image: SOFA2_PAGE_IMAGES.team },
+    { key: 'quoc-bao', name: 'Phạm Quốc Bảo', role: 'Quản lý chất lượng', bio: 'Theo dõi tiêu chuẩn kiểm tra và hồ sơ trước khi bàn giao.', image: SOFA2_PAGE_IMAGES.team },
+  ].map((item, index) => ABOUT_ROW(`team-${item.key}`, 'Team member', item.name, item.bio, index + 1, { title: item.role, image: item.image })),
+  ...[
+    { name: 'Đối tác vật liệu', description: 'Nhà cung cấp vật liệu bọc và phụ kiện — dữ liệu mẫu, vui lòng thay bằng đối tác đã xác nhận.' },
+    { name: 'Studio kiến trúc', description: 'Đơn vị tư vấn thiết kế và phối hợp giải pháp nội thất cho công trình.' },
+    { name: 'Đối tác dự án', description: 'Đầu mối phối hợp khảo sát, đề xuất cấu hình và bàn giao sản phẩm.' },
+    { name: 'Đối tác vận chuyển', description: 'Đơn vị hỗ trợ vận chuyển, lắp đặt và điều phối lịch giao hàng.' },
+    { name: 'Đại lý phân phối', description: 'Kênh giới thiệu và tư vấn sản phẩm tại các khu vực.' },
+    { name: 'Đối tác dịch vụ', description: 'Đơn vị phối hợp chăm sóc, bảo trì và hỗ trợ sau bán hàng.' },
+  ].map((partner, index) => ABOUT_ROW(`partner-${index + 1}`, 'Partner', partner.name, partner.description, index + 1, { image: SOFA2_PAGE_IMAGES.cta })),
+  ...[SOFA2_PAGE_IMAGES.workshop, SOFA2_PAGE_IMAGES.factory, SOFA2_PAGE_IMAGES.technology, SOFA2_PAGE_IMAGES.team, SOFA2_PAGE_IMAGES.product1, SOFA2_PAGE_IMAGES.product7, SOFA2_PAGE_IMAGES.cta, SOFA2_PAGE_IMAGES.contact].map((image, index) => ABOUT_ROW(`gallery-${index + 1}`, 'Gallery image', `Hình ảnh LUXE Sofa ${index + 1}`, 'Hình ảnh hoạt động, không gian sản xuất và sản phẩm LUXE Sofa.', index + 1, {
+    image,
+    ...(index === 7 ? { status: 'Tạm ẩn' } : {}),
+  })),
+  ...[
+    { key: 'brand', title: 'Câu chuyện thương hiệu', description: 'Giới thiệu về hành trình và triết lý chế tác của LUXE Sofa.', image: SOFA2_PAGE_IMAGES.aboutHero },
+    { key: 'factory', title: 'Một ngày tại xưởng', description: 'Góc nhìn về các công đoạn chế tác và hoàn thiện sản phẩm.', image: SOFA2_PAGE_IMAGES.factory },
+    { key: 'craft', title: 'Từ vật liệu đến thành phẩm', description: 'Quá trình lựa chọn vật liệu, lắp ráp và kiểm tra chất lượng.', image: SOFA2_PAGE_IMAGES.workshop },
+  ].map((item, index) => ABOUT_ROW(`video-${item.key}`, 'Video', item.title, item.description, index + 1, { image: item.image, videoUrl: '' })),
+  ABOUT_ROW('about-cta', 'Call to action', 'Trở thành một phần câu chuyện', 'Ghé showroom hoặc đặt lịch tư vấn miễn phí để trải nghiệm chất lượng LUXE Sofa.', 99, { ctaLabel: 'Đặt lịch tư vấn', ctaLink: '/sofa2/showrooms', image: SOFA2_PAGE_IMAGES.cta }),
 ];
 
 const cmsContactRows: Record<string, string | number>[] = [
@@ -1261,7 +1347,7 @@ const CMS_GROUP: Sofa2AdminGroup = {
   icon: 'solar:documents-bold-duotone',
   modules: [
     cmsPage('home', 'Trang chủ', '/sofa2'),
-    cmsPage('about', 'Trang giới thiệu', '/sofa2/about', cmsAboutRows),
+    cmsPage('about', 'Giới thiệu', '/sofa2/about', SOFA2_ABOUT_MOCK_DATA),
     cmsPage('contact', 'Trang liên hệ', '/sofa2/contact', cmsContactRows),
     cmsPage('policy', 'Trang chính sách', '/sofa2/policy', cmsPolicyRows),
     cmsPage('terms', 'Trang điều khoản', '/sofa2/policy/terms', cmsTermsRows),

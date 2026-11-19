@@ -79,6 +79,8 @@ export type Sofa2CmsPageBlock = {
   heading: string;
   content: string;
   image: string;
+  icon: string;
+  videoUrl: string;
   ctaLabel: string;
   ctaLink: string;
   metaTitle: string;
@@ -137,6 +139,8 @@ const toPageBlock = (row: Record<string, string | number>, slug: string, index: 
   heading: String(row.heading ?? ''),
   content: String(row.content ?? ''),
   image: String(row.image ?? ''),
+  icon: String(row.icon ?? ''),
+  videoUrl: String(row.videoUrl ?? ''),
   ctaLabel: String(row.ctaLabel ?? ''),
   ctaLink: String(row.ctaLink ?? ''),
   metaTitle: String(row.metaTitle ?? ''),
