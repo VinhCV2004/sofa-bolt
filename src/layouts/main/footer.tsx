@@ -51,9 +51,18 @@ export type FooterProps = {
   sx?: SxProps<Theme>;
   customLinks?: FooterLinkGroup[];
   description?: string;
+  brandName?: string;
+  brandHref?: string;
 };
 
-export function Footer({ layoutQuery, sx, customLinks, description }: FooterProps) {
+export function Footer({
+  layoutQuery,
+  sx,
+  customLinks,
+  description,
+  brandName,
+  brandHref = '/',
+}: FooterProps) {
   const theme = useTheme();
   const linkGroups = customLinks?.length ? customLinks : LINKS;
 
@@ -69,7 +78,22 @@ export function Footer({ layoutQuery, sx, customLinks, description }: FooterProp
           [theme.breakpoints.up(layoutQuery)]: { textAlign: 'unset' },
         }}
       >
-        <Logo />
+        {brandName ? (
+          <Box
+            component={RouterLink}
+            href={brandHref}
+            sx={{ display: 'inline-flex', flexDirection: 'column', color: 'text.primary', textDecoration: 'none' }}
+          >
+            <Typography sx={{ fontFamily: 'Georgia, serif', fontWeight: 700, letterSpacing: 1.5 }}>
+              {brandName}
+            </Typography>
+            <Typography variant="caption" sx={{ letterSpacing: 2, color: 'text.secondary' }}>
+              ATELIER · NỘI THẤT
+            </Typography>
+          </Box>
+        ) : (
+          <Logo />
+        )}
 
         <Grid
           container
@@ -152,7 +176,9 @@ export function Footer({ layoutQuery, sx, customLinks, description }: FooterProp
         </Grid>
 
         <Typography variant="body2" sx={{ mt: 10 }}>
-          © All rights reserved.
+          {brandName
+            ? `© ${new Date().getFullYear()} ${brandName}. Bảo lưu mọi quyền.`
+            : '© All rights reserved.'}
         </Typography>
       </Container>
     </Box>

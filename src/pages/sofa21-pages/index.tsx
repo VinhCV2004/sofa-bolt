@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 
@@ -8,8 +9,9 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Unstable_Grid2';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import Alert from '@mui/material/Alert';
+import TextField from '@mui/material/TextField';
 
 import { RouterLink } from 'src/routes/components';
 
@@ -17,6 +19,14 @@ import { Iconify } from 'src/components/iconify';
 
 import { SOFA21_SITE_MAP, type Sofa21Node } from 'src/sections/sofa21/sofa21-content';
 import { SOFA21_COLORS, SOFA21_IMAGES, SOFA21_PRODUCTS } from 'src/sections/sofa21/sofa21-data';
+import {
+  Sofa21Cart,
+  Sofa21Catalog,
+  Sofa21Compare,
+  Sofa21Wishlist,
+  Sofa21ProductDetail,
+  Sofa21CheckoutNotice,
+} from 'src/sections/sofa21/sofa21-commerce';
 
 type LocatedNode = Sofa21Node & { parent?: Sofa21Node };
 
@@ -39,6 +49,16 @@ function resolvePage(pathname: string) {
     .find((item) => normalize(item.path) === path);
   if (match) return match;
   if (path.startsWith('/sofa21/products/')) {
+    if (path.startsWith('/sofa21/products/item/')) {
+      const slug = path.slice('/sofa21/products/item/'.length);
+      const product = SOFA21_PRODUCTS.find((item) => item.slug === slug);
+
+      return {
+        title: product?.name || 'Không tìm thấy sản phẩm',
+        path,
+        parent: ALL_NODES.find((item) => item.path === '/sofa21/products'),
+      };
+    }
     return {
       title: 'Chi tiết sản phẩm',
       path,
@@ -84,6 +104,11 @@ function descriptionFor(title: string, section: string) {
 }
 
 function heroImageFor(section: string, path: string) {
+  const productSlug = path.startsWith('/sofa21/products/item/')
+    ? path.slice('/sofa21/products/item/'.length)
+    : '';
+  const productImage = SOFA21_PRODUCTS.find((product) => product.slug === productSlug)?.image;
+  if (productImage) return productImage;
   if (path.includes('factory') || path.includes('process') || path.includes('production'))
     return SOFA21_IMAGES.factory;
   if (section === 'Sản phẩm') return SOFA21_IMAGES.sofa;
@@ -113,11 +138,27 @@ const quickTips = [
 
 export default function Sofa21Pages() {
   const { pathname } = useLocation();
+  const [formPreviewSentFor, setFormPreviewSentFor] = useState('');
   const current = resolvePage(pathname);
   const section = sectionOf(current.path);
   const children = current.children || [];
-  const crumb = current.path.split('/').filter(Boolean).slice(1);
+  const crumb = current.path.startsWith('/sofa21/products/item/')
+    ? ['Sản phẩm', current.title]
+    : current.path === '/sofa21/cart/items'
+      ? [current.title]
+      : current.path.split('/').filter(Boolean).slice(1);
   const isProduct = current.path.includes('/products');
+  const isProductDetail = current.path.startsWith('/sofa21/products/item/');
+  const isCatalog =
+    isProduct &&
+    !isProductDetail &&
+    !current.path.includes('/products/detail/');
+  const isCart = current.path.startsWith('/sofa21/cart');
+  const isWishlist = current.path === '/sofa21/account/wishlist';
+  const isCompare = current.path === '/sofa21/compare';
+  const isCheckout = current.path.startsWith('/sofa21/checkout');
+  const isCommercePage =
+    isCatalog || isProductDetail || isCart || isWishlist || isCompare || isCheckout;
   const needsForm =
     /contact|visit|consult|register|quote|ticket|apply|forgot-password|chat|oem/.test(current.path);
   const image = heroImageFor(section, current.path);
@@ -279,7 +320,7 @@ export default function Sofa21Pages() {
         </Box>
 
         <Container sx={{ pt: { xs: 5, md: 8 } }}>
-          {children.length > 0 && (
+          {children.length > 0 && !isCommercePage && (
             <>
               <Stack
                 direction={{ xs: 'column', md: 'row' }}
@@ -402,91 +443,22 @@ export default function Sofa21Pages() {
             </>
           )}
 
-          {isProduct && (
-            <Box sx={{ mt: children.length ? 9 : 1 }}>
-              <Stack
-                direction={{ xs: 'column', md: 'row' }}
-                justifyContent="space-between"
-                alignItems={{ md: 'end' }}
-                spacing={2}
-                sx={{ mb: 3 }}
-              >
-                <Box>
-                  <Typography
-                    variant="overline"
-                    sx={{ color: SOFA21_COLORS.persimmonDeep, letterSpacing: 2 }}
-                  >
-                    SOFA21 SELECTED
-                  </Typography>
-                  <Typography
-                    variant="h3"
-                    sx={{
-                      mt: 0.5,
-                      fontWeight: 800,
-                      letterSpacing: '-.04em',
-                      fontSize: { xs: 30, md: 44 },
-                    }}
-                  >
-                    Sản phẩm được yêu thích
-                  </Typography>
-                </Box>
-                <Button
-                  component={RouterLink}
-                  href="/sofa21/compare"
-                  endIcon={<Iconify icon="solar:arrow-right-linear" />}
-                  sx={{ color: SOFA21_COLORS.cobalt }}
-                >
-                  So sánh sản phẩm
-                </Button>
-              </Stack>
-              <Grid container spacing={2.5}>
-                {SOFA21_PRODUCTS.map((product, index) => (
-                  <Grid key={product.name} xs={12} sm={6} md={4}>
-                    <Card
-                      component={RouterLink}
-                      href="/sofa21/products/detail/information"
-                      sx={{
-                        display: 'block',
-                        p: 1.3,
-                        textDecoration: 'none',
-                        color: SOFA21_COLORS.ink,
-                        bgcolor: SOFA21_COLORS.paper,
-                        boxShadow: 'none',
-                        borderRadius: index === 1 ? '80px 80px 16px 16px' : 2.5,
-                        transition: 'transform .25s',
-                        '&:hover': { transform: 'translateY(-5px)' },
-                      }}
-                    >
-                      <Box
-                        component="img"
-                        src={product.image}
-                        alt={product.name}
-                        sx={{
-                          width: 1,
-                          height: { xs: 250, md: 310 },
-                          objectFit: 'cover',
-                          borderRadius: index === 1 ? '80px 80px 12px 12px' : 2,
-                        }}
-                      />
-                      <Stack spacing={0.5} sx={{ px: 1, pt: 1.5, pb: 1 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {product.category}
-                        </Typography>
-                        <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                          {product.name}
-                        </Typography>
-                        <Typography sx={{ color: SOFA21_COLORS.cobalt, fontWeight: 800 }}>
-                          {product.price}
-                        </Typography>
-                      </Stack>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
+          {isCatalog && (
+            <Box sx={{ mt: { xs: 4, md: 6 } }}>
+              <Sofa21Catalog key={current.path} pathname={current.path} />
             </Box>
           )}
+          {isProductDetail && (
+            <Box sx={{ mt: { xs: 4, md: 6 } }}>
+              <Sofa21ProductDetail slug={current.path.slice('/sofa21/products/item/'.length)} />
+            </Box>
+          )}
+          {isCart && <Box sx={{ mt: { xs: 4, md: 6 } }}><Sofa21Cart /></Box>}
+          {isWishlist && <Box sx={{ mt: { xs: 4, md: 6 } }}><Sofa21Wishlist /></Box>}
+          {isCompare && <Box sx={{ mt: { xs: 4, md: 6 } }}><Sofa21Compare /></Box>}
+          {isCheckout && <Box sx={{ mt: { xs: 4, md: 6 } }}><Sofa21CheckoutNotice /></Box>}
 
-          {!children.length && !isProduct && (
+          {!children.length && !isProduct && !isCommercePage && (
             <Grid container spacing={3.5} sx={{ mt: { xs: 3, md: 5 } }}>
               <Grid xs={12} md={7}>
                 <Box
@@ -519,14 +491,20 @@ export default function Sofa21Pages() {
                       component="form"
                       spacing={2}
                       sx={{ mt: 3 }}
-                      onSubmit={(event) => event.preventDefault()}
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        setFormPreviewSentFor(current.path);
+                      }}
                     >
+                      <Alert severity="info">
+                        Bản xem thử: biểu mẫu chưa gửi thông tin đến Sofa21.
+                      </Alert>
                       <Grid container spacing={2}>
                         <Grid xs={12} sm={6}>
-                          <TextField fullWidth label="Họ và tên" size="small" />
+                          <TextField fullWidth label="Họ và tên" size="small" required />
                         </Grid>
                         <Grid xs={12} sm={6}>
-                          <TextField fullWidth label="Số điện thoại" size="small" />
+                          <TextField fullWidth label="Số điện thoại" size="small" required />
                         </Grid>
                         <Grid xs={12}>
                           <TextField
@@ -535,9 +513,15 @@ export default function Sofa21Pages() {
                             multiline
                             minRows={3}
                             size="small"
+                            required
                           />
                         </Grid>
                       </Grid>
+                      {formPreviewSentFor === current.path && (
+                        <Alert severity="success">
+                          Đã mô phỏng bước xác nhận. Chưa có dữ liệu nào được gửi hoặc lưu.
+                        </Alert>
+                      )}
                       <Button
                         type="submit"
                         variant="contained"
@@ -549,7 +533,7 @@ export default function Sofa21Pages() {
                           '&:hover': { bgcolor: SOFA21_COLORS.cobaltDeep },
                         }}
                       >
-                        Gửi yêu cầu
+                        Xem xác nhận mẫu
                       </Button>
                     </Stack>
                   )}
@@ -604,7 +588,7 @@ export default function Sofa21Pages() {
           )}
 
           {/* A secondary discovery band makes category and detail pages feel authored, not empty templates. */}
-          <Box
+          {!isCommercePage && <Box
             sx={{
               mt: 8,
               overflow: 'hidden',
@@ -661,7 +645,7 @@ export default function Sofa21Pages() {
                 />
               </Grid>
             </Grid>
-          </Box>
+          </Box>}
         </Container>
       </Box>
     </>

@@ -8,7 +8,7 @@ import { CONFIG } from 'src/config-global';
 
 // ----------------------------------------------------------------------
 
-export function SignInButton({ sx, ...other }: ButtonProps) {
+export function SignInButton({ sx, label = 'Sign in', ...other }: ButtonProps & { label?: string }) {
   return (
     <Button
       component={RouterLink}
@@ -17,7 +17,7 @@ export function SignInButton({ sx, ...other }: ButtonProps) {
       sx={sx}
       {...other}
     >
-      Sign in
+      {label}
     </Button>
   );
 }

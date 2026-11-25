@@ -497,7 +497,7 @@ export function Sofa21View() {
               <Grid key={product.name} xs={12} sm={6} md={4}>
                 <Card
                   component={RouterLink}
-                  href="/sofa21/products"
+                  href={`/sofa21/products/item/${product.slug}`}
                   sx={{
                     display: 'block',
                     height: 1,
