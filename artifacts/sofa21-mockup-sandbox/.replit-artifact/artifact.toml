@@ -1,0 +1,19 @@
+kind = "design"
+previewPath = "/__sofa21_mockup__/"
+title = "Sofa21 Design Preview"
+description = "An isolated canvas preview for comparing the current Sofa21 homepage with its redesign."
+version = "1.0.0"
+id = "artifacts/sofa21-mockup-sandbox"
+router = "path"
+
+[[services]]
+name = "Component Preview Server"
+paths = [ "/__sofa21_mockup__/" ]
+localPort = 21723
+
+[services.development]
+run = "npm run dev"
+
+[services.env]
+PORT = "21723"
+BASE_PATH = "/__sofa21_mockup__/"

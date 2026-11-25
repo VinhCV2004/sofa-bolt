@@ -1,0 +1,10 @@
+@import '@fontsource-variable/public-sans';
+@import '@fontsource/barlow/400.css';
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
+@import '@fontsource/barlow/700.css';
+@import '@fontsource/barlow/800.css';
+
+:root { color-scheme: light; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { font-family: 'Public Sans', 'Barlow', sans-serif; }
